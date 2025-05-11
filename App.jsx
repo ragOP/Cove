@@ -5,7 +5,7 @@ import ImageWithLink from './ImageLink';
 const App = () => {
   return (
     <View>
-      <Text>App</Text>
+      <Text>killer ki kd 0.2</Text>
       <ImageWithLink />
     </View>
   );
