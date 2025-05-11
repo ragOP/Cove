@@ -3,4 +3,5 @@ export const Paths = Object.freeze({
   REGISTER: 'Register',
   HOME: 'Home',
   START: 'Start',
+  LOGIN: 'Login',
 });
