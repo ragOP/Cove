@@ -17,10 +17,13 @@ end
 target 'CoveApp' do
   config = use_native_modules!
 
-  use_react_native!(
+  pod 'BVLinearGradient', :path => '../node_modules/react-native-linear-gradient'
+
+  use_react_native!( 
     :path => config[:reactNativePath],
     # An absolute path to your application root.
     :app_path => "#{Pod::Config.instance.installation_root}/.."
+    
   )
 
   post_install do |installer|

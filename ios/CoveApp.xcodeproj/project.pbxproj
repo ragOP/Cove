@@ -7,50 +7,40 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0C80B921A6F3F58F76C31292 /* libPods-CoveApp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-CoveApp.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		1E1FF1732A22494FBC211D98 /* Sansita-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 17F9B72E070B482B97F204AB /* Sansita-BoldItalic.ttf */; };
+		57C32774CE3646B0BFE96E66 /* Sansita-ExtraBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 74C27D97055344E7865C528F /* Sansita-ExtraBoldItalic.ttf */; };
+		632CB58136ED4F42843AEC8B /* Sansita-BlackItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E9AD86B0C2ED4F82B2532F87 /* Sansita-BlackItalic.ttf */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
-		AB423C3F666F4CCCAC46F315 /* Sansita-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 84D1FE7CD6BF4A0AAFA8113A /* Sansita-Black.ttf */; };
-		632CB58136ED4F42843AEC8B /* Sansita-BlackItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E9AD86B0C2ED4F82B2532F87 /* Sansita-BlackItalic.ttf */; };
 		863E70D20D154D8BB81BD3E0 /* Sansita-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5AE95719236142A28D8BE50C /* Sansita-Bold.ttf */; };
-		1E1FF1732A22494FBC211D98 /* Sansita-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 17F9B72E070B482B97F204AB /* Sansita-BoldItalic.ttf */; };
+		9EED95E3D33E5A961A73EB3F /* libPods-CoveApp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F941854170425E62C15CB4E /* libPods-CoveApp.a */; };
+		AB423C3F666F4CCCAC46F315 /* Sansita-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 84D1FE7CD6BF4A0AAFA8113A /* Sansita-Black.ttf */; };
 		AF37C764423B4DC9925CAC51 /* Sansita-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7F703C55C0CC4D0C9B32D30F /* Sansita-ExtraBold.ttf */; };
-		57C32774CE3646B0BFE96E66 /* Sansita-ExtraBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 74C27D97055344E7865C528F /* Sansita-ExtraBoldItalic.ttf */; };
+		C358632162851B0BAA0ACC7A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		C3C36AC62BCB42C6AB785792 /* Sansita-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = CDC19AB8F6EA42F68892456D /* Sansita-Italic.ttf */; };
 		C4F6F249A0824ADEB6903FC6 /* Sansita-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D7856651939D4CB9B75BDA76 /* Sansita-Regular.ttf */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-		00E356F41AD99517003FC87E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 13B07F861A680F5B00A75B9A;
-			remoteInfo = CoveApp;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXFileReference section */
-		00E356F11AD99517003FC87E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* CoveApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CoveApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = CoveApp/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = CoveApp/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = CoveApp/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		3B4392A12AC88292D35C810B /* Pods-CoveApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CoveApp.debug.xcconfig"; path = "Target Support Files/Pods-CoveApp/Pods-CoveApp.debug.xcconfig"; sourceTree = "<group>"; };
-		5709B34CF0A7D63546082F79 /* Pods-CoveApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CoveApp.release.xcconfig"; path = "Target Support Files/Pods-CoveApp/Pods-CoveApp.release.xcconfig"; sourceTree = "<group>"; };
-		5DCACB8F33CDC322A6C60F78 /* libPods-CoveApp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-CoveApp.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		17F9B72E070B482B97F204AB /* Sansita-BoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Sansita-BoldItalic.ttf"; path = "../src/assets/fonts/Sansita-BoldItalic.ttf"; sourceTree = "<group>"; };
+		251F21448EC835DBEAEC3913 /* Pods-CoveApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CoveApp.release.xcconfig"; path = "Target Support Files/Pods-CoveApp/Pods-CoveApp.release.xcconfig"; sourceTree = "<group>"; };
+		4F941854170425E62C15CB4E /* libPods-CoveApp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-CoveApp.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5AE95719236142A28D8BE50C /* Sansita-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Sansita-Bold.ttf"; path = "../src/assets/fonts/Sansita-Bold.ttf"; sourceTree = "<group>"; };
+		74C27D97055344E7865C528F /* Sansita-ExtraBoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Sansita-ExtraBoldItalic.ttf"; path = "../src/assets/fonts/Sansita-ExtraBoldItalic.ttf"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = CoveApp/AppDelegate.swift; sourceTree = "<group>"; };
+		7F703C55C0CC4D0C9B32D30F /* Sansita-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Sansita-ExtraBold.ttf"; path = "../src/assets/fonts/Sansita-ExtraBold.ttf"; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = CoveApp/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		84D1FE7CD6BF4A0AAFA8113A /* Sansita-Black.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Sansita-Black.ttf"; path = "../src/assets/fonts/Sansita-Black.ttf"; sourceTree = "<group>"; };
+		889ECB51DF86E6B350CFABFB /* Pods-CoveApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CoveApp.debug.xcconfig"; path = "Target Support Files/Pods-CoveApp/Pods-CoveApp.debug.xcconfig"; sourceTree = "<group>"; };
+		CDC19AB8F6EA42F68892456D /* Sansita-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Sansita-Italic.ttf"; path = "../src/assets/fonts/Sansita-Italic.ttf"; sourceTree = "<group>"; };
+		D7856651939D4CB9B75BDA76 /* Sansita-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Sansita-Regular.ttf"; path = "../src/assets/fonts/Sansita-Regular.ttf"; sourceTree = "<group>"; };
+		E9AD86B0C2ED4F82B2532F87 /* Sansita-BlackItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Sansita-BlackItalic.ttf"; path = "../src/assets/fonts/Sansita-BlackItalic.ttf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		84D1FE7CD6BF4A0AAFA8113A /* Sansita-Black.ttf */ = {isa = PBXFileReference; name = "Sansita-Black.ttf"; path = "../src/assets/fonts/Sansita-Black.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		E9AD86B0C2ED4F82B2532F87 /* Sansita-BlackItalic.ttf */ = {isa = PBXFileReference; name = "Sansita-BlackItalic.ttf"; path = "../src/assets/fonts/Sansita-BlackItalic.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		5AE95719236142A28D8BE50C /* Sansita-Bold.ttf */ = {isa = PBXFileReference; name = "Sansita-Bold.ttf"; path = "../src/assets/fonts/Sansita-Bold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		17F9B72E070B482B97F204AB /* Sansita-BoldItalic.ttf */ = {isa = PBXFileReference; name = "Sansita-BoldItalic.ttf"; path = "../src/assets/fonts/Sansita-BoldItalic.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		7F703C55C0CC4D0C9B32D30F /* Sansita-ExtraBold.ttf */ = {isa = PBXFileReference; name = "Sansita-ExtraBold.ttf"; path = "../src/assets/fonts/Sansita-ExtraBold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		74C27D97055344E7865C528F /* Sansita-ExtraBoldItalic.ttf */ = {isa = PBXFileReference; name = "Sansita-ExtraBoldItalic.ttf"; path = "../src/assets/fonts/Sansita-ExtraBoldItalic.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		CDC19AB8F6EA42F68892456D /* Sansita-Italic.ttf */ = {isa = PBXFileReference; name = "Sansita-Italic.ttf"; path = "../src/assets/fonts/Sansita-Italic.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		D7856651939D4CB9B75BDA76 /* Sansita-Regular.ttf */ = {isa = PBXFileReference; name = "Sansita-Regular.ttf"; path = "../src/assets/fonts/Sansita-Regular.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,21 +48,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0C80B921A6F3F58F76C31292 /* libPods-CoveApp.a in Frameworks */,
+				9EED95E3D33E5A961A73EB3F /* libPods-CoveApp.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		00E356F01AD99517003FC87E /* Supporting Files */ = {
-			isa = PBXGroup;
-			children = (
-				00E356F11AD99517003FC87E /* Info.plist */,
-			);
-			name = "Supporting Files";
-			sourceTree = "<group>";
-		};
 		13B07FAE1A68108700A75B9A /* CoveApp */ = {
 			isa = PBXGroup;
 			children = (
@@ -89,7 +71,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				5DCACB8F33CDC322A6C60F78 /* libPods-CoveApp.a */,
+				4F941854170425E62C15CB4E /* libPods-CoveApp.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -124,17 +106,8 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				3B4392A12AC88292D35C810B /* Pods-CoveApp.debug.xcconfig */,
-				5709B34CF0A7D63546082F79 /* Pods-CoveApp.release.xcconfig */,
-			);
-			path = Pods;
-			sourceTree = "<group>";
-		};
 		85E196E930544088B8DAD221 /* Resources */ = {
-			isa = "PBXGroup";
+			isa = PBXGroup;
 			children = (
 				84D1FE7CD6BF4A0AAFA8113A /* Sansita-Black.ttf */,
 				E9AD86B0C2ED4F82B2532F87 /* Sansita-BlackItalic.ttf */,
@@ -147,7 +120,15 @@
 			);
 			name = Resources;
 			sourceTree = "<group>";
-			path = "";
+		};
+		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				889ECB51DF86E6B350CFABFB /* Pods-CoveApp.debug.xcconfig */,
+				251F21448EC835DBEAEC3913 /* Pods-CoveApp.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
@@ -156,13 +137,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "CoveApp" */;
 			buildPhases = (
-				C38B50BA6285516D6DCD4F65 /* [CP] Check Pods Manifest.lock */,
+				EAD633E9418CB0725C2D676B /* [CP] Check Pods Manifest.lock */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
-				00EEFC60759A1932668264C0 /* [CP] Embed Pods Frameworks */,
-				E235C05ADACE081382539298 /* [CP] Copy Pods Resources */,
+				2C308CF0B6E3C1949305F401 /* [CP] Embed Pods Frameworks */,
+				D2832D0CFFE854CB46401D8E /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -205,13 +186,6 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		00E356EC1AD99517003FC87E /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		13B07F8E1A680F5B00A75B9A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -226,6 +200,7 @@
 				57C32774CE3646B0BFE96E66 /* Sansita-ExtraBoldItalic.ttf in Resources */,
 				C3C36AC62BCB42C6AB785792 /* Sansita-Italic.ttf in Resources */,
 				C4F6F249A0824ADEB6903FC6 /* Sansita-Regular.ttf in Resources */,
+				C358632162851B0BAA0ACC7A /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -248,7 +223,7 @@
 			shellPath = /bin/sh;
 			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\n/bin/sh -c \"$WITH_ENVIRONMENT $REACT_NATIVE_XCODE\"\n";
 		};
-		00EEFC60759A1932668264C0 /* [CP] Embed Pods Frameworks */ = {
+		2C308CF0B6E3C1949305F401 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -265,7 +240,24 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CoveApp/Pods-CoveApp-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		C38B50BA6285516D6DCD4F65 /* [CP] Check Pods Manifest.lock */ = {
+		D2832D0CFFE854CB46401D8E /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-CoveApp/Pods-CoveApp-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-CoveApp/Pods-CoveApp-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CoveApp/Pods-CoveApp-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		EAD633E9418CB0725C2D676B /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -287,23 +279,6 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		E235C05ADACE081382539298 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CoveApp/Pods-CoveApp-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CoveApp/Pods-CoveApp-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CoveApp/Pods-CoveApp-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -317,18 +292,10 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
-/* Begin PBXTargetDependency section */
-		00E356F51AD99517003FC87E /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 13B07F861A680F5B00A75B9A /* CoveApp */;
-			targetProxy = 00E356F41AD99517003FC87E /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3B4392A12AC88292D35C810B /* Pods-CoveApp.debug.xcconfig */;
+			baseConfigurationReference = 889ECB51DF86E6B350CFABFB /* Pods-CoveApp.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -348,15 +315,20 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = CoveApp;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5709B34CF0A7D63546082F79 /* Pods-CoveApp.release.xcconfig */;
+			baseConfigurationReference = 251F21448EC835DBEAEC3913 /* Pods-CoveApp.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -375,7 +347,12 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = CoveApp;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
@@ -449,7 +426,14 @@
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					" ",
+				);
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
+				USE_HERMES = true;
 			};
 			name = Debug;
 		};
@@ -514,7 +498,13 @@
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					" ",
+				);
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
+				USE_HERMES = true;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
