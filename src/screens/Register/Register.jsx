@@ -6,22 +6,46 @@ import {
   TouchableOpacity,
   Pressable,
   Image,
+  SafeAreaView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {FontStyles} from '../../styles/fontStyles';
-import PhoneInput from 'react-native-phone-number-input';
 import CustomOtp from '../../components/CustomOtp/CustomOtp';
 import UserAgreementFooter from '../../components/Footer/UserAgreementFooter';
 import {useNavigation} from '@react-navigation/native';
 import {FEMALE, MALE, OTHER} from '../../constants/GENDER';
 import CustomTextInput from '../../components/CustomTextField/CustomTextField';
 import CustomButton from '../../components/CustomButton/CustomButton';
-// import {DatePicker} from 'react-native-wheel-datepicker';
 import {DatePicker} from 'react-native-wheel-pick';
+import {onRegister} from '../../apis/onRegister';
+import CustomSnackbar from '../../components/CustomSnackbar/CustomSnackbar';
+import {Paths} from '../../navigaton/paths';
+import {onUpdateDetails} from '../../apis/onUpdateDetails';
+import useDebounce from '../../hooks/useDebounce';
+import {usernameAvailability} from '../../apis/usernameAvailability';
+import {useDispatch, useSelector} from 'react-redux';
+import {login} from '../../redux/slice/authSlice';
+import CustomPhoneInput from '../../components/CustomPhoneInput/CustomPhoneInput';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {TOKEN} from '../../constants/AUTH';
 
 const PhoneNumberForm = ({goNext, form, setForm}) => {
   const phoneInput = useRef(null);
   const navigation = useNavigation();
+
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+
+  const onUserRegister = async () => {
+    const phoneNumberLength = form.phoneNumber.length;
+
+    if (phoneNumberLength === 10) {
+      goNext();
+    } else {
+      setSnackbarMessage('Please enter a valid 10-digit phone number');
+      setSnackbarVisible(true);
+    }
+  };
 
   const onStartScreen = () => {
     navigation.navigate('Start');
@@ -30,63 +54,65 @@ const PhoneNumberForm = ({goNext, form, setForm}) => {
   const onChangeNumber = number => {
     const dialCode = phoneInput.current?.getCallingCode() || '';
 
+    const sanitizedText = number.replace(/[^0-9]/g, '');
+
     setForm(prev => ({
       ...prev,
       dialCode: dialCode,
-      phoneNumber: number,
+      phoneNumber: sanitizedText,
     }));
   };
 
   return (
-    <View style={styles.phoneNumberFormContainer}>
-      <View style={styles.phoneNumberTopContainer}>
-        <TouchableOpacity onPress={onStartScreen}>
-          <View style={styles.iconBox}>
-            <Icon name="chevron-back" size={30} color="#fff" />
-          </View>
-        </TouchableOpacity>
+    <>
+      <View style={styles.phoneNumberFormContainer}>
+        <View style={styles.phoneNumberTopContainer}>
+          <TouchableOpacity onPress={onStartScreen}>
+            <View style={styles.iconBox}>
+              <Icon name="chevron-back" size={30} color="#fff" />
+            </View>
+          </TouchableOpacity>
 
-        <View style={styles.phoneInputContainer}>
-          <Text style={[styles.headingText, FontStyles.heading]}>
-            Phone number
-          </Text>
+          <View style={styles.phoneInputContainer}>
+            <Text style={[styles.headingText, FontStyles.heading]}>
+              Phone number
+            </Text>
 
-          <View style={styles.phoneFormContainer}>
-            <PhoneInput
-              ref={phoneInput}
-              defaultValue={form.phoneNumber}
-              defaultCode="IN"
-              layout="second"
-              onChangeText={onChangeNumber}
-              renderDropdownImage={
-                <Icon name="chevron-down" size={20} color="#fff" />
-              }
-              textInputProps={{
-                placeholderTextColor: '#fff',
-                cursorColor: '#fff',
-              }}
-              countryPickerProps={{withFlag: false}}
-              withDarkTheme
-              withShadow
-              autoFocus
-              containerStyle={styles.phoneInputLibContainer}
-              textContainerStyle={styles.textInputContainer}
-              textInputStyle={styles.textInputStyle}
-              codeTextStyle={styles.codeTextStyle}
+            <View style={styles.phoneFormContainer}>
+              <CustomPhoneInput
+                ref={phoneInput}
+                value={form.phoneNumber}
+                onChangeText={onChangeNumber}
+                autoFocus={true}
+              />
+            </View>
+            <CustomButton
+              title="Send Verification Code"
+              onClick={onUserRegister}
             />
           </View>
-          <CustomButton title="Send Verfication Code" onClick={goNext} />
         </View>
+
+        <UserAgreementFooter />
       </View>
 
-      <UserAgreementFooter />
-    </View>
+      <CustomSnackbar
+        visible={snackbarVisible}
+        message={snackbarMessage}
+        onDismiss={() => setSnackbarVisible(false)}
+      />
+    </>
   );
 };
 
 const PhoneNumberVerification = ({goNext, goBack, form, otp, setOtp}) => {
-  const [time, setTime] = useState(30);
   const intervalRef = useRef(null);
+  const dispatch = useDispatch();
+
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [time, setTime] = useState(30);
+  const [isValidating, setIsValidating] = useState(false);
 
   const startTimer = () => {
     intervalRef.current = setInterval(() => {
@@ -107,9 +133,57 @@ const PhoneNumberVerification = ({goNext, goBack, form, otp, setOtp}) => {
     setOtp(currentOtp);
   };
 
-  const onVerifyOtp = () => {
-    if (otp === '123456') {
-      goNext();
+  const onVerifyOtp = async () => {
+    if (isValidating) {
+      return;
+    }
+
+    try {
+      setIsValidating(true);
+
+      const payload = {
+        phoneNumber: form.phoneNumber,
+        otp: otp,
+      };
+
+      const apiResponse = await onRegister({payload});
+
+      if (apiResponse?.response?.success) {
+        const data = apiResponse?.response?.data;
+        const token = data?.token;
+        const userData = data?.user;
+        dispatch(
+          login({
+            token: token,
+            user: {
+              id: userData?._id,
+              name: userData?.name,
+              username: userData?.username,
+              phoneNumber: userData?.phoneNumber,
+              email: userData?.email,
+            },
+          }),
+        );
+        await AsyncStorage.setItem(TOKEN, token);
+        setSnackbarMessage('OTP verified successfully');
+        setSnackbarVisible(true);
+        stopTimer();
+
+        setTimeout(() => {
+          goNext();
+        }, 1000);
+      } else {
+        setSnackbarMessage(
+          apiResponse?.response?.message || 'Invalid OTP, please try again',
+        );
+        setSnackbarVisible(true);
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      setSnackbarMessage('Error verifying OTP, please try again');
+      setSnackbarVisible(true);
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -126,40 +200,50 @@ const PhoneNumberVerification = ({goNext, goBack, form, otp, setOtp}) => {
   }, []);
 
   return (
-    <View style={styles.phoneOtpContainer}>
-      <View style={styles.iconBox}>
-        <TouchableOpacity onPress={goBack}>
-          <Icon name="chevron-back" size={30} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.otpNumberContainer}>
-        <Text style={styles.otpNumberTextHeader}>
-          Verification code has been sent to{' '}
-        </Text>
-        <Text style={[FontStyles.heading, styles.otpNumberTextSubHeader]}>
-          +{form.dialCode} {form.phoneNumber}
-        </Text>
-        <View style={styles.otpContainer}>
-          <CustomOtp onTextChange={onChangeOtp} />
-          {time <= 0 ? (
-            <TouchableOpacity onPress={onResendOtp}>
-              <Text style={styles.resendText}>Resend</Text>
-            </TouchableOpacity>
-          ) : (
-            <Text style={styles.resendTextTimer}>Resend in {time}s</Text>
-          )}
+    <>
+      <View style={styles.phoneOtpContainer}>
+        <View style={styles.iconBox}>
+          <TouchableOpacity onPress={goBack}>
+            <Icon name="chevron-back" size={30} color="#fff" />
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.verifyCodeContainer}>
-          <CustomButton
-            title="Verify code"
-            onClick={onVerifyOtp}
-            style={styles.verfiyCodeButton}
-          />
+        <View style={styles.otpNumberContainer}>
+          <Text style={styles.otpNumberTextHeader}>
+            Verification code has been sent to{' '}
+          </Text>
+          <Text style={[FontStyles.heading, styles.otpNumberTextSubHeader]}>
+            +{form.dialCode} {form.phoneNumber}
+          </Text>
+          <View style={styles.otpContainer}>
+            <CustomOtp onTextChange={onChangeOtp} />
+            {time <= 0 ? (
+              <TouchableOpacity onPress={onResendOtp}>
+                <Text style={styles.resendText}>Resend</Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.resendTextTimer}>Resend in {time}s</Text>
+            )}
+          </View>
+
+          <View style={styles.verifyCodeContainer}>
+            <CustomButton
+              title="Verify code"
+              onClick={onVerifyOtp}
+              style={styles.verfiyCodeButton}
+              isLoading={isValidating}
+              disabled={otp.length < 6 || isValidating}
+            />
+          </View>
         </View>
       </View>
-    </View>
+
+      <CustomSnackbar
+        visible={snackbarVisible}
+        message={snackbarMessage}
+        onDismiss={() => setSnackbarVisible(false)}
+      />
+    </>
   );
 };
 
@@ -186,6 +270,7 @@ const NameInput = ({goNext, goBack, form, setForm}) => {
           placeholder="Enter Full Name..."
           onChangeText={onChangeName}
           value={form.name}
+          autoFocus={true}
         />
         <View style={styles.nameInputIconContainer}>
           <TouchableOpacity onPress={goNext}>
@@ -330,50 +415,198 @@ const GenderSelect = ({goNext, goBack, form, setForm}) => {
 };
 
 const UsernameInput = ({goNext, goBack, form, setForm}) => {
-  const onChangeUsername = username => {
+  const username = form.userName;
+
+  const reduxAuth = useSelector(state => state.auth);
+
+  const [isAvailable, setIsAvailable] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [snackbarState, setSnackbarState] = useState({
+    visible: false,
+    message: '',
+    type: 'info',
+  });
+
+  const debouncedUsername = useDebounce(username, 500);
+
+  const onChangeUsername = currentUsername => {
     setForm(prev => ({
       ...prev,
-      userName: username,
+      userName: currentUsername,
     }));
   };
 
-  const userName = form.userName;
+  const onValidateUsername = () => {
+    if (username.length < 6) {
+      setSnackbarState(prev => ({
+        ...prev,
+        visible: true,
+        message: 'Username must be at least 6 characters long',
+        type: 'error',
+      }));
+
+      return;
+    }
+
+    if (!isAvailable) {
+      setSnackbarState(prev => ({
+        ...prev,
+        visible: true,
+        message: 'Username is not available',
+        type: 'error',
+      }));
+
+      return;
+    }
+
+    if (username.length > 5 && isAvailable) {
+      setSnackbarState(prev => ({
+        ...prev,
+        visible: true,
+        message: 'Username is available',
+        type: 'success',
+      }));
+
+      setTimeout(() => {
+        goNext();
+      }, 1000);
+    }
+  };
+
+  const onCloseSnackbar = () => {
+    setSnackbarState(prev => ({
+      ...prev,
+      visible: false,
+    }));
+  };
+
+  useEffect(() => {
+    const checkUsernameAvailability = async () => {
+      if (debouncedUsername) {
+        setIsChecking(true);
+        try {
+          const apiResponse = await usernameAvailability({
+            payload: {username: debouncedUsername},
+          });
+
+          if (apiResponse?.response?.success) {
+            setIsAvailable(true);
+          }
+        } catch (error) {
+          console.error('Error checking username availability:', error);
+        } finally {
+          setIsChecking(false);
+        }
+      } else {
+        setIsAvailable(false);
+      }
+    };
+
+    if (debouncedUsername.length > 5) {
+      checkUsernameAvailability();
+    }
+  }, [debouncedUsername]);
 
   return (
-    <View style={styles.usernameFormContainer}>
-      <TouchableOpacity onPress={goBack}>
-        <View style={styles.iconBox}>
-          <Icon name="chevron-back" size={30} color="#fff" />
-        </View>
-      </TouchableOpacity>
+    <>
+      <View style={styles.usernameFormContainer}>
+        <TouchableOpacity onPress={goBack}>
+          <View style={styles.iconBox}>
+            <Icon name="chevron-back" size={30} color="#fff" />
+          </View>
+        </TouchableOpacity>
 
-      <View style={styles.userNameInnerContainer}>
-        <Text style={[FontStyles.heading, styles.otpNumberTextSubHeader]}>
-          Enter Username
-        </Text>
+        <View style={styles.userNameInnerContainer}>
+          <Text style={[FontStyles.heading, styles.otpNumberTextSubHeader]}>
+            Enter Username
+          </Text>
 
-        <CustomTextInput
-          placeholder="Enter username"
-          value={userName}
-          onChangeText={onChangeUsername}
-        />
+          <CustomTextInput
+            placeholder="Enter username"
+            value={username}
+            onChangeText={onChangeUsername}
+            autoFocus={true}
+          />
 
-        <View style={styles.usernameInputIconContainer}>
-          <TouchableOpacity onPress={goNext}>
-            <View style={styles.nameInputIconBox}>
-              <Icon name="chevron-forward" size={30} color="#fff" />
-            </View>
-          </TouchableOpacity>
+          {isChecking ? (
+            <Text style={styles.loadingText}>Checking...</Text>
+          ) : username.length > 5 ? (
+            <>
+              {isAvailable === true && (
+                <Text style={styles.successText}>Username is available!</Text>
+              )}
+              {isAvailable === false && (
+                <Text style={styles.errorText}>Username is taken.</Text>
+              )}
+            </>
+          ) : (
+            <Text style={styles.errorText}>{''}</Text>
+          )}
+
+          <View style={styles.usernameInputIconContainer}>
+            <TouchableOpacity onPress={onValidateUsername}>
+              <View style={styles.nameInputIconBox}>
+                <Icon name="chevron-forward" size={30} color="#fff" />
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
+
+      <CustomSnackbar
+        visible={snackbarState.visible}
+        message={snackbarState.message}
+        type={snackbarState.type}
+        onDismiss={onCloseSnackbar}
+      />
+    </>
   );
 };
 
 const PasswordInput = ({goNext, goBack, form, setForm}) => {
-  const onSubmit = () => {
-    console.log('FORM SUBMITTED', form);
-    console.log('DOB', form.dob.toISOString());
+  const navigation = useNavigation();
+  const dispatch = useDispatch();
+
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+
+  const onSubmit = async () => {
+    const formData = new FormData();
+    formData.append('name', form.name);
+    formData.append('username', form.username);
+    formData.append('password', form.password);
+    // formData.append('dob', form.dob.toISOString());
+
+    const apiResponse = await onUpdateDetails({payload: formData});
+
+    if (apiResponse?.response?.success) {
+      setSnackbarMessage('Account created successfully');
+      setSnackbarVisible(true);
+
+      const data = apiResponse?.response?.data;
+      const userData = data?.user;
+
+      dispatch(
+        login({
+          token: userData?.token,
+          user: {
+            id: userData?.id,
+            name: userData?.name,
+            username: userData?.username,
+            phoneNumber: userData?.phoneNumber,
+            email: userData?.email,
+          },
+        }),
+      );
+
+      navigation.navigate(Paths.HOME);
+    } else {
+      setSnackbarMessage(
+        apiResponse?.response?.message ||
+          'Error creating account, please try again',
+      );
+      setSnackbarVisible(true);
+    }
   };
 
   const onChangePassword = password => {
@@ -394,41 +627,50 @@ const PasswordInput = ({goNext, goBack, form, setForm}) => {
   const confirmPassword = form.confirmPassword;
 
   return (
-    <View style={styles.passwordFormContainer}>
-      <TouchableOpacity onPress={goBack}>
-        <View style={styles.iconBox}>
-          <Icon name="chevron-back" size={30} color="#fff" />
+    <>
+      <View style={styles.passwordFormContainer}>
+        <TouchableOpacity onPress={goBack}>
+          <View style={styles.iconBox}>
+            <Icon name="chevron-back" size={30} color="#fff" />
+          </View>
+        </TouchableOpacity>
+
+        <View style={styles.passwordInnerContainer}>
+          <Text style={[FontStyles.heading, styles.otpNumberTextSubHeader]}>
+            Set Password
+          </Text>
+
+          <CustomTextInput
+            placeholder="Enter password"
+            value={password}
+            onChangeText={onChangePassword}
+            autoFocus={true}
+          />
         </View>
-      </TouchableOpacity>
 
-      <View style={styles.passwordInnerContainer}>
-        <Text style={[FontStyles.heading, styles.otpNumberTextSubHeader]}>
-          Set Password
-        </Text>
+        <View style={styles.passwordInnerContainer}>
+          <Text style={[FontStyles.heading, styles.otpNumberTextSubHeader]}>
+            Confirm Password
+          </Text>
 
-        <CustomTextInput
-          placeholder="Enter password"
-          value={password}
-          onChangeText={onChangePassword}
-        />
+          <CustomTextInput
+            placeholder="Confirm password"
+            value={confirmPassword}
+            onChangeText={onChangeConfirmPassword}
+          />
+        </View>
+
+        <View style={styles.createAccountButtonContainer}>
+          <CustomButton title="Create Account" onClick={onSubmit} />
+        </View>
       </View>
 
-      <View style={styles.passwordInnerContainer}>
-        <Text style={[FontStyles.heading, styles.otpNumberTextSubHeader]}>
-          Confirm Password
-        </Text>
-
-        <CustomTextInput
-          placeholder="Confirm password"
-          value={confirmPassword}
-          onChangeText={onChangeConfirmPassword}
-        />
-      </View>
-
-      <View style={styles.createAccountButtonContainer}>
-        <CustomButton title="Create Account" onClick={onSubmit} />
-      </View>
-    </View>
+      <CustomSnackbar
+        visible={snackbarVisible}
+        message={snackbarMessage}
+        onDismiss={() => setSnackbarVisible(false)}
+      />
+    </>
   );
 };
 
@@ -527,12 +769,17 @@ const Register = () => {
     }
   };
 
-  return <>{renderStep()}</>;
+  return (
+    <SafeAreaView style={styles.safeAreaContainer}>{renderStep()}</SafeAreaView>
+  );
 };
 
 export default Register;
 
 const styles = StyleSheet.create({
+  safeAreaContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -775,6 +1022,21 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'flex-end',
   },
+  loadingText: {
+    color: '#fff',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  successText: {
+    color: '#A8D28C',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  errorText: {
+    color: '#D28A8C',
+    fontSize: 14,
+    textAlign: 'center',
+  },
 
   createAccountButtonContainer: {
     paddingHorizontal: 40,
@@ -797,35 +1059,5 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'flex-end',
     marginRight: 40,
-  },
-
-  // Phone Input Library Styles
-  phoneInputLibContainer: {
-    borderRadius: 70,
-    overflow: 'hidden',
-    // height: 70,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    background: '#765152',
-    backgroundColor: '#765152',
-    color: '#fff',
-  },
-  textInputContainer: {
-    padding: 0,
-    backgroundColor: '#765152',
-    background: '#765152',
-    color: '#fff',
-    margin: 0,
-  },
-  textInputStyle: {
-    color: '#fff',
-    margin: 0,
-  },
-  codeTextStyle: {
-    color: '#fff',
-    marginLeft: 20,
   },
 });

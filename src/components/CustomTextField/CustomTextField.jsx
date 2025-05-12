@@ -2,7 +2,12 @@ import {useState} from 'react';
 import {StyleSheet, View} from 'react-native';
 import {TextInput} from 'react-native-gesture-handler';
 
-const CustomTextInput = ({placeholder = 'Enter text', onChangeText, value}) => {
+const CustomTextInput = ({
+  placeholder = 'Enter text',
+  onChangeText,
+  value,
+  autoFocus = false,
+}) => {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
@@ -15,10 +20,12 @@ const CustomTextInput = ({placeholder = 'Enter text', onChangeText, value}) => {
         style={styles.textInput}
         value={value}
         placeholder={placeholder}
+        keyboardType="default"
         onChangeText={onChangeText}
         placeholderTextColor="rgba(255, 255, 255, 0.35)"
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
+        autoFocus={autoFocus}
       />
     </View>
   );

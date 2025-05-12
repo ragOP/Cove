@@ -11,6 +11,7 @@ const Start = () => {
   const onRegisterPage = () => {
     navigation.navigate(Paths.REGISTER);
   };
+
   return (
     <LinearGradient
       colors={['#D28A8C', '#281E14']}
