@@ -1,49 +1,10 @@
 import React from 'react';
-import {StyleSheet, View, Text, Animated} from 'react-native';
-import ContactHeader from './ContactHeader';
+import {StyleSheet, View, Text, Animated, FlatList} from 'react-native';
+import {messages} from '../../../utils/testing/messages';
+import {formatTime} from '../../../utils/time/formatTime';
+import {formatDateLabel} from '../../../utils/date/formatDateLabel';
 
-const messages = [
-  {
-    id: '1',
-    type: 'sent',
-    text: 'Hello! Are you coming to the party?',
-    time: '8:00PM',
-  },
-  {
-    id: '2',
-    type: 'received',
-    text: 'Yes, I will be there in 10 minutes.',
-    time: '8:01PM',
-  },
-  {
-    id: '3',
-    type: 'sent',
-    text: 'Awesome! See you soon.',
-    time: '8:02PM',
-  },
-  {
-    id: '4',
-    type: 'received',
-    text: 'Do you want me to bring anything?',
-    time: '8:03PM',
-  },
-  {
-    id: '5',
-    type: 'sent',
-    text: 'No, just bring yourself!',
-    time: '8:04PM',
-  },
-  {
-    id: '6',
-    type: 'received',
-    text: 'Haha, okay! 😊',
-    time: '8:05PM',
-  },
-];
-
-const AnimatedFlatList = Animated.createAnimatedComponent(
-  require('react-native').FlatList,
-);
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 
 const MessageItem = ({item, index}) => {
   const isSent = item.type === 'sent';
@@ -68,7 +29,7 @@ const MessageItem = ({item, index}) => {
       <Text style={isSent ? styles.sentText : styles.receivedText}>
         {item.text}
       </Text>
-      <Text style={styles.timeText}>{item.time}</Text>
+      <Text style={styles.timeText}>{formatTime(item.timestamp)}</Text>
     </Animated.View>
   );
 };
@@ -79,9 +40,27 @@ const ChatsContainer = () => {
       <AnimatedFlatList
         data={messages}
         keyExtractor={item => item.id}
-        renderItem={({item, index}) => (
-          <MessageItem item={item} index={index} />
-        )}
+        renderItem={({item, index}) => {
+          const currentDate = new Date(item.timestamp).toDateString();
+          const previousDate =
+            index > 0
+              ? new Date(messages[index - 1].timestamp).toDateString()
+              : null;
+          const showDateLabel = index === 0 || currentDate !== previousDate;
+
+          return (
+            <>
+              {showDateLabel && (
+                <View style={styles.dateLabelContainer}>
+                  <Text style={styles.dateLabelText}>
+                    {formatDateLabel(item.timestamp)}
+                  </Text>
+                </View>
+              )}
+              <MessageItem item={item} index={index} />
+            </>
+          );
+        }}
         contentContainerStyle={styles.chatContainer}
         showsVerticalScrollIndicator={false}
       />
@@ -129,5 +108,18 @@ const styles = StyleSheet.create({
     color: '#ddd',
     textAlign: 'right',
     marginTop: 4,
+  },
+  dateLabelContainer: {
+    alignSelf: 'center',
+    backgroundColor: '#333',
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginVertical: 8,
+  },
+  dateLabelText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
