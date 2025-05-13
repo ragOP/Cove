@@ -28,6 +28,8 @@ import {login} from '../../redux/slice/authSlice';
 import CustomPhoneInput from '../../components/CustomPhoneInput/CustomPhoneInput';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {TOKEN} from '../../constants/AUTH';
+import {launchImageLibrary} from 'react-native-image-picker';
+import {Avatar, Button} from 'react-native-paper';
 
 const PhoneNumberForm = ({goNext, form, setForm}) => {
   const phoneInput = useRef(null);
@@ -106,8 +108,9 @@ const PhoneNumberForm = ({goNext, form, setForm}) => {
 };
 
 const PhoneNumberVerification = ({goNext, goBack, form, otp, setOtp}) => {
-  const intervalRef = useRef(null);
   const dispatch = useDispatch();
+  const navigation = useNavigation();
+  const intervalRef = useRef(null);
 
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -125,6 +128,7 @@ const PhoneNumberVerification = ({goNext, goBack, form, otp, setOtp}) => {
       });
     }, 1000);
   };
+
   const stopTimer = () => {
     clearInterval(intervalRef.current);
   };
@@ -147,11 +151,15 @@ const PhoneNumberVerification = ({goNext, goBack, form, otp, setOtp}) => {
       };
 
       const apiResponse = await onRegister({payload});
+      console.log('API Response:', apiResponse);
 
       if (apiResponse?.response?.success) {
+        const statusCode = apiResponse?.response?.statusCode;
+
         const data = apiResponse?.response?.data;
         const token = data?.token;
         const userData = data?.user;
+
         dispatch(
           login({
             token: token,
@@ -165,13 +173,18 @@ const PhoneNumberVerification = ({goNext, goBack, form, otp, setOtp}) => {
           }),
         );
         await AsyncStorage.setItem(TOKEN, token);
+
         setSnackbarMessage('OTP verified successfully');
         setSnackbarVisible(true);
         stopTimer();
 
-        setTimeout(() => {
-          goNext();
-        }, 1000);
+        if (statusCode === 200) {
+          navigation.navigate(Paths.HOME);
+        } else {
+          setTimeout(() => {
+            goNext();
+          }, 500);
+        }
       } else {
         setSnackbarMessage(
           apiResponse?.response?.message || 'Invalid OTP, please try again',
@@ -256,11 +269,11 @@ const NameInput = ({goNext, goBack, form, setForm}) => {
   };
   return (
     <View style={styles.nameInputContainer}>
-      <TouchableOpacity onPress={goBack}>
+      {/* <TouchableOpacity onPress={goBack}>
         <View style={styles.iconBox}>
           <Icon name="chevron-back" size={30} color="#fff" />
         </View>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       <View style={styles.nameInputInnerContainer}>
         <Text style={[FontStyles.heading, styles.otpNumberTextSubHeader]}>
@@ -315,6 +328,7 @@ const BirthDateInput = ({goNext, goBack, form, setForm}) => {
           style={styles.datePickerStyles}
           maximumDate={new Date()}
           onDateChange={onChangeDate}
+          minimumDate={new Date(1990, 0, 1)}
           textColor="#fff"
           dividerColor="#fff"
         />
@@ -415,9 +429,7 @@ const GenderSelect = ({goNext, goBack, form, setForm}) => {
 };
 
 const UsernameInput = ({goNext, goBack, form, setForm}) => {
-  const username = form.userName;
-
-  const reduxAuth = useSelector(state => state.auth);
+  const username = form.username;
 
   const [isAvailable, setIsAvailable] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
@@ -432,7 +444,7 @@ const UsernameInput = ({goNext, goBack, form, setForm}) => {
   const onChangeUsername = currentUsername => {
     setForm(prev => ({
       ...prev,
-      userName: currentUsername,
+      username: currentUsername,
     }));
   };
 
@@ -567,45 +579,88 @@ const PasswordInput = ({goNext, goBack, form, setForm}) => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [snackbarState, setSnackbarState] = useState({
+    visible: false,
+    message: '',
+    type: 'info',
+  });
 
   const onSubmit = async () => {
-    const formData = new FormData();
-    formData.append('name', form.name);
-    formData.append('username', form.username);
-    formData.append('password', form.password);
-    // formData.append('dob', form.dob.toISOString());
+    if (isCreatingAccount) {
+      return;
+    }
 
-    const apiResponse = await onUpdateDetails({payload: formData});
+    try {
+      setIsCreatingAccount(true);
 
-    if (apiResponse?.response?.success) {
-      setSnackbarMessage('Account created successfully');
-      setSnackbarVisible(true);
+      if (form.password !== form.confirmPassword) {
+        setSnackbarState(prev => ({
+          visible: true,
+          message: 'Passwords do not match',
+          type: 'error',
+        }));
+        return;
+      }
 
-      const data = apiResponse?.response?.data;
-      const userData = data?.user;
+      const formData = new FormData();
+      formData.append('name', form.name);
+      formData.append('username', form.username);
+      formData.append('password', form.password);
+      formData.append('dob', form.dob.toISOString());
+      console.log('profilePicture', form.profilePicture);
 
-      dispatch(
-        login({
-          token: userData?.token,
-          user: {
-            id: userData?.id,
-            name: userData?.name,
-            username: userData?.username,
-            phoneNumber: userData?.phoneNumber,
-            email: userData?.email,
-          },
-        }),
-      );
+      if (form.profilePicture) {
+        formData.append('profilePicture', {
+          uri: form.profilePicture.uri,
+          type: form.profilePicture.type || 'image/jpeg',
+          name: form.profilePicture.fileName || 'profile.jpg',
+        });
+      }
 
-      navigation.navigate(Paths.HOME);
-    } else {
-      setSnackbarMessage(
-        apiResponse?.response?.message ||
-          'Error creating account, please try again',
-      );
-      setSnackbarVisible(true);
+      const apiResponse = await onUpdateDetails({payload: formData});
+      console.log('apiResponse', apiResponse);
+      if (apiResponse?.response?.success) {
+        setSnackbarState(prev => ({
+          visible: true,
+          message: 'Account created successfully',
+          type: 'success',
+        }));
+
+        const data = apiResponse?.response?.data;
+        const userData = data?.user;
+
+        dispatch(
+          login({
+            token: userData?.token,
+            user: {
+              id: userData?.id,
+              name: userData?.name,
+              username: userData?.username,
+              phoneNumber: userData?.phoneNumber,
+              email: userData?.email,
+            },
+          }),
+        );
+
+        navigation.navigate(Paths.HOME);
+      } else {
+        const errrorMessage = apiResponse?.response?.message;
+        setSnackbarState(prev => ({
+          visible: true,
+          message: errrorMessage || 'Error creating account, please try again',
+          type: 'error',
+        }));
+      }
+    } catch (error) {
+      console.error(error);
+      setSnackbarState(prev => ({
+        visible: true,
+        message: 'Error creating account, please try again',
+        type: 'error',
+      }));
+    } finally {
+      setIsCreatingAccount(false);
     }
   };
 
@@ -625,6 +680,13 @@ const PasswordInput = ({goNext, goBack, form, setForm}) => {
 
   const password = form.password;
   const confirmPassword = form.confirmPassword;
+
+  const onCloseSnackbar = () => {
+    setSnackbarState(prev => ({
+      ...prev,
+      visible: false,
+    }));
+  };
 
   return (
     <>
@@ -661,16 +723,86 @@ const PasswordInput = ({goNext, goBack, form, setForm}) => {
         </View>
 
         <View style={styles.createAccountButtonContainer}>
-          <CustomButton title="Create Account" onClick={onSubmit} />
+          <CustomButton
+            title="Create Account"
+            onClick={onSubmit}
+            isLoading={isCreatingAccount}
+          />
         </View>
       </View>
 
       <CustomSnackbar
-        visible={snackbarVisible}
-        message={snackbarMessage}
-        onDismiss={() => setSnackbarVisible(false)}
+        visible={snackbarState.visible}
+        message={snackbarState.message}
+        type={snackbarState.type}
+        onDismiss={onCloseSnackbar}
       />
     </>
+  );
+};
+
+const ImageUploadScreen = ({goNext, goBack, form, setForm}) => {
+  const [imageUri, setImageUri] = useState(form.profilePicture.uri || null);
+
+  const pickImage = async () => {
+    launchImageLibrary(
+      {
+        mediaType: 'photo',
+        quality: 0.4,
+      },
+      response => {
+        if (response.didCancel) {
+          return;
+        }
+
+        if (response.errorCode) {
+          return;
+        }
+
+        if (response.assets && response.assets.length > 0) {
+          const asset = response.assets[0];
+          setImageUri(asset.uri);
+          setForm(prev => ({
+            ...prev,
+            profilePicture: asset,
+          }));
+        }
+      },
+    );
+  };
+
+  return (
+    <View style={styles.imageUploadContainer}>
+      <TouchableOpacity onPress={goBack}>
+        <View style={styles.iconBox}>
+          <Icon name="chevron-back" size={30} color="#fff" />
+        </View>
+      </TouchableOpacity>
+      <View style={styles.avatarContainer}>
+        <Avatar.Image
+          size={120}
+          source={
+            imageUri ? {uri: imageUri} : require('../../assets/images/user.png')
+          }
+          style={styles.avatar}
+        />
+        <Button
+          mode="contained"
+          icon="camera"
+          onPress={pickImage}
+          style={styles.uploadButton}>
+          Upload Image
+        </Button>
+      </View>
+
+      <View style={styles.imageIconContainer}>
+        <TouchableOpacity onPress={goNext}>
+          <View style={styles.nameInputIconBox}>
+            <Icon name="chevron-forward" size={30} color="#fff" />
+          </View>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
@@ -683,15 +815,16 @@ const Register = () => {
     name: '',
     dob: null,
     gender: 'Male',
-    userName: '',
+    username: '',
     password: '',
     confirmPassword: '',
+    profilePicture: null,
   });
 
   const [otp, setOtp] = useState('');
 
   const goNext = () => {
-    if (currentStep < 7) {
+    if (currentStep < 8) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -756,6 +889,15 @@ const Register = () => {
           />
         );
       case 7:
+        return (
+          <ImageUploadScreen
+            goNext={goNext}
+            goBack={goBack}
+            form={form}
+            setForm={setForm}
+          />
+        );
+      case 8:
         return (
           <PasswordInput
             goNext={goNext}
@@ -878,6 +1020,7 @@ const styles = StyleSheet.create({
     display: 'flex',
     gap: 28,
     paddingHorizontal: 40,
+    marginTop: 100,
   },
   nameInputIconContainer: {
     display: 'flex',
@@ -1040,6 +1183,31 @@ const styles = StyleSheet.create({
 
   createAccountButtonContainer: {
     paddingHorizontal: 40,
+  },
+
+  // Image Upload Styles
+  imageUploadContainer: {
+    flex: 1,
+    backgroundColor: '#181818',
+  },
+  avatarContainer: {
+    alignItems: 'center',
+    marginTop: 32,
+  },
+  avatar: {
+    backgroundColor: '#333',
+    marginBottom: 16,
+  },
+  uploadButton: {
+    marginTop: 8,
+    backgroundColor: '#D28A8C',
+  },
+  imageIconContainer: {
+    display: 'flex',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    marginTop: 40,
+    marginRight: 20,
   },
 
   // Password Input Styles

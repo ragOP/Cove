@@ -78,5 +78,7 @@
 			<string>Zocial.ttf</string>
 			<string>Fontisto.ttf</string>
 		</array>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>This app requires access to your photo library to let you upload a profile image.</string>
 	</dict>
 </plist>
