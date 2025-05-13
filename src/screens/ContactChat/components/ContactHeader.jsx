@@ -45,9 +45,9 @@ const ContactHeader = () => {
           <Icon
             name="chatbubble-ellipses"
             size={26}
-            color="rgba(255, 255, 255, 0.5)"
+            color={true ? '#D28A8C' : 'rgba(255, 255, 255, 0.5)'}
           />
-          <Text style={styles.tabText}>Chat</Text>
+          <Text style={true ? styles.activeTabText : styles.tabText}>Chat</Text>
         </View>
         <View style={styles.chatTabBox}>
           <MaterialIcon
@@ -126,5 +126,8 @@ const styles = StyleSheet.create({
   },
   tabText: {
     color: 'rgba(255, 255, 255, 0.5)',
+  },
+  activeTabText: {
+    color: '#D28A8C',
   },
 });

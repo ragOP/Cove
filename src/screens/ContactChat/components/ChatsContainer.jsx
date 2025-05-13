@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 12,
     borderRadius: 12,
-    marginVertical: 8,
+    marginBottom: 12,
   },
   dateLabelText: {
     color: '#fff',
