@@ -4,4 +4,5 @@ export const Paths = Object.freeze({
   HOME: 'Home',
   START: 'Start',
   LOGIN: 'Login',
+  CONTACT_CHAT: 'ContactChat',
 });

@@ -23,7 +23,7 @@ import {Paths} from '../../navigaton/paths';
 import {onUpdateDetails} from '../../apis/onUpdateDetails';
 import useDebounce from '../../hooks/useDebounce';
 import {usernameAvailability} from '../../apis/usernameAvailability';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {login} from '../../redux/slice/authSlice';
 import CustomPhoneInput from '../../components/CustomPhoneInput/CustomPhoneInput';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -911,9 +911,7 @@ const Register = () => {
     }
   };
 
-  return (
-    <SafeAreaView style={styles.safeAreaContainer}>{renderStep()}</SafeAreaView>
-  );
+  return <>{renderStep()}</>;
 };
 
 export default Register;
