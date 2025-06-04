@@ -9,4 +9,5 @@ export const endpoints = {
   friendRequests: 'api/user/friend-requests',
   conversations: 'api/user/one-to-one-chat',
   sendMessage: 'api/user/messages/send-message',
+  uploadFile: 'api/user/upload-files',
 };

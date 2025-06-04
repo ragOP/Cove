@@ -1,81 +1,265 @@
 import React, {useState} from 'react';
-import {StyleSheet, TextInput, View, TouchableOpacity} from 'react-native';
+import {
+  StyleSheet,
+  TextInput,
+  View,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  ActivityIndicator,
+  Text,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {sendMessage} from '../../../apis/sendMessage';
 import {useSelector} from 'react-redux';
+import Clipboard from '@react-native-clipboard/clipboard';
+
+import {prepareMessagePayload} from '../../../helpers/messages/prepareMessagePayload';
+import {selectFiles} from '../../../helpers/files/selectFiles';
+import {uploadFiles} from '../../../helpers/files/uploadFiles';
+import SelectedMessageBar from './SelectedMessageBar';
 
 const SendChat = ({
   conversationId,
   conversations,
   setConversations,
   receiverId,
+  replyMessage,
+  onCancelReply,
 }) => {
   const userId = useSelector(state => state.auth.user?.id);
 
   const [message, setMessage] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]); // [{uri, type, name, ...}]
+  const [uploading, setUploading] = useState(false);
+  const [captions, setCaptions] = useState({}); // { idx: caption }
+  const [activeFileIdx, setActiveFileIdx] = useState(null); // index of active file for caption
+
+  // File selection handler
+  const handleSelectFiles = async () => {
+    try {
+      const files = await selectFiles();
+      if (files && files.length > 0) {
+        const limitedFiles = files.slice(0, 5);
+        setSelectedFiles(limitedFiles);
+        setCaptions({});
+        setActiveFileIdx(limitedFiles.length - 1); // Most recent as active
+      }
+    } catch (err) {
+      console.error('File selection error:', err);
+    }
+  };
+
+  // Remove a selected file
+  const handleRemoveFile = idx => {
+    setSelectedFiles(prev => {
+      const newFiles = prev.filter((_, i) => i !== idx);
+      // Adjust activeFileIdx
+      if (activeFileIdx === idx) {
+        setActiveFileIdx(newFiles.length ? Math.max(0, idx - 1) : null);
+      } else if (activeFileIdx > idx) {
+        setActiveFileIdx(activeFileIdx - 1);
+      }
+      return newFiles;
+    });
+    setCaptions(prev => {
+      const newCaptions = {...prev};
+      delete newCaptions[idx];
+      // Shift captions for remaining files
+      const shifted = {};
+      Object.keys(newCaptions).forEach(key => {
+        const k = parseInt(key, 10);
+        shifted[k < idx ? k : k - 1] = newCaptions[key];
+      });
+      return shifted;
+    });
+  };
+
+  // Caption change handler (now only for active file)
+  const handleCaptionChange = text => {
+    if (activeFileIdx !== null) {
+      setCaptions(prev => ({...prev, [activeFileIdx]: text}));
+    } else {
+      setMessage(text);
+    }
+  };
 
   console.log('>>>', conversations);
 
+  // Main send handler
   const handleSend = async () => {
-    if (!message.trim() || isSendingMessage) {
+    if (isSendingMessage) {
       return;
     }
-
-    try {
-      setIsSendingMessage(true);
-
-      const messagePayload = {
-        // senderId: userId,
-        receiverId: receiverId,
-        content: message,
-        type: 'text',
-      };
-
-      const apiResponse = await sendMessage({
-        payload: messagePayload,
-      });
-
-      if (apiResponse?.response?.success) {
-        const data = apiResponse.response.data;
-        console.log('Message sent successfully:', data);
-        setConversations && setConversations(prev => [...(prev || []), data]);
-        setMessage('');
-      } else {
-        console.error(
-          'Failed to send message:',
-          apiResponse?.response?.message,
-        );
-      }
-    } catch (error) {
-      console.error('Error setting isSendingMessage:', error);
+    if ((!message.trim() && selectedFiles.length === 0) || isSendingMessage) {
       return;
+    }
+    setIsSendingMessage(true);
+    setUploading(true);
+    let uploadedFiles = [];
+    try {
+      // Upload files if any
+      if (selectedFiles.length > 0) {
+        uploadedFiles = await uploadFiles(selectedFiles);
+        // Attach captions to uploaded files
+        uploadedFiles = uploadedFiles.map((file, idx) => ({
+          ...file,
+          caption: captions[idx] || '',
+        }));
+      }
+      setUploading(false);
+      // Prepare message payload (text, files, or both)
+      const payloads = prepareMessagePayload({
+        text: selectedFiles.length > 0 ? '' : message,
+        files: uploadedFiles,
+        senderId: userId,
+        receiverId,
+        replyTo: replyMessage?._id || replyMessage?.id || undefined,
+      });
+      // Send all payloads (text and/or files)
+      for (const payload of payloads) {
+        const apiResponse = await sendMessage({payload});
+        if (apiResponse?.response?.success) {
+          const data = apiResponse.response.data;
+          setConversations && setConversations(prev => [...(prev || []), data]);
+        } else {
+          console.error(
+            'Failed to send message:',
+            apiResponse?.response?.message,
+          );
+        }
+      }
+      setMessage('');
+      setSelectedFiles([]);
+      setCaptions({});
+      setActiveFileIdx(null);
+      if (replyMessage && onCancelReply) onCancelReply();
+    } catch (error) {
+      setUploading(false);
+      console.error('Error sending message:', error);
     } finally {
       setIsSendingMessage(false);
     }
   };
 
+  // File preview UI
+  const renderFilePreviews = () => {
+    if (!selectedFiles.length) {
+      return null;
+    }
+    return (
+      <ScrollView horizontal style={styles.previewContainer}>
+        {selectedFiles.map((file, idx) => (
+          <TouchableOpacity
+            key={idx}
+            style={[
+              styles.previewItem,
+              activeFileIdx === idx && styles.activePreviewItem,
+            ]}
+            onPress={() => setActiveFileIdx(idx)}
+            activeOpacity={0.8}>
+            {file.type && file.type.startsWith('image') ? (
+              <Image source={{uri: file.uri}} style={styles.previewImage} />
+            ) : (
+              <Icon name="document" size={32} color="#fff" />
+            )}
+            <TouchableOpacity
+              style={styles.removeButton}
+              onPress={e => {
+                e.stopPropagation && e.stopPropagation();
+                handleRemoveFile(idx);
+              }}
+              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+              <Icon name="close-circle" size={24} color="#f55" />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    );
+  };
+
+  // WhatsApp-style reply preview bar
+  const renderReplyPreview = () => {
+    if (!replyMessage) {
+      return null;
+    }
+    const isImage = replyMessage.type === 'image' && replyMessage.content;
+    const isSent = replyMessage.sender?._id === userId;
+    const senderLabel = isSent ? 'You' : replyMessage.sender?.name || 'User';
+
+    return (
+      <View style={styles.replyPreviewBar}>
+        <View style={styles.replyIndicator} />
+        <View style={styles.replyContent}>
+          <Text style={styles.replyLabel} numberOfLines={1}>
+            {senderLabel}
+          </Text>
+          <View style={styles.replyRow}>
+            {isImage && (
+              <Image
+                source={{uri: replyMessage.content}}
+                style={styles.replyThumb}
+              />
+            )}
+            <Text
+              style={[styles.replyText, isImage && styles.replyTextWithImage]}
+              numberOfLines={1}>
+              {replyMessage.text || replyMessage.content || '[Media]'}
+            </Text>
+          </View>
+        </View>
+        <TouchableOpacity style={styles.replyCloseBtn} onPress={onCancelReply}>
+          <Icon name="close" size={20} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // Main message/caption input
+  const renderMainInput = () => (
+    <TextInput
+      style={styles.input}
+      placeholder={
+        selectedFiles.length > 0 ? 'Add a caption...' : 'Type a message'
+      }
+      placeholderTextColor="#bbb"
+      value={
+        selectedFiles.length > 0 && activeFileIdx !== null
+          ? captions[activeFileIdx] || ''
+          : message
+      }
+      onChangeText={handleCaptionChange}
+      selectionColor="#fff"
+      returnKeyType="send"
+      autoFocus={true}
+      multiline
+    />
+  );
+
   return (
-    <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Type a message"
-        placeholderTextColor="#bbb"
-        value={message}
-        onChangeText={setMessage}
-        selectionColor="#fff"
-        returnKeyType="send"
-        autoFocus={true}
-      />
-      <TouchableOpacity style={styles.iconButton}>
-        <Icon name="mic" size={24} color="#fff" />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.iconButton} onPress={handleSend}>
-        <Icon name="send" size={24} color="#fff" />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.iconButton}>
-        <Icon name="add-circle-outline" size={28} color="#fff" />
-      </TouchableOpacity>
+    <View>
+      {replyMessage && renderReplyPreview()}
+      {renderFilePreviews()}
+      <View style={styles.container}>
+        {renderMainInput()}
+        <TouchableOpacity style={styles.iconButton}>
+          <Icon name="mic" size={24} color="#fff" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={handleSend}
+          disabled={isSendingMessage || uploading}>
+          {isSendingMessage || uploading ? (
+            <ActivityIndicator color="#fff" size={20} />
+          ) : (
+            <Icon name="send" size={24} color="#fff" />
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.iconButton} onPress={handleSelectFiles}>
+          <Icon name="add-circle-outline" size={28} color="#fff" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -104,5 +288,101 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  previewContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 12,
+    marginBottom: 4,
+  },
+  previewItem: {
+    position: 'relative',
+    marginRight: 8,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+    borderRadius: 8,
+    padding: 2,
+    backgroundColor: '#222',
+  },
+  activePreviewItem: {
+    borderColor: '#4BB543',
+    backgroundColor: '#333',
+  },
+  previewImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: '#222',
+  },
+  removeButton: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    backgroundColor: 'transparent',
+    zIndex: 2,
+  },
+  captionInput: {
+    marginTop: 4,
+    minWidth: 60,
+    maxWidth: 100,
+    color: '#fff',
+    fontSize: 13,
+    backgroundColor: '#222',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  replyPreviewBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(210,138,140,0.18)',
+    borderLeftWidth: 4,
+    borderLeftColor: '#D28A8C',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginHorizontal: 12,
+    marginTop: 4,
+    borderRadius: 8,
+    marginBottom: 2,
+  },
+  replyIndicator: {
+    width: 4,
+    height: 36,
+    backgroundColor: '#D28A8C',
+    borderRadius: 2,
+    marginRight: 8,
+  },
+  replyContent: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: 4,
+  },
+  replyLabel: {
+    color: '#D28A8C',
+    fontWeight: 'bold',
+    fontSize: 13,
+    marginBottom: 2,
+  },
+  replyText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  replyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  replyThumb: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    marginRight: 4,
+    backgroundColor: '#222',
+  },
+  replyTextWithImage: {
+    marginLeft: 6,
+  },
+  replyCloseBtn: {
+    marginLeft: 8,
+    padding: 4,
   },
 });

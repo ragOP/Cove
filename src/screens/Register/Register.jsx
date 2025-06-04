@@ -17,7 +17,6 @@ import CustomTextInput from '../../components/CustomTextField/CustomTextField';
 import CustomButton from '../../components/CustomButton/CustomButton';
 import {DatePicker} from 'react-native-wheel-pick';
 import {onRegister} from '../../apis/onRegister';
-import CustomSnackbar from '../../components/CustomSnackbar/CustomSnackbar';
 import {Paths} from '../../navigaton/paths';
 import {onUpdateDetails} from '../../apis/onUpdateDetails';
 import useDebounce from '../../hooks/useDebounce';

@@ -2,7 +2,6 @@ import React, {useRef, useEffect, useState} from 'react';
 import {
   StyleSheet,
   View,
-  Animated,
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
@@ -13,11 +12,83 @@ import {useQuery} from '@tanstack/react-query';
 import {getConversations} from '../../../apis/getConversations';
 import {useSelector} from 'react-redux';
 import MessageItem from '../../../components/Messages/MessageItem';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {useSharedValue, useAnimatedStyle, withTiming, runOnJS} from 'react-native-reanimated';
 
-const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 const SCROLL_TO_BOTTOM_THRESHOLD = 10;
+const THEME_COLOR = '#D28A8C';
 
-const ChatsContainer = ({conversationId, conversations, setConversations}) => {
+function ChatMessageRow({
+  item,
+  index,
+  showDateLabel,
+  userId,
+  onReply,
+  onSelectMessage,
+  selected,
+}) {
+  const held = useSharedValue(false);
+  const translateX = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      backgroundColor: held.value || selected ? 'rgba(210,138,140,0.13)' : 'transparent',
+      transform: [{translateX: translateX.value}],
+    };
+  });
+
+  // Pan for swipe-to-reply (should trigger for the whole row)
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-30, 30])
+    .onUpdate(e => {
+      if (e.translationX > 0) {
+        translateX.value = e.translationX > 80 ? 80 : e.translationX;
+      }
+    })
+    .onEnd(e => {
+      if (e.translationX > 60 && Math.abs(e.translationX) > Math.abs(e.translationY)) {
+        translateX.value = withTiming(0, {duration: 150});
+        onReply && runOnJS(onReply)(item);
+      } else {
+        translateX.value = withTiming(0, {duration: 150});
+      }
+    })
+    .onFinalize(() => {
+      translateX.value = withTiming(0, {duration: 150});
+    });
+
+  // Long press for background highlight and select message
+  const longPressGesture = Gesture.LongPress()
+    .minDuration(350)
+    .onStart(() => {
+      held.value = true;
+    })
+    .onEnd(() => {
+      held.value = false;
+      onSelectMessage && runOnJS(onSelectMessage)(item);
+    })
+    .onFinalize(() => {
+      held.value = false;
+    });
+
+  // Combine gestures
+  const composedGesture = Gesture.Simultaneous(panGesture, longPressGesture);
+
+  return (
+    <GestureDetector gesture={composedGesture}>
+      <Animated.View style={[styles.fullRow, animatedStyle]}>
+        <MessageItem
+          item={item}
+          index={index}
+          showDateLabel={showDateLabel}
+          userId={userId}
+        />
+      </Animated.View>
+    </GestureDetector>
+  );
+}
+
+const ChatsContainer = ({conversationId, conversations, setConversations, onReply, onSelectMessage, selectedMessage}) => {
   const flatListRef = useRef(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -80,7 +151,7 @@ const ChatsContainer = ({conversationId, conversations, setConversations}) => {
 
   return (
     <View style={styles.container}>
-      <AnimatedFlatList
+      <FlatList
         ref={flatListRef}
         data={conversations}
         keyExtractor={item => item._id || item.localId}
@@ -91,13 +162,16 @@ const ChatsContainer = ({conversationId, conversations, setConversations}) => {
               ? new Date(conversations[index - 1].timestamp).toDateString()
               : null;
           const showDateLabel = index === 0 || currentDate !== previousDate;
-
+          const isSelected = selectedMessage && (item._id === selectedMessage._id);
           return (
-            <MessageItem
+            <ChatMessageRow
               item={item}
               index={index}
               showDateLabel={showDateLabel}
               userId={userId}
+              onReply={onReply}
+              onSelectMessage={onSelectMessage}
+              selected={isSelected}
             />
           );
         }}
@@ -152,5 +226,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 2,
     elevation: 4,
+  },
+  fullRow: {
+    width: '100%',
+    paddingHorizontal: 0,
+    // Remove padding so highlight covers the full row
   },
 });

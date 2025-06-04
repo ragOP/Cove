@@ -2,9 +2,15 @@ import {useEffect, useRef} from 'react';
 import {Animated, Text, View, StyleSheet} from 'react-native';
 import {formatDateLabel} from '../../utils/date/formatDateLabel';
 import {formatTime} from '../../utils/time/formatTime';
-import { renderMessageContent } from '../../helpers/messages/renderMessageContent';
+import {renderMessageContent} from '../../helpers/messages/renderMessageContent';
 
-const MessageItem = ({item, index, showDateLabel, userId}) => {
+const MessageItem = ({
+  item,
+  index,
+  showDateLabel,
+  userId,
+  showSenderLabel = false,
+}) => {
   const isSent = item.sender._id === userId;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -15,6 +21,16 @@ const MessageItem = ({item, index, showDateLabel, userId}) => {
       useNativeDriver: true,
     }).start();
   }, [fadeAnim, index]);
+
+  // Sender label logic
+  let senderLabel = null;
+  if (showSenderLabel) {
+    senderLabel = (
+      <Text style={styles.senderLabel}>
+        {isSent ? 'You: ' : item.sender?.name ? item.sender.name + ': ' : ''}
+      </Text>
+    );
+  }
 
   return (
     <Animated.View style={[styles.messageWrapper, {opacity: fadeAnim}]}>
@@ -44,9 +60,17 @@ export const styles = StyleSheet.create({
     maxWidth: '80%',
     borderRadius: 18,
     padding: 10,
+    // Remove horizontal margin so highlight covers full row
   },
   messageWrapper: {
     marginBottom: 12,
+    width: '100%', // Make highlight cover full row
+  },
+  senderLabel: {
+    color: '#D28A8C',
+    fontWeight: 'bold',
+    fontSize: 13,
+    marginBottom: 2,
   },
   receivedMessage: {
     alignSelf: 'flex-start',
@@ -74,10 +98,12 @@ export const styles = StyleSheet.create({
   sentText: {
     color: '#fff',
     fontSize: 14,
+    marginRight: 12,
   },
   receivedText: {
     color: '#fff',
     fontSize: 14,
+    marginRight: 12,
   },
   imageMessage: {
     width: 180,

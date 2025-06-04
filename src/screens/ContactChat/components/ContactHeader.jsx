@@ -7,7 +7,7 @@ import {Text} from 'react-native-paper';
 import {useNavigation} from '@react-navigation/native';
 import UserAvatar from '../../../components/CustomAvatar/UserAvatar';
 
-const ContactHeader = ({name, username, profilePicture}) => {
+const ContactHeader = ({name, username, profilePicture, activeTab, onTabChange}) => {
   const navigation = useNavigation();
 
   return (
@@ -30,24 +30,34 @@ const ContactHeader = ({name, username, profilePicture}) => {
           <FeatherIcon name="more-horizontal" size={30} color="#fff" />
         </View>
       </View>
-
-      <View style={styles.tabContainer}>
-        <View style={[styles.chatTabBox, styles.tabBorder]}>
+      {/* Tab toggle row (controlled by parent) */}
+      <View style={styles.tabToggleRow}>
+        <TouchableOpacity
+          style={[styles.tabToggleBtn, activeTab === 'chat' && styles.tabActive]}
+          onPress={() => onTabChange('chat')}
+          activeOpacity={0.85}
+        >
           <Icon
             name="chatbubble-ellipses"
-            size={26}
-            color={true ? '#D28A8C' : 'rgba(255, 255, 255, 0.5)'}
+            size={22}
+            color={activeTab === 'chat' ? '#D28A8C' : 'rgba(255,255,255,0.5)'}
+            style={styles.tabIconMargin}
           />
-          <Text style={true ? styles.activeTabText : styles.tabText}>Chat</Text>
-        </View>
-        <View style={styles.chatTabBox}>
+          <Text style={[styles.tabToggleText, activeTab === 'chat' && styles.tabActiveText]}>Chat</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabToggleBtn, activeTab === 'gallery' && styles.tabActive]}
+          onPress={() => onTabChange('gallery')}
+          activeOpacity={0.85}
+        >
           <MaterialIcon
             name="card-multiple-outline"
-            size={26}
-            color="rgba(255, 255, 255, 0.5)"
+            size={22}
+            color={activeTab === 'gallery' ? '#D28A8C' : 'rgba(255,255,255,0.5)'}
+            style={styles.tabIconMargin}
           />
-          <Text style={styles.tabText}>Gallery</Text>
-        </View>
+          <Text style={[styles.tabToggleText, activeTab === 'gallery' && styles.tabActiveText]}>Gallery</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -96,29 +106,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  // Tab container styles
-  tabContainer: {
-    backgroundColor: '#000',
+  // Tab toggle styles
+  tabToggleRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: '#000',
+    borderBottomWidth: 1,
+    borderBottomColor: '#232323',
+    marginBottom: 0,
   },
-  chatTabBox: {
-    display: 'flex',
+  tabToggleBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    padding: 12,
+    paddingVertical: 12,
+    backgroundColor: 'transparent',
   },
-  tabBorder: {
-    borderRightWidth: 2,
-    borderRightColor: 'rgba(102, 102, 102, 1)',
+  tabToggleText: {
+    color: '#bbb',
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
-  tabText: {
-    color: 'rgba(255, 255, 255, 0.5)',
+  tabActive: {
+    borderBottomWidth: 3,
+    borderBottomColor: '#D28A8C',
+    backgroundColor: '#202124',
   },
-  activeTabText: {
+  tabActiveText: {
     color: '#D28A8C',
+  },
+  tabIconMargin: {
+    marginRight: 6,
   },
 });
