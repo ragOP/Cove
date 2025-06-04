@@ -2,77 +2,51 @@ import React, {useRef, useEffect, useState} from 'react';
 import {
   StyleSheet,
   View,
-  Text,
   Animated,
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {messages} from '../../../utils/testing/messages';
-import {formatTime} from '../../../utils/time/formatTime';
-import {formatDateLabel} from '../../../utils/date/formatDateLabel';
+import {useQuery} from '@tanstack/react-query';
+import {getConversations} from '../../../apis/getConversations';
+import {useSelector} from 'react-redux';
+import MessageItem from '../../../components/Messages/MessageItem';
 
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 const SCROLL_TO_BOTTOM_THRESHOLD = 10;
 
-const MessageItem = ({item, index, showDateLabel}) => {
-  const isSent = item.type === 'sent';
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 350,
-      // delay: index * 60,
-      useNativeDriver: true,
-    }).start();
-  }, [fadeAnim, index]);
-
-  return (
-    <Animated.View style={[styles.messageWrapper, {opacity: fadeAnim}]}>
-      {showDateLabel && (
-        <View style={styles.dateLabelContainer}>
-          <Text style={styles.dateLabelText}>
-            {formatDateLabel(item.timestamp)}
-          </Text>
-        </View>
-      )}
-      <View
-        style={[
-          styles.messageContainer,
-          isSent ? styles.sentMessage : styles.receivedMessage,
-        ]}>
-        <Text style={isSent ? styles.sentText : styles.receivedText}>
-          {item.text}
-        </Text>
-        <Text style={styles.timeText}>{formatTime(item.timestamp)}</Text>
-      </View>
-    </Animated.View>
-  );
-};
-
-const ChatsContainer = () => {
+const ChatsContainer = ({conversationId, conversations, setConversations}) => {
   const flatListRef = useRef(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const userId = useSelector(state => state.auth.user?.id);
 
-  // Simulate loading
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(timer);
-  }, []);
+  const {isLoading, refetch} = useQuery({
+    queryKey: ['user_conversations', conversationId],
+    queryFn: async () => {
+      const apiResponse = await getConversations({id: conversationId});
+      if (apiResponse?.response?.success) {
+        const data = apiResponse.response.data?.[0]?.messages;
+        setConversations?.(data);
+        return data || [];
+      } else {
+        setConversations?.([]);
+        return [];
+      }
+    },
+    enabled: !!conversationId,
+  });
 
-  // Scroll to bottom on mount (no animation)
   useEffect(() => {
-    if (!loading && flatListRef.current) {
+    if (!isLoading && flatListRef.current) {
       setTimeout(() => {
         flatListRef.current.scrollToEnd({animated: false});
       }, 100);
     }
-  }, [loading]);
+  }, [isLoading, conversations.length]);
 
-  // Show scroll-to-bottom icon if not at bottom
   const handleScroll = event => {
     const {layoutMeasurement, contentOffset, contentSize} = event.nativeEvent;
     const paddingToBottom = 40;
@@ -80,18 +54,23 @@ const ChatsContainer = () => {
       layoutMeasurement.height + contentOffset.y >=
       contentSize.height - paddingToBottom;
     setShowScrollToBottom(
-      !isAtBottom && messages.length > SCROLL_TO_BOTTOM_THRESHOLD,
+      !isAtBottom && conversations.length > SCROLL_TO_BOTTOM_THRESHOLD,
     );
   };
 
-  // Scroll to bottom when icon pressed (with animation)
   const scrollToBottom = () => {
     if (flatListRef.current) {
       flatListRef.current.scrollToEnd({animated: true});
     }
   };
 
-  if (loading) {
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
+  if (isLoading || !conversations) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
         <ActivityIndicator size="large" color="#fff" />
@@ -103,13 +82,13 @@ const ChatsContainer = () => {
     <View style={styles.container}>
       <AnimatedFlatList
         ref={flatListRef}
-        data={messages}
-        keyExtractor={item => item.id}
+        data={conversations}
+        keyExtractor={item => item._id || item.localId}
         renderItem={({item, index}) => {
           const currentDate = new Date(item.timestamp).toDateString();
           const previousDate =
             index > 0
-              ? new Date(messages[index - 1].timestamp).toDateString()
+              ? new Date(conversations[index - 1].timestamp).toDateString()
               : null;
           const showDateLabel = index === 0 || currentDate !== previousDate;
 
@@ -118,18 +97,26 @@ const ChatsContainer = () => {
               item={item}
               index={index}
               showDateLabel={showDateLabel}
+              userId={userId}
             />
           );
         }}
         contentContainerStyle={styles.chatContainer}
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => {
-          if (flatListRef.current && messages.length > 0) {
+          if (flatListRef.current && conversations.length > 0) {
             flatListRef.current.scrollToEnd({animated: false});
           }
         }}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#fff"
+          />
+        }
       />
       {showScrollToBottom && (
         <TouchableOpacity
@@ -156,51 +143,6 @@ const styles = StyleSheet.create({
   chatContainer: {
     padding: 16,
     paddingBottom: 24,
-  },
-  messageWrapper: {
-    marginBottom: 12,
-  },
-  messageContainer: {
-    maxWidth: '80%',
-    borderRadius: 18,
-    padding: 10,
-  },
-  sentMessage: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#7b585a',
-    borderBottomRightRadius: 0,
-  },
-  receivedMessage: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#000',
-    borderBottomLeftRadius: 0,
-  },
-  sentText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  receivedText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  timeText: {
-    fontSize: 10,
-    color: '#ddd',
-    textAlign: 'right',
-    marginTop: 4,
-  },
-  dateLabelContainer: {
-    alignSelf: 'center',
-    backgroundColor: '#333',
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  dateLabelText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '500',
   },
   scrollToBottomBtn: {
     position: 'absolute',

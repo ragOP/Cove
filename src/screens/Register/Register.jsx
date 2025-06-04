@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Pressable,
   Image,
-  SafeAreaView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {FontStyles} from '../../styles/fontStyles';
@@ -30,13 +29,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {TOKEN} from '../../constants/AUTH';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {Avatar, Button} from 'react-native-paper';
+import {showSnackbar} from '../../redux/slice/snackbarSlice';
 
 const PhoneNumberForm = ({goNext, form, setForm}) => {
   const phoneInput = useRef(null);
   const navigation = useNavigation();
-
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const dispatch = useDispatch();
 
   const onUserRegister = async () => {
     const phoneNumberLength = form.phoneNumber.length;
@@ -44,8 +42,13 @@ const PhoneNumberForm = ({goNext, form, setForm}) => {
     if (phoneNumberLength === 10) {
       goNext();
     } else {
-      setSnackbarMessage('Please enter a valid 10-digit phone number');
-      setSnackbarVisible(true);
+      dispatch(
+        showSnackbar({
+          type: 'error',
+          title: 'Please enter a valid 10-digit phone number',
+          placement: 'top',
+        }),
+      );
     }
   };
 
@@ -97,12 +100,6 @@ const PhoneNumberForm = ({goNext, form, setForm}) => {
 
         <UserAgreementFooter />
       </View>
-
-      <CustomSnackbar
-        visible={snackbarVisible}
-        message={snackbarMessage}
-        onDismiss={() => setSnackbarVisible(false)}
-      />
     </>
   );
 };
@@ -112,8 +109,6 @@ const PhoneNumberVerification = ({goNext, goBack, form, otp, setOtp}) => {
   const navigation = useNavigation();
   const intervalRef = useRef(null);
 
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
   const [time, setTime] = useState(30);
   const [isValidating, setIsValidating] = useState(false);
 
@@ -151,7 +146,6 @@ const PhoneNumberVerification = ({goNext, goBack, form, otp, setOtp}) => {
       };
 
       const apiResponse = await onRegister({payload});
-      console.log('API Response:', apiResponse);
 
       if (apiResponse?.response?.success) {
         const statusCode = apiResponse?.response?.statusCode;
@@ -160,25 +154,44 @@ const PhoneNumberVerification = ({goNext, goBack, form, otp, setOtp}) => {
         const token = data?.token;
         const userData = data?.user;
 
+        // dispatch(
+        //   login({
+        //     token: token,
+        //     user: {
+        //       id: userData?._id,
+        //       name: userData?.name,
+        //       username: userData?.username,
+        //       phoneNumber: userData?.phoneNumber,
+        //       email: userData?.email,
+        //     },
+        //   }),
+        // );
+        // await AsyncStorage.setItem(TOKEN, token);
+
         dispatch(
-          login({
-            token: token,
-            user: {
-              id: userData?._id,
-              name: userData?.name,
-              username: userData?.username,
-              phoneNumber: userData?.phoneNumber,
-              email: userData?.email,
-            },
+          showSnackbar({
+            type: 'success',
+            title: 'OTP verified successfully',
+            placement: 'top',
           }),
         );
-        await AsyncStorage.setItem(TOKEN, token);
 
-        setSnackbarMessage('OTP verified successfully');
-        setSnackbarVisible(true);
         stopTimer();
 
         if (statusCode === 200) {
+          dispatch(
+            login({
+              token: token,
+              user: {
+                id: userData?._id,
+                name: userData?.name,
+                username: userData?.username,
+                phoneNumber: userData?.phoneNumber,
+                email: userData?.email,
+              },
+            }),
+          );
+          await AsyncStorage.setItem(TOKEN, token);
           navigation.navigate(Paths.HOME);
         } else {
           setTimeout(() => {
@@ -186,15 +199,25 @@ const PhoneNumberVerification = ({goNext, goBack, form, otp, setOtp}) => {
           }, 500);
         }
       } else {
-        setSnackbarMessage(
-          apiResponse?.response?.message || 'Invalid OTP, please try again',
+        const error =
+          apiResponse?.response?.error || 'Invalid OTP, please try again';
+        dispatch(
+          showSnackbar({
+            type: 'error',
+            title: error || 'Please enter a valid 10-digit phone number',
+            placement: 'top',
+          }),
         );
-        setSnackbarVisible(true);
       }
     } catch (error) {
       console.error('Error verifying OTP:', error);
-      setSnackbarMessage('Error verifying OTP, please try again');
-      setSnackbarVisible(true);
+      dispatch(
+        showSnackbar({
+          type: 'error',
+          title: 'Error verifying OTP:',
+          placement: 'top',
+        }),
+      );
     } finally {
       setIsValidating(false);
     }
@@ -250,12 +273,6 @@ const PhoneNumberVerification = ({goNext, goBack, form, otp, setOtp}) => {
           </View>
         </View>
       </View>
-
-      <CustomSnackbar
-        visible={snackbarVisible}
-        message={snackbarMessage}
-        onDismiss={() => setSnackbarVisible(false)}
-      />
     </>
   );
 };
@@ -429,16 +446,11 @@ const GenderSelect = ({goNext, goBack, form, setForm}) => {
 };
 
 const UsernameInput = ({goNext, goBack, form, setForm}) => {
+  const dispatch = useDispatch();
   const username = form.username;
 
   const [isAvailable, setIsAvailable] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  const [snackbarState, setSnackbarState] = useState({
-    visible: false,
-    message: '',
-    type: 'info',
-  });
-
   const debouncedUsername = useDebounce(username, 500);
 
   const onChangeUsername = currentUsername => {
@@ -450,46 +462,41 @@ const UsernameInput = ({goNext, goBack, form, setForm}) => {
 
   const onValidateUsername = () => {
     if (username.length < 6) {
-      setSnackbarState(prev => ({
-        ...prev,
-        visible: true,
-        message: 'Username must be at least 6 characters long',
-        type: 'error',
-      }));
+      dispatch(
+        showSnackbar({
+          type: 'error',
+          title: 'Username must be at least 6 characters long',
+          placement: 'top',
+        }),
+      );
 
       return;
     }
 
     if (!isAvailable) {
-      setSnackbarState(prev => ({
-        ...prev,
-        visible: true,
-        message: 'Username is not available',
-        type: 'error',
-      }));
+      dispatch(
+        showSnackbar({
+          type: 'error',
+          title: 'Username is not available',
+          placement: 'top',
+        }),
+      );
 
       return;
     }
 
     if (username.length > 5 && isAvailable) {
-      setSnackbarState(prev => ({
-        ...prev,
-        visible: true,
-        message: 'Username is available',
-        type: 'success',
-      }));
-
+      dispatch(
+        showSnackbar({
+          type: 'success',
+          title: 'Username is  available',
+          placement: 'top',
+        }),
+      );
       setTimeout(() => {
         goNext();
       }, 1000);
     }
-  };
-
-  const onCloseSnackbar = () => {
-    setSnackbarState(prev => ({
-      ...prev,
-      visible: false,
-    }));
   };
 
   useEffect(() => {
@@ -564,13 +571,6 @@ const UsernameInput = ({goNext, goBack, form, setForm}) => {
           </View>
         </View>
       </View>
-
-      <CustomSnackbar
-        visible={snackbarState.visible}
-        message={snackbarState.message}
-        type={snackbarState.type}
-        onDismiss={onCloseSnackbar}
-      />
     </>
   );
 };
@@ -580,11 +580,6 @@ const PasswordInput = ({goNext, goBack, form, setForm}) => {
   const dispatch = useDispatch();
 
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
-  const [snackbarState, setSnackbarState] = useState({
-    visible: false,
-    message: '',
-    type: 'info',
-  });
 
   const onSubmit = async () => {
     if (isCreatingAccount) {
@@ -595,11 +590,13 @@ const PasswordInput = ({goNext, goBack, form, setForm}) => {
       setIsCreatingAccount(true);
 
       if (form.password !== form.confirmPassword) {
-        setSnackbarState(prev => ({
-          visible: true,
-          message: 'Passwords do not match',
-          type: 'error',
-        }));
+        dispatch(
+          showSnackbar({
+            type: 'error',
+            title: 'Passwords do not match',
+            placement: 'top',
+          }),
+        );
         return;
       }
 
@@ -608,7 +605,6 @@ const PasswordInput = ({goNext, goBack, form, setForm}) => {
       formData.append('username', form.username);
       formData.append('password', form.password);
       formData.append('dob', form.dob.toISOString());
-      console.log('profilePicture', form.profilePicture);
 
       if (form.profilePicture) {
         formData.append('profilePicture', {
@@ -619,14 +615,15 @@ const PasswordInput = ({goNext, goBack, form, setForm}) => {
       }
 
       const apiResponse = await onUpdateDetails({payload: formData});
-      console.log('apiResponse', apiResponse);
-      if (apiResponse?.response?.success) {
-        setSnackbarState(prev => ({
-          visible: true,
-          message: 'Account created successfully',
-          type: 'success',
-        }));
 
+      if (apiResponse?.response?.success) {
+        dispatch(
+          showSnackbar({
+            type: 'success',
+            title: 'Account created successfully',
+            placement: 'top',
+          }),
+        );
         const data = apiResponse?.response?.data;
         const userData = data?.user;
 
@@ -646,19 +643,23 @@ const PasswordInput = ({goNext, goBack, form, setForm}) => {
         navigation.navigate(Paths.HOME);
       } else {
         const errrorMessage = apiResponse?.response?.message;
-        setSnackbarState(prev => ({
-          visible: true,
-          message: errrorMessage || 'Error creating account, please try again',
-          type: 'error',
-        }));
+        dispatch(
+          showSnackbar({
+            type: 'error',
+            title: errrorMessage || 'Error creating account, please try again',
+            placement: 'top',
+          }),
+        );
       }
     } catch (error) {
       console.error(error);
-      setSnackbarState(prev => ({
-        visible: true,
-        message: 'Error creating account, please try again',
-        type: 'error',
-      }));
+      dispatch(
+        showSnackbar({
+          type: 'error',
+          title: 'Error creating account, please try again',
+          placement: 'top',
+        }),
+      );
     } finally {
       setIsCreatingAccount(false);
     }
@@ -681,12 +682,12 @@ const PasswordInput = ({goNext, goBack, form, setForm}) => {
   const password = form.password;
   const confirmPassword = form.confirmPassword;
 
-  const onCloseSnackbar = () => {
-    setSnackbarState(prev => ({
-      ...prev,
-      visible: false,
-    }));
-  };
+  // const onCloseSnackbar = () => {
+  //   setSnackbarState(prev => ({
+  //     ...prev,
+  //     visible: false,
+  //   }));
+  // };
 
   return (
     <>
@@ -730,13 +731,6 @@ const PasswordInput = ({goNext, goBack, form, setForm}) => {
           />
         </View>
       </View>
-
-      <CustomSnackbar
-        visible={snackbarState.visible}
-        message={snackbarState.message}
-        type={snackbarState.type}
-        onDismiss={onCloseSnackbar}
-      />
     </>
   );
 };

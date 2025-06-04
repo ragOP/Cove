@@ -9,40 +9,65 @@ import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Paths} from './src/navigaton/paths';
 import Start from './src/screens/Start/Start';
-import {Provider} from 'react-redux';
+import {Provider, useSelector} from 'react-redux';
 import {PersistGate} from 'redux-persist/integration/react';
 import {persistor, store} from './src/redux/store';
 import ContactChat from './src/screens/ContactChat/ContactChat';
+import AddContact from './src/screens/AddContact/AddContact';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import FriendRequests from './src/screens/FriendRequests/FriendRequests';
+import {PaperProvider} from 'react-native-paper';
+import CustomSnackbar from './src/components/Snackbar/CustomSnackbar';
+
+export const queryClient = new QueryClient();
 
 const Stack = createNativeStackNavigator();
 
+const AppStack = () => (
+  <Stack.Navigator screenOptions={{headerShown: false}}>
+    <Stack.Screen name={Paths.HOME} component={Home} />
+    <Stack.Screen name={Paths.CONTACT_CHAT} component={ContactChat} />
+    <Stack.Screen name={Paths.ADD_CONTACT} component={AddContact} />
+    <Stack.Screen name={Paths.FRIEND_REQUESTS} component={FriendRequests} />
+  </Stack.Navigator>
+);
+
+const AuthStack = () => (
+  <Stack.Navigator screenOptions={{headerShown: false}}>
+    <Stack.Screen name={Paths.SPLASH} component={Splash} />
+    <Stack.Screen name={Paths.START} component={Start} />
+    <Stack.Screen name={Paths.REGISTER} component={Register} />
+  </Stack.Navigator>
+);
+
+const RootNavigator = () => {
+  const token = useSelector(state => state.auth.token);
+
+  return (
+    <NavigationContainer>
+      {token ? <AppStack /> : <AuthStack />}
+      <CustomSnackbar />
+    </NavigationContainer>
+  );
+};
+
 const App = () => {
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <GestureHandlerRootView style={styles.container}>
-          <SafeAreaProvider>
-            <SafeAreaView style={styles.safeAreaContainer}>
-              <NavigationContainer>
-                <Stack.Navigator
-                  screenOptions={{headerShown: false}}
-                  initialRouteName={Paths.Home}>
-                  {/* initialRouteName={Paths.SPLASH}> */}
-                  <Stack.Screen name={Paths.HOME} component={Home} />
-                  <Stack.Screen name={Paths.SPLASH} component={Splash} />
-                  <Stack.Screen name={Paths.START} component={Start} />
-                  <Stack.Screen name={Paths.REGISTER} component={Register} />
-                  <Stack.Screen
-                    name={Paths.CONTACT_CHAT}
-                    component={ContactChat}
-                  />
-                </Stack.Navigator>
-              </NavigationContainer>
-            </SafeAreaView>
-          </SafeAreaProvider>
-        </GestureHandlerRootView>
-      </PersistGate>
-    </Provider>
+    <QueryClientProvider client={queryClient}>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <GestureHandlerRootView style={styles.container}>
+            <SafeAreaProvider>
+              <SafeAreaView style={styles.safeAreaContainer}>
+                <PaperProvider>
+                  <RootNavigator />
+                </PaperProvider>
+              </SafeAreaView>
+            </SafeAreaProvider>
+          </GestureHandlerRootView>
+        </PersistGate>
+      </Provider>
+    </QueryClientProvider>
   );
 };
 

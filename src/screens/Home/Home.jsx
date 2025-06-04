@@ -1,6 +1,13 @@
 import {useNavigation} from '@react-navigation/native';
 import React, {useState, useRef} from 'react';
-import {StyleSheet, View, FlatList, Animated, Pressable} from 'react-native';
+import {
+  StyleSheet,
+  View,
+  FlatList,
+  Animated,
+  Pressable,
+  TouchableOpacity,
+} from 'react-native';
 import {
   Text,
   Avatar,
@@ -8,31 +15,23 @@ import {
   IconButton,
   Badge,
   Chip,
+  Button,
+  Menu,
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import {Paths} from '../../navigaton/paths';
+import {useQuery} from '@tanstack/react-query';
+import {getUserContacts} from '../../apis/getUserContacts';
+import {useDispatch, useSelector} from 'react-redux';
+import {logout} from '../../redux/slice/authSlice';
+import UserAvatar from '../../components/CustomAvatar/UserAvatar';
+import {getChatDisplayInfo} from '../../utils/chat/getChatDisplayInfo';
+import {showSnackbar} from '../../redux/slice/snackbarSlice';
+import {getMessagePreview} from '../../helpers/messages/getMessagePreview';
+import { formatChatTime } from '../../utils/message/formatChatTime';
 
-const contacts = [
-  {
-    id: '1',
-    name: 'Alice Johnson',
-    message: 'Hey, how are you?',
-    time: '9:30 PM',
-    count: 2,
-    username: 'alicej',
-    avatar: 'https://randomuser.me/api/portraits/women/1.jpg',
-  },
-  {
-    id: '2',
-    name: 'Bob Smith',
-    message: 'See you soon!',
-    time: '8:15 AM',
-    count: 0,
-    username: 'bobsmith',
-    avatar: 'https://randomuser.me/api/portraits/men/2.jpg',
-  },
-];
-
-const ContactRow = ({item, onPress, onLongPress, selected}) => {
+const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
   const scale = useRef(new Animated.Value(1)).current;
   const rippleAnim = useRef(new Animated.Value(0)).current;
   const [isHeld, setIsHeld] = useState(false);
@@ -82,6 +81,14 @@ const ContactRow = ({item, onPress, onLongPress, selected}) => {
     outputRange: [selected || isHeld ? '#232323' : 'transparent', '#292929'],
   });
 
+  const display = getChatDisplayInfo(item, userId);
+  const unreadCount = item.unreadCount || 0;
+  const lastMessage = item.lastMessage || {};
+  const isGroup = Boolean(item.participants.length > 2);
+  const previewMessage = getMessagePreview(lastMessage, userId, isGroup);
+  const lastMessageTime = lastMessage.timestamp;
+
+  console.log('previewMessage:', lastMessage);
   return (
     <Pressable
       onPress={onPress}
@@ -92,15 +99,29 @@ const ContactRow = ({item, onPress, onLongPress, selected}) => {
       android_ripple={{color: '#233d2e'}}>
       <Animated.View
         style={[styles.contactRow, {transform: [{scale}], backgroundColor}]}>
-        <Avatar.Image size={54} source={{uri: item.avatar}} />
+        <UserAvatar
+          profilePicture={display.profilePicture}
+          name={display.name}
+          _id={display._id}
+          size={54}
+        />
         <View style={styles.contactInfo}>
-          <Text style={styles.contactName}>{item.name}</Text>
-          <Text style={styles.contactMessage}>{item.message}</Text>
+          <Text style={styles.contactName}>{display.name}</Text>
+          {Array.isArray(previewMessage) ? (
+            <View style={styles.previewMessage}>
+              <Icon name="checkmark-done" size={16} color="#4BB543" />
+              <Text style={styles.previewText}>{previewMessage[1]}</Text>
+            </View>
+          ) : (
+            <Text style={styles.previewText}>{previewMessage}</Text>
+          )}
         </View>
         <View style={styles.contactMeta}>
-          <Text style={styles.contactTime}>{item.time}</Text>
-          {item.count > 0 && (
-            <Badge style={styles.badge}>+{item.count - 1}</Badge>
+          <Text style={styles.contactTime}>
+            {formatChatTime(lastMessageTime)}
+          </Text>
+          {unreadCount > 0 && (
+            <Badge style={styles.badge}>+{unreadCount - 1}</Badge>
           )}
         </View>
       </Animated.View>
@@ -112,36 +133,159 @@ const OutlinedIcon = _props => (
   <Icon name="add-circle-outline" size={28} color="#fff" />
 );
 
+const EmptyContactsState = ({onAddPress}) => (
+  <View style={styles.emptyStateContainer}>
+    <Avatar.Icon
+      icon="message-text-outline"
+      size={100}
+      style={styles.emptyAvatar}
+      color="#D28A8C"
+    />
+    <Text style={styles.emptyTitle}>No Chats Yet</Text>
+    <Text style={styles.emptySubtitle}>
+      Start a new conversation by adding a contact. Your chats will appear here.
+    </Text>
+    <Button
+      mode="contained"
+      icon="account-plus"
+      style={styles.emptyButton}
+      labelStyle={styles.emptyButtonLabel}
+      onPress={onAddPress}>
+      Add Contact
+    </Button>
+  </View>
+);
+
 const Home = () => {
+  const dispatch = useDispatch();
   const navigation = useNavigation();
+
+  const userId = useSelector(state => state.auth.user?.id);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedId, setSelectedId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [params, setParams] = useState({
+    search: '',
+    page: 1,
+    per_page: 20,
+  });
+  const pendingRequestsCount = 3;
+  const {
+    data: contacts = [],
+    isLoading: isLoadingContacts,
+    refetch,
+  } = useQuery({
+    queryKey: ['contacts', params],
+    queryFn: async () => {
+      const apiResponse = await getUserContacts({params});
+      if (apiResponse?.response?.success) {
+        const data = apiResponse.response.data || [];
+        return data;
+      } else {
+        console.error('Failed to fetch contacts:', apiResponse);
+        dispatch(
+          showSnackbar({
+            title: 'Error',
+            subtitle:
+              apiResponse?.response?.message || 'Failed to fetch contacts.',
+            type: 'error',
+          }),
+        );
+        return [];
+      }
+    },
+  });
 
-  const totalUnread = contacts.reduce((sum, c) => sum + c.count, 0);
+  const totalUnread = contacts.reduce(
+    (sum, c) => sum + (c.unreadCount || 0),
+    0,
+  );
 
   const handleContactPress = item => {
-    setSelectedId(item.id);
-    navigation.navigate('ContactChat', {contact: item});
+    setSelectedId(item._id);
+    navigation.navigate(Paths.CONTACT_CHAT, {contact: item});
   };
 
   const handleContactLongPress = item => {
-    setSelectedId(item.id);
+    setSelectedId(item._id);
+  };
+
+  const handlePageRefresh = async () => {
+    setRefreshing(true);
+    setSearchQuery('');
+    setSelectedId(null);
+    setParams({
+      search: '',
+      page: 1,
+      per_page: 20,
+    });
+    await refetch();
+    setRefreshing(false);
+  };
+
+  const [menuVisible, setMenuVisible] = useState(false);
+
+  const openMenu = () => setMenuVisible(true);
+  const closeMenu = () => setMenuVisible(false);
+
+  const handleLogout = () => {
+    closeMenu();
+    dispatch(logout());
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.headerRow}>
         <Text style={styles.headerText}>All Chats</Text>
-        <IconButton
-          icon={OutlinedIcon}
-          size={28}
-          onPress={() => {}}
-          style={styles.plusIcon}
-        />
+        <View style={styles.headerInnerRow}>
+          <TouchableOpacity
+            style={styles.friendRequestBtn}
+            onPress={() => navigation.navigate(Paths.FRIEND_REQUESTS)}
+            activeOpacity={0.8}>
+            <View style={styles.friendRequestIconWrapper}>
+              <MaterialCommunityIcons
+                name="account-plus"
+                size={24}
+                color="#fff"
+              />
+              {pendingRequestsCount > 0 && (
+                <View style={styles.friendRequestCountBubble}>
+                  <Text style={styles.friendRequestCountText}>
+                    {pendingRequestsCount}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+          <IconButton
+            icon={OutlinedIcon}
+            size={28}
+            onPress={() => navigation.navigate(Paths.ADD_CONTACT)}
+            style={styles.plusIcon}
+          />
+          <Menu
+            visible={menuVisible}
+            onDismiss={closeMenu}
+            anchor={
+              <IconButton
+                icon="dots-vertical"
+                iconColor="#fff"
+                size={28}
+                onPress={openMenu}
+                style={styles.optionsIcon}
+              />
+            }
+            contentStyle={{backgroundColor: '#232323'}}>
+            <Menu.Item
+              onPress={handleLogout}
+              title="Logout"
+              leadingIcon="logout"
+              titleStyle={{color: '#fff'}}
+            />
+          </Menu>
+        </View>
       </View>
-
       <Searchbar
         placeholder="Search"
         value={searchQuery}
@@ -150,8 +294,6 @@ const Home = () => {
         iconColor="#D28A8C"
         placeholderTextColor="#D28A8C"
       />
-
-      {/* All Unread Chip */}
       {totalUnread > 0 && (
         <View style={styles.chipRow}>
           <Chip
@@ -168,19 +310,43 @@ const Home = () => {
           </Chip>
         </View>
       )}
-
       <FlatList
         data={contacts}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item._id}
         renderItem={({item}) => (
           <ContactRow
             item={item}
             onPress={() => handleContactPress(item)}
             onLongPress={() => handleContactLongPress(item)}
-            selected={selectedId === item.id}
+            selected={selectedId === item._id}
+            userId={userId}
           />
         )}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          (!contacts || contacts.length === 0) && {
+            flex: 1,
+            justifyContent: 'center',
+          },
+        ]}
+        ListEmptyComponent={
+          isLoadingContacts ? (
+            <View style={styles.loadingContainer}>
+              <Avatar.Icon
+                icon="message-text"
+                size={64}
+                style={styles.loadingAvatar}
+              />
+              <Text style={styles.loadingText}>Loading chats...</Text>
+            </View>
+          ) : (
+            <EmptyContactsState
+              onAddPress={() => navigation.navigate(Paths.ADD_CONTACT)}
+            />
+          )
+        }
+        refreshing={refreshing}
+        onRefresh={handlePageRefresh}
       />
     </View>
   );
@@ -201,18 +367,22 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     justifyContent: 'space-between',
   },
+  headerInnerRow: {flexDirection: 'row', alignItems: 'center'},
   headerText: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
     flex: 1,
     textAlign: 'center',
+    marginLeft: 72,
   },
   plusIcon: {
     margin: 0,
   },
+  optionsIcon: {
+    margin: 0,
+  },
   chipRow: {
-    display: 'flex',
     flexDirection: 'row',
     gap: 8,
     paddingHorizontal: 16,
@@ -265,6 +435,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
   },
+  previewMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  previewText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  previewTextBold: {
+    fontWeight: 'bold',
+  },
   contactMessage: {
     color: 'rgba(255, 255, 255, 0.55)',
     fontSize: 14,
@@ -283,5 +465,89 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     color: '#000',
     fontWeight: 'bold',
+  },
+  emptyStateContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    paddingTop: 32,
+  },
+  emptyAvatar: {
+    backgroundColor: '#232323',
+    marginBottom: 24,
+    opacity: 0.92,
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 15,
+    color: '#bbb',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  emptyButton: {
+    backgroundColor: '#D28A8C',
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 6,
+    alignSelf: 'center',
+    elevation: 2,
+  },
+  emptyButtonLabel: {fontWeight: 'bold'},
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 64,
+  },
+  loadingAvatar: {
+    backgroundColor: '#232323',
+  },
+  loadingText: {
+    color: '#bbb',
+    marginTop: 16,
+    fontSize: 16,
+  },
+  friendRequestBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  friendRequestIconWrapper: {
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  friendRequestCountBubble: {
+    position: 'absolute',
+    top: -8,
+    right: -15,
+    backgroundColor: '#D28A8C',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#232323',
+    zIndex: 2,
+    paddingHorizontal: 4,
+  },
+  friendRequestCountText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  emptyAvata: {
+    backgroundColor: '#232323',
+    marginBottom: 24,
+    opacity: 0.92,
+    alignSelf: 'center',
   },
 });

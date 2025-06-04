@@ -1,18 +1,13 @@
 import {apiService} from './apiService';
 import {endpoints} from './endpoints';
 
-export const onUpdateDetails = async ({payload}) => {
+export const acceptFriendRequest = async ({payload, requestId}) => {
   try {
-    const headers = {
-      'Content-Type': 'multipart/form-data',
-    };
     const apiResponse = await apiService({
-      endpoint: endpoints.userProfile,
+      endpoint: `${endpoints.friendRequests}/${requestId}/accept`,
       method: 'PATCH',
       data: payload,
-      headers: headers,
     });
-
     return apiResponse;
   } catch (error) {
     console.error(error);

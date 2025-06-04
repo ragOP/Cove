@@ -3,17 +3,12 @@ import {StyleSheet, View, TouchableOpacity} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import FeatherIcon from 'react-native-vector-icons/Feather';
-import {Avatar, Text} from 'react-native-paper';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {Text} from 'react-native-paper';
+import {useNavigation} from '@react-navigation/native';
+import UserAvatar from '../../../components/CustomAvatar/UserAvatar';
 
-const ContactHeader = () => {
+const ContactHeader = ({name, username, profilePicture}) => {
   const navigation = useNavigation();
-  const route = useRoute();
-  const contact = route.params?.contact;
-
-  if (!contact) {
-    return null;
-  }
 
   return (
     <View style={styles.container}>
@@ -23,14 +18,10 @@ const ContactHeader = () => {
             <Icon name="chevron-back" size={26} color="#fff" />
           </TouchableOpacity>
           <View style={styles.profileContainer}>
-            <Avatar.Image
-              source={{uri: contact.avatar}}
-              size={40}
-              style={styles.avatarStyle}
-            />
+            <UserAvatar profilePicture={profilePicture} size={40} name={name} />
             <View style={styles.profileNameUsername}>
-              <Text style={styles.nameText}>{contact.name}</Text>
-              <Text style={styles.usernameText}>@{contact.username}</Text>
+              <Text style={styles.nameText}>{name}</Text>
+              {username && <Text style={styles.usernameText}>@{username}</Text>}
             </View>
           </View>
         </View>
