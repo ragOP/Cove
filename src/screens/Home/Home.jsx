@@ -396,6 +396,12 @@ const Home = () => {
               }
               style={styles.menuContent}>
               <Menu.Item
+                onPress={() => navigation.navigate(Paths.PROFILE)}
+                title="Profile"
+                leadingIcon="account"
+                style={styles.menuItemTitle}
+              />
+              <Menu.Item
                 onPress={handleLogout}
                 title="Logout"
                 leadingIcon="logout"

@@ -18,6 +18,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import FriendRequests from './src/screens/FriendRequests/FriendRequests';
 import {PaperProvider} from 'react-native-paper';
 import CustomSnackbar from './src/components/Snackbar/CustomSnackbar';
+import Profile from './src/screens/Profile/Profile';
 
 export const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const AppStack = () => (
     <Stack.Screen name={Paths.CONTACT_CHAT} component={ContactChat} />
     <Stack.Screen name={Paths.ADD_CONTACT} component={AddContact} />
     <Stack.Screen name={Paths.FRIEND_REQUESTS} component={FriendRequests} />
+    <Stack.Screen name={Paths.PROFILE} component={Profile} />
   </Stack.Navigator>
 );
 
