@@ -13,60 +13,9 @@ import {useQuery} from '@tanstack/react-query';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {getUserPendingRequests} from '../../apis/getUserPendingRequests';
 import {acceptFriendRequest} from '../../apis/acceptFriendRequest';
-import {getInitials} from '../../utils/name/getInitials';
 import UserAvatar from '../../components/CustomAvatar/UserAvatar';
 import {useDispatch} from 'react-redux';
 import {showSnackbar} from '../../redux/slice/snackbarSlice';
-
-const DUMMY_REQUESTS = [
-  {
-    id: '1',
-    name: 'Jane Doe',
-    avatar: 'https://randomuser.me/api/portraits/women/1.jpg',
-    mutual: 3,
-    username: 'janedoe',
-  },
-  {
-    id: '2',
-    name: 'John Smith',
-    avatar: 'https://randomuser.me/api/portraits/men/2.jpg',
-    mutual: 1,
-    username: 'johnsmith',
-  },
-  {
-    id: '3',
-    name: 'Alice Johnson',
-    avatar: 'https://randomuser.me/api/portraits/women/3.jpg',
-    mutual: 0,
-    username: 'alicej',
-  },
-  {
-    id: '4',
-    name: 'Mike Taylor',
-    avatar: 'https://randomuser.me/api/portraits/men/4.jpg',
-    mutual: 2,
-    username: 'miket',
-  },
-  {
-    id: '5',
-    name: 'Samantha Green',
-    avatar: 'https://randomuser.me/api/portraits/women/5.jpg',
-    mutual: 1,
-    username: 'samgreen',
-  },
-  {
-    id: '6',
-    name: 'Chris Brown',
-    avatar: 'https://randomuser.me/api/portraits/men/6.jpg',
-    mutual: 4,
-    username: 'chrisb',
-  },
-];
-
-// export const getUserPendingRequests = async () => {
-//   await new Promise(res => setTimeout(res, 600));
-//   return DUMMY_REQUESTS;
-// };
 
 if (
   Platform.OS === 'android' &&
@@ -230,7 +179,19 @@ const FriendRequests = ({navigation}) => {
         refreshing={refreshing || isRefetching}
         onRefresh={handleRefresh}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No pending requests.</Text>
+          <View style={styles.emptyStateContainer}>
+            <Avatar.Icon
+              icon="account-multiple-plus"
+              size={80}
+              style={styles.emptyAvatar}
+              color="#D28A8C"
+            />
+            <Text style={styles.emptyTitle}>No Pending Requests</Text>
+            <Text style={styles.emptySubtitle}>
+              You're all caught up! When someone sends you a friend request, it
+              will appear here.
+            </Text>
+          </View>
         }
         showsVerticalScrollIndicator={false}
       />
@@ -368,5 +329,31 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 40,
     fontSize: 16,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    paddingTop: 32,
+  },
+  emptyAvatar: {
+    backgroundColor: '#232323',
+    marginBottom: 24,
+    opacity: 0.92,
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 15,
+    color: '#bbb',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });

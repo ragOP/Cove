@@ -1,5 +1,5 @@
 import {useNavigation} from '@react-navigation/native';
-import React, {useState, useRef} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {
   StyleSheet,
   View,
@@ -29,8 +29,11 @@ import UserAvatar from '../../components/CustomAvatar/UserAvatar';
 import {getChatDisplayInfo} from '../../utils/chat/getChatDisplayInfo';
 import {showSnackbar} from '../../redux/slice/snackbarSlice';
 import {getMessagePreview} from '../../helpers/messages/getMessagePreview';
-import { formatChatTime } from '../../utils/message/formatChatTime';
+import {formatChatTime} from '../../utils/message/formatChatTime';
+import {getUserPendingRequests} from '../../apis/getUserPendingRequests';
+import useDebounce from '../../hooks/useDebounce';
 
+// --- ContactRow Component ---
 const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
   const scale = useRef(new Animated.Value(1)).current;
   const rippleAnim = useRef(new Animated.Value(0)).current;
@@ -81,12 +84,17 @@ const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
     outputRange: [selected || isHeld ? '#232323' : 'transparent', '#292929'],
   });
 
+  console.log('>>>', item);
   const display = getChatDisplayInfo(item, userId);
   const unreadCount = item.unreadCount || 0;
-  const lastMessage = item.lastMessage || {};
+  const lastMessage = item.lastMessage || null;
   const isGroup = Boolean(item.participants.length > 2);
-  const previewMessage = getMessagePreview(lastMessage, userId, isGroup);
-  const lastMessageTime = lastMessage.timestamp;
+  const previewMessage = lastMessage
+    ? getMessagePreview(lastMessage, userId, isGroup)
+    : '';
+  const lastMessageTime = lastMessage?.timestamp
+    ? lastMessage?.timestamp
+    : item?.updatedAt;
 
   return (
     <Pressable
@@ -128,6 +136,27 @@ const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
   );
 };
 
+// --- SelectedContactBar Component ---
+const SelectedContactBar = ({selectedContacts, onClose, onDelete, onFavorite}) => {
+  if (!selectedContacts || selectedContacts.length === 0) { return null; }
+  return (
+    <View style={styles.selectedBarContainer}>
+      <TouchableOpacity onPress={onClose} style={styles.iconBtn}>
+        <Icon name="close" size={24} color="#fff" />
+      </TouchableOpacity>
+      <View style={styles.selectedContactInfoCount}>
+        <Text style={styles.selectedContactCount}>{selectedContacts.length}</Text>
+      </View>
+      <TouchableOpacity onPress={() => onFavorite(selectedContacts)} style={styles.iconBtn}>
+        <Icon name="star-outline" size={22} color="#D28A8C" />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => onDelete(selectedContacts)} style={styles.iconBtn}>
+        <Icon name="trash" size={22} color="#f55" />
+      </TouchableOpacity>
+    </View>
+  );
+};
+
 const OutlinedIcon = _props => (
   <Icon name="add-circle-outline" size={28} color="#fff" />
 );
@@ -162,15 +191,29 @@ const Home = () => {
   const userId = useSelector(state => state.auth.user?.id);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedId, setSelectedId] = useState(null);
+  const debouncedSearch = useDebounce(searchQuery, 350);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [selectedContacts, setSelectedContacts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [params, setParams] = useState({
     search: '',
     page: 1,
     per_page: 20,
-    contact_type: 'all', // renamed from filter to contact_type
+    contact_type: 'all',
   });
-  const pendingRequestsCount = 3;
+
+  const {
+    data: requests = [],
+    refetch: refetchRequests,
+    isRefetching,
+  } = useQuery({
+    queryKey: ['pendingRequests'],
+    queryFn: getUserPendingRequests,
+    select: data => data?.response?.data || [],
+  });
+
+  const pendingRequestsCount = requests.length || 0;
+
   const {
     data: contacts = [],
     isLoading: isLoadingContacts,
@@ -197,8 +240,16 @@ const Home = () => {
     },
   });
 
+  useEffect(() => {
+    setParams(prev => ({
+      ...prev,
+      search: debouncedSearch,
+      page: 1,
+    }));
+  }, [debouncedSearch]);
+
   const totalUnread = contacts.reduce(
-    (sum, c) => sum + (c.unreadCount || 0),
+    (sum, c) => sum + (c.unreadCount > 0 ? 1 : 0),
     0,
   );
 
@@ -233,25 +284,53 @@ const Home = () => {
   }
 
   const handleContactPress = item => {
-    setSelectedId(item._id);
-    navigation.navigate(Paths.CONTACT_CHAT, {contact: item});
+    if (selectedIds.length > 0) {
+      if (selectedIds.includes(item._id)) {
+        const newIds = selectedIds.filter(id => id !== item._id);
+        setSelectedIds(newIds);
+        setSelectedContacts(selectedContacts.filter(c => c._id !== item._id));
+      } else {
+        setSelectedIds([...selectedIds, item._id]);
+        setSelectedContacts([...selectedContacts, item]);
+      }
+    } else {
+      setSelectedIds([]);
+      setSelectedContacts([]);
+      navigation.navigate(Paths.CONTACT_CHAT, {contact: item});
+    }
+  };
+  const handleContactLongPress = item => {
+    if (!selectedIds.includes(item._id)) {
+      setSelectedIds([...selectedIds, item._id]);
+      setSelectedContacts([...selectedContacts, item]);
+    }
+  };
+  const handleClearSelected = () => {
+    setSelectedIds([]);
+    setSelectedContacts([]);
   };
 
-  const handleContactLongPress = item => {
-    setSelectedId(item._id);
+  const handleDeleteContact = contact => {
+    // TODO: Implement delete logic (API call, update state, etc.)
+    handleClearSelected();
+  };
+
+  const handleFavoriteContact = contact => {
+    // TODO: Implement favorite/unfavorite logic (API call, update state, etc.)
+    handleClearSelected();
   };
 
   const handlePageRefresh = async () => {
     setRefreshing(true);
     setSearchQuery('');
-    setSelectedId(null);
+    setSelectedIds([]);
     setParams({
       search: '',
       page: 1,
       per_page: 20,
       contact_type: 'all',
     });
-    await refetch();
+    await Promise.all([refetch(), refetchRequests()]);
     setRefreshing(false);
   };
 
@@ -267,56 +346,65 @@ const Home = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.headerText}>All Chats</Text>
-        <View style={styles.headerInnerRow}>
-          <TouchableOpacity
-            style={styles.friendRequestBtn}
-            onPress={() => navigation.navigate(Paths.FRIEND_REQUESTS)}
-            activeOpacity={0.8}>
-            <View style={styles.friendRequestIconWrapper}>
-              <MaterialCommunityIcons
-                name="account-plus"
-                size={24}
-                color="#fff"
-              />
-              {pendingRequestsCount > 0 && (
-                <View style={styles.friendRequestCountBubble}>
-                  <Text style={styles.friendRequestCountText}>
-                    {pendingRequestsCount}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </TouchableOpacity>
-          <IconButton
-            icon={OutlinedIcon}
-            size={28}
-            onPress={() => navigation.navigate(Paths.ADD_CONTACT)}
-            style={styles.plusIcon}
-          />
-          <Menu
-            visible={menuVisible}
-            onDismiss={closeMenu}
-            anchor={
-              <IconButton
-                icon="dots-vertical"
-                iconColor="#fff"
-                size={28}
-                onPress={openMenu}
-                style={styles.optionsIcon}
-              />
-            }
-            contentStyle={{backgroundColor: '#232323'}}>
-            <Menu.Item
-              onPress={handleLogout}
-              title="Logout"
-              leadingIcon="logout"
-              titleStyle={{color: '#fff'}}
+      {selectedContacts.length > 0 ? (
+        <SelectedContactBar
+          selectedContacts={selectedContacts}
+          onClose={handleClearSelected}
+          onDelete={handleDeleteContact}
+          onFavorite={handleFavoriteContact}
+        />
+      ) : (
+        <View style={styles.headerRow}>
+          <Text style={styles.headerText}>All Chats</Text>
+          <View style={styles.headerInnerRow}>
+            <TouchableOpacity
+              style={styles.friendRequestBtn}
+              onPress={() => navigation.navigate(Paths.FRIEND_REQUESTS)}
+              activeOpacity={0.8}>
+              <View style={styles.friendRequestIconWrapper}>
+                <MaterialCommunityIcons
+                  name="account-plus"
+                  size={24}
+                  color="#fff"
+                />
+                {pendingRequestsCount > 0 && (
+                  <View style={styles.friendRequestCountBubble}>
+                    <Text style={styles.friendRequestCountText}>
+                      {pendingRequestsCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+            <IconButton
+              icon={OutlinedIcon}
+              size={28}
+              onPress={() => navigation.navigate(Paths.ADD_CONTACT)}
+              style={styles.plusIcon}
             />
-          </Menu>
+            <Menu
+              visible={menuVisible}
+              onDismiss={closeMenu}
+              anchor={
+                <IconButton
+                  icon="dots-vertical"
+                  iconColor="#fff"
+                  size={28}
+                  onPress={openMenu}
+                  style={styles.optionsIcon}
+                />
+              }
+              style={styles.menuContent}>
+              <Menu.Item
+                onPress={handleLogout}
+                title="Logout"
+                leadingIcon="logout"
+                style={styles.menuItemTitle}
+              />
+            </Menu>
+          </View>
         </View>
-      </View>
+      )}
       <Searchbar
         placeholder="Search"
         value={searchQuery}
@@ -325,17 +413,13 @@ const Home = () => {
         iconColor="#D28A8C"
         placeholderTextColor="#D28A8C"
       />
-      {/* Dynamic filter chips row */}
       <View style={styles.chipRow}>
         {chatFilters.map(filter => {
           const selected = params.contact_type === filter.key;
           return (
             <Chip
               key={filter.key}
-              style={[
-                styles.unreadChip,
-                selected && styles.unreadChipSelected,
-              ]}
+              style={[styles.unreadChip, selected && styles.unreadChipSelected]}
               textStyle={[
                 styles.unreadChipText,
                 selected && styles.unreadChipTextSelected,
@@ -343,11 +427,12 @@ const Home = () => {
               selected={selected}
               selectedColor="#fff"
               onPress={() => {
-                setParams(prev => ({ ...prev, contact_type: filter.key }));
-              }}
-            >
+                setParams(prev => ({...prev, contact_type: filter.key}));
+              }}>
               {filter.label}
-              {filter.show && filter.getCount() !== null ? ` (${filter.getCount()})` : ''}
+              {filter.show && filter.getCount() !== null
+                ? ` (${filter.getCount()})`
+                : ''}
             </Chip>
           );
         })}
@@ -360,17 +445,15 @@ const Home = () => {
             item={item}
             onPress={() => handleContactPress(item)}
             onLongPress={() => handleContactLongPress(item)}
-            selected={selectedId === item._id}
+            selected={selectedIds.includes(item._id)}
             userId={userId}
           />
         )}
-        contentContainerStyle={[
-          styles.listContent,
-          (!contacts || contacts.length === 0) && {
-            flex: 1,
-            justifyContent: 'center',
-          },
-        ]}
+        contentContainerStyle={
+          contacts && contacts.length === 0
+            ? styles.emptyListContent
+            : styles.listContent
+        }
         ListEmptyComponent={
           isLoadingContacts ? (
             <View style={styles.loadingContainer}>
@@ -601,5 +684,43 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     opacity: 0.92,
     alignSelf: 'center',
+  },
+  // --- Styles for SelectedContactBar ---
+  selectedBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#232323',
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  iconBtn: {
+    padding: 6,
+    marginHorizontal: 2,
+  },
+  selectedContactInfoCount: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectedContactCount: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  menuContent: {
+    backgroundColor: '#232323',
+  },
+  menuItemTitle: {
+    color: '#fff',
+  },
+  emptyListContent: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+    paddingBottom: 16,
   },
 });

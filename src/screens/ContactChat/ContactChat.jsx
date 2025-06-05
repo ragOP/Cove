@@ -1,4 +1,15 @@
-import {KeyboardAvoidingView, Platform, StyleSheet, View, TouchableOpacity, Text, ActivityIndicator, Modal, Pressable, Image} from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  Text,
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  Image,
+} from 'react-native';
 import React, {useEffect, useState} from 'react';
 import ChatsContainer from './components/ChatsContainer';
 import ContactHeader from './components/ContactHeader';
@@ -24,7 +35,7 @@ const ContactChat = () => {
   const [conversations, setConversations] = useState([]);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [replyMessage, setReplyMessage] = useState(null);
-  const [tab, setTab] = useState('chat'); // 'chat' or 'gallery'
+  const [tab, setTab] = useState('chat');
   const [galleryMedia, setGalleryMedia] = useState([]);
   const [galleryLoading, setGalleryLoading] = useState(false);
   const [previewedMedia, setPreviewedMedia] = useState(null);
@@ -33,21 +44,20 @@ const ContactChat = () => {
   useEffect(() => {
     if (tab === 'gallery' && galleryMedia.length === 0) {
       setGalleryLoading(true);
-      getUserMedia({ userId: contactDetails._id })
+      getUserMedia({userId: contactDetails._id})
         .then(setGalleryMedia)
         .finally(() => setGalleryLoading(false));
     }
   }, [tab, contactDetails._id, galleryMedia.length]);
 
-  // Handler for selecting a message (on long press)
   const handleSelectMessage = msg => setSelectedMessage(msg);
   const handleClearSelected = () => setSelectedMessage(null);
   const handleCopySelected = msg => Clipboard.setString(msg.content || '');
   const handleReplySelected = msg => {
     setReplyMessage(msg);
     handleClearSelected();
-  }; // Implement reply logic as needed
-  const handleDeleteSelected = msg => handleClearSelected(); // Implement delete logic as needed
+  };
+  const handleDeleteSelected = msg => handleClearSelected();
 
   if (!contactDetails) {
     return null;
@@ -59,7 +69,6 @@ const ContactChat = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
       <View style={styles.container}>
-        {/* Header and toggle always visible */}
         {selectedMessage ? (
           <SelectedMessageBar
             selectedMessage={selectedMessage}
@@ -104,7 +113,10 @@ const ContactChat = () => {
                 <ActivityIndicator size="large" color="#D28A8C" />
               </View>
             ) : (
-              <GallerySection media={galleryMedia} onMediaPress={setPreviewedMedia} />
+              <GallerySection
+                media={galleryMedia}
+                onMediaPress={setPreviewedMedia}
+              />
             )}
             {/* Full image preview modal */}
             {previewedMedia && previewedMedia.type === 'image' && (
@@ -112,15 +124,18 @@ const ContactChat = () => {
                 visible={!!previewedMedia}
                 transparent
                 animationType="fade"
-                onRequestClose={() => setPreviewedMedia(null)}
-              >
-                <Pressable style={styles.previewOverlay} onPress={() => setPreviewedMedia(null)}>
+                onRequestClose={() => setPreviewedMedia(null)}>
+                <Pressable
+                  style={styles.previewOverlay}
+                  onPress={() => setPreviewedMedia(null)}>
                   <Image
-                    source={{ uri: previewedMedia.url }}
+                    source={{uri: previewedMedia.url}}
                     style={styles.fullPreviewImage}
                     resizeMode="contain"
                   />
-                  <TouchableOpacity style={styles.previewCloseBtn} onPress={() => setPreviewedMedia(null)}>
+                  <TouchableOpacity
+                    style={styles.previewCloseBtn}
+                    onPress={() => setPreviewedMedia(null)}>
                     <Icon name="close" size={32} color="#fff" />
                   </TouchableOpacity>
                 </Pressable>

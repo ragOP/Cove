@@ -31,12 +31,11 @@ const SendChat = ({
 
   const [message, setMessage] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState([]); // [{uri, type, name, ...}]
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const [captions, setCaptions] = useState({}); // { idx: caption }
-  const [activeFileIdx, setActiveFileIdx] = useState(null); // index of active file for caption
+  const [captions, setCaptions] = useState({});
+  const [activeFileIdx, setActiveFileIdx] = useState(null);
 
-  // File selection handler
   const handleSelectFiles = async () => {
     try {
       const files = await selectFiles();
@@ -44,18 +43,16 @@ const SendChat = ({
         const limitedFiles = files.slice(0, 5);
         setSelectedFiles(limitedFiles);
         setCaptions({});
-        setActiveFileIdx(limitedFiles.length - 1); // Most recent as active
+        setActiveFileIdx(limitedFiles.length - 1);
       }
     } catch (err) {
       console.error('File selection error:', err);
     }
   };
 
-  // Remove a selected file
   const handleRemoveFile = idx => {
     setSelectedFiles(prev => {
       const newFiles = prev.filter((_, i) => i !== idx);
-      // Adjust activeFileIdx
       if (activeFileIdx === idx) {
         setActiveFileIdx(newFiles.length ? Math.max(0, idx - 1) : null);
       } else if (activeFileIdx > idx) {
@@ -66,7 +63,6 @@ const SendChat = ({
     setCaptions(prev => {
       const newCaptions = {...prev};
       delete newCaptions[idx];
-      // Shift captions for remaining files
       const shifted = {};
       Object.keys(newCaptions).forEach(key => {
         const k = parseInt(key, 10);
@@ -76,7 +72,6 @@ const SendChat = ({
     });
   };
 
-  // Caption change handler (now only for active file)
   const handleCaptionChange = text => {
     if (activeFileIdx !== null) {
       setCaptions(prev => ({...prev, [activeFileIdx]: text}));
@@ -85,9 +80,6 @@ const SendChat = ({
     }
   };
 
-  console.log('>>>', conversations);
-
-  // Main send handler
   const handleSend = async () => {
     if (isSendingMessage) {
       return;
@@ -99,17 +91,14 @@ const SendChat = ({
     setUploading(true);
     let uploadedFiles = [];
     try {
-      // Upload files if any
       if (selectedFiles.length > 0) {
         uploadedFiles = await uploadFiles(selectedFiles);
-        // Attach captions to uploaded files
         uploadedFiles = uploadedFiles.map((file, idx) => ({
           ...file,
           caption: captions[idx] || '',
         }));
       }
       setUploading(false);
-      // Prepare message payload (text, files, or both)
       const payloads = prepareMessagePayload({
         text: selectedFiles.length > 0 ? '' : message,
         files: uploadedFiles,
@@ -117,7 +106,7 @@ const SendChat = ({
         receiverId,
         replyTo: replyMessage?._id || replyMessage?.id || undefined,
       });
-      // Send all payloads (text and/or files)
+
       for (const payload of payloads) {
         const apiResponse = await sendMessage({payload});
         if (apiResponse?.response?.success) {
@@ -143,7 +132,6 @@ const SendChat = ({
     }
   };
 
-  // File preview UI
   const renderFilePreviews = () => {
     if (!selectedFiles.length) {
       return null;
@@ -179,7 +167,6 @@ const SendChat = ({
     );
   };
 
-  // WhatsApp-style reply preview bar
   const renderReplyPreview = () => {
     if (!replyMessage) {
       return null;
@@ -188,11 +175,26 @@ const SendChat = ({
     const isSent = replyMessage.sender?._id === userId;
     const senderLabel = isSent ? 'You' : replyMessage.sender?.name || 'User';
 
+    const replyBarBg = isSent
+      ? 'rgba(210,138,140,0.18)'
+      : 'rgba(120,88,90,0.18)';
+
+    const replyBarBorder = isSent ? '#D28A8C' : '#7b585a';
+    const replyLabelColor = isSent ? '#D28A8C' : '#7b585a';
+
     return (
-      <View style={styles.replyPreviewBar}>
-        <View style={styles.replyIndicator} />
+      <View
+        style={[
+          styles.replyPreviewBar,
+          {backgroundColor: replyBarBg, borderLeftColor: replyBarBorder},
+        ]}>
+        <View
+          style={[styles.replyIndicator, {backgroundColor: replyBarBorder}]}
+        />
         <View style={styles.replyContent}>
-          <Text style={styles.replyLabel} numberOfLines={1}>
+          <Text
+            style={[styles.replyLabel, {color: replyLabelColor}]}
+            numberOfLines={1}>
             {senderLabel}
           </Text>
           <View style={styles.replyRow}>
@@ -232,7 +234,7 @@ const SendChat = ({
       onChangeText={handleCaptionChange}
       selectionColor="#fff"
       returnKeyType="send"
-      autoFocus={true}
+      autoFocus={false}
       multiline
     />
   );

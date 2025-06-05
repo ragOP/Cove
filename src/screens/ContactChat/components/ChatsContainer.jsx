@@ -37,7 +37,6 @@ function ChatMessageRow({
     };
   });
 
-  // Pan for swipe-to-reply (should trigger for the whole row)
   const panGesture = Gesture.Pan()
     .activeOffsetX([-30, 30])
     .onUpdate(e => {
@@ -57,7 +56,6 @@ function ChatMessageRow({
       translateX.value = withTiming(0, {duration: 150});
     });
 
-  // Long press for background highlight and select message
   const longPressGesture = Gesture.LongPress()
     .minDuration(350)
     .onStart(() => {
@@ -71,7 +69,6 @@ function ChatMessageRow({
       held.value = false;
     });
 
-  // Combine gestures
   const composedGesture = Gesture.Simultaneous(panGesture, longPressGesture);
 
   return (
@@ -110,13 +107,15 @@ const ChatsContainer = ({conversationId, conversations, setConversations, onRepl
     enabled: !!conversationId,
   });
 
+  console.log('ChatsContainer - conversations:', conversations);
+
   useEffect(() => {
     if (!isLoading && flatListRef.current) {
       setTimeout(() => {
         flatListRef.current.scrollToEnd({animated: false});
       }, 100);
     }
-  }, [isLoading, conversations.length]);
+  }, [isLoading, conversations?.length]);
 
   const handleScroll = event => {
     const {layoutMeasurement, contentOffset, contentSize} = event.nativeEvent;
@@ -141,7 +140,7 @@ const ChatsContainer = ({conversationId, conversations, setConversations, onRepl
     setRefreshing(false);
   };
 
-  if (isLoading || !conversations) {
+  if (isLoading) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
         <ActivityIndicator size="large" color="#fff" />
@@ -178,7 +177,7 @@ const ChatsContainer = ({conversationId, conversations, setConversations, onRepl
         contentContainerStyle={styles.chatContainer}
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => {
-          if (flatListRef.current && conversations.length > 0) {
+          if (flatListRef.current && conversations?.length > 0) {
             flatListRef.current.scrollToEnd({animated: false});
           }
         }}
@@ -230,6 +229,5 @@ const styles = StyleSheet.create({
   fullRow: {
     width: '100%',
     paddingHorizontal: 0,
-    // Remove padding so highlight covers the full row
   },
 });

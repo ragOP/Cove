@@ -103,7 +103,14 @@ const PhoneNumberForm = ({goNext, form, setForm}) => {
   );
 };
 
-const PhoneNumberVerification = ({goNext, goBack, form, otp, setOtp}) => {
+const PhoneNumberVerification = ({
+  goNext,
+  goBack,
+  form,
+  otp,
+  setOtp,
+  setTempToken,
+}) => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const intervalRef = useRef(null);
@@ -152,6 +159,8 @@ const PhoneNumberVerification = ({goNext, goBack, form, otp, setOtp}) => {
         const data = apiResponse?.response?.data;
         const token = data?.token;
         const userData = data?.user;
+
+        setTempToken(token);
 
         // dispatch(
         //   login({
@@ -506,6 +515,7 @@ const UsernameInput = ({goNext, goBack, form, setForm}) => {
           const apiResponse = await usernameAvailability({
             payload: {username: debouncedUsername},
           });
+          console.log('API Response:', apiResponse);
 
           if (apiResponse?.response?.success) {
             setIsAvailable(true);
@@ -574,7 +584,7 @@ const UsernameInput = ({goNext, goBack, form, setForm}) => {
   );
 };
 
-const PasswordInput = ({goNext, goBack, form, setForm}) => {
+const PasswordInput = ({goNext, goBack, form, setForm, tempToken}) => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
@@ -613,7 +623,11 @@ const PasswordInput = ({goNext, goBack, form, setForm}) => {
         });
       }
 
-      const apiResponse = await onUpdateDetails({payload: formData});
+      const apiResponse = await onUpdateDetails({
+        payload: formData,
+        token: tempToken,
+      });
+      console.log('apiResponse:', apiResponse);
 
       if (apiResponse?.response?.success) {
         dispatch(
@@ -628,7 +642,7 @@ const PasswordInput = ({goNext, goBack, form, setForm}) => {
 
         dispatch(
           login({
-            token: userData?.token,
+            token: tempToken,
             user: {
               id: userData?.id,
               name: userData?.name,
@@ -638,8 +652,9 @@ const PasswordInput = ({goNext, goBack, form, setForm}) => {
             },
           }),
         );
+        await AsyncStorage.setItem(TOKEN, tempToken);
 
-        navigation.navigate(Paths.HOME);
+        // navigation.navigate(Paths.HOME);
       } else {
         const errrorMessage = apiResponse?.response?.message;
         dispatch(
@@ -805,6 +820,7 @@ const ImageUploadScreen = ({goNext, goBack, form, setForm}) => {
 
 const Register = () => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [tempToken, setTempToken] = useState(null);
 
   const [form, setForm] = useState({
     dialCode: '91',
@@ -847,6 +863,7 @@ const Register = () => {
             setForm={setForm}
             otp={otp}
             setOtp={setOtp}
+            setTempToken={setTempToken}
           />
         );
       case 3:
@@ -856,6 +873,7 @@ const Register = () => {
             goBack={goBack}
             form={form}
             setForm={setForm}
+            tempToken={tempToken}
           />
         );
       case 4:
@@ -901,6 +919,7 @@ const Register = () => {
             goBack={goBack}
             form={form}
             setForm={setForm}
+            tempToken={tempToken}
           />
         );
       default:
