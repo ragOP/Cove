@@ -38,6 +38,23 @@ const Profile = ({navigation}) => {
         <Text style={styles.name}>{user?.name}</Text>
         <Text style={styles.username}>@{user?.username}</Text>
         <Text style={styles.phone}>{user?.phoneNumber}</Text>
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <MaterialCommunityIcons name="account-group-outline" size={22} color="#D28A8C" style={styles.statIcon} />
+            <Text style={styles.statValue}>0</Text>
+            <Text style={styles.statLabel}>Friends</Text>
+          </View>
+          <View style={styles.statCard}>
+            <MaterialCommunityIcons name="account-multiple-plus-outline" size={22} color="#D28A8C" style={styles.statIcon} />
+            <Text style={styles.statValue}>0</Text>
+            <Text style={styles.statLabel}>Groups</Text>
+          </View>
+          <View style={styles.statCard}>
+            <MaterialCommunityIcons name="star-outline" size={22} color="#D28A8C" style={styles.statIcon} />
+            <Text style={styles.statValue}>0</Text>
+            <Text style={styles.statLabel}>Favorites</Text>
+          </View>
+        </View>
       </View>
       <Divider style={styles.divider} />
       <View style={styles.optionsSection}>
@@ -77,9 +94,14 @@ const Profile = ({navigation}) => {
         labelStyle={styles.logoutLabel}
         icon="logout"
         onPress={handleLogout}
-        >
+        contentStyle={styles.logoutContent}
+      >
         Logout
       </Button>
+      <View style={styles.madeWithCard}>
+        <MaterialCommunityIcons name="heart" size={18} color="#D28A8C" style={styles.madeWithIcon} />
+        <Text style={styles.madeWithText}>Made with love • v1.0</Text>
+      </View>
     </ScrollView>
   );
 };
@@ -91,7 +113,7 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     minHeight: '100%',
   },
@@ -100,13 +122,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     marginBottom: 8,
-    marginTop: 4,
+    marginTop: 0,
     paddingHorizontal: 0,
   },
   backBtn: {
     marginLeft: -8,
     marginRight: 8,
-    backgroundColor: 'rgba(210,138,140,0.12)',
+    backgroundColor: 'transparent',
   },
   topBarTitle: {
     color: '#fff',
@@ -130,6 +152,32 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '90%',
+    marginTop: 18,
+    marginBottom: 2,
+  },
+  statCard: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statIcon: {
+    marginBottom: 2,
+  },
+  statValue: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+    marginTop: 2,
+  },
+  statLabel: {
+    color: '#bbb',
+    fontSize: 13,
+    marginTop: 0,
+    letterSpacing: 0.1,
   },
   name: {
     color: '#fff',
@@ -200,6 +248,28 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     letterSpacing: 0.2,
+  },
+  madeWithCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginTop: 28,
+    backgroundColor: '#232323',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginBottom: 24,
+  },
+  madeWithIcon: {
+    marginRight: 6,
+  },
+  madeWithText: {
+    color: '#bbb',
+    fontSize: 14,
+    letterSpacing: 0.2,
+  },
+  logoutContent: {
+    paddingHorizontal: 0,
   },
 });
 
