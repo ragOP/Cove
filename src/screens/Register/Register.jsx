@@ -735,33 +735,37 @@ const PasswordInput = ({goNext, goBack, form, setForm}) => {
 };
 
 const ImageUploadScreen = ({goNext, goBack, form, setForm}) => {
-  const [imageUri, setImageUri] = useState(form.profilePicture.uri || null);
+  const [imageUri, setImageUri] = useState(form?.profilePicture?.uri || null);
 
   const pickImage = async () => {
-    launchImageLibrary(
-      {
-        mediaType: 'photo',
-        quality: 0.4,
-      },
-      response => {
-        if (response.didCancel) {
-          return;
-        }
+    try {
+      launchImageLibrary(
+        {
+          mediaType: 'photo',
+          quality: 0.4,
+        },
+        response => {
+          if (response.didCancel) {
+            return;
+          }
 
-        if (response.errorCode) {
-          return;
-        }
+          if (response.errorCode) {
+            return;
+          }
 
-        if (response.assets && response.assets.length > 0) {
-          const asset = response.assets[0];
-          setImageUri(asset.uri);
-          setForm(prev => ({
-            ...prev,
-            profilePicture: asset,
-          }));
-        }
-      },
-    );
+          if (response.assets && response.assets.length > 0) {
+            const asset = response.assets[0];
+            setImageUri(asset.uri);
+            setForm(prev => ({
+              ...prev,
+              profilePicture: asset,
+            }));
+          }
+        },
+      );
+    } catch (error) {
+      console.warn('Image picker error:', error);
+    }
   };
 
   return (
