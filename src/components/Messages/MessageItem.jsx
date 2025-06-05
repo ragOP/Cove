@@ -3,6 +3,7 @@ import {Animated, Text, View, StyleSheet} from 'react-native';
 import {formatDateLabel} from '../../utils/date/formatDateLabel';
 import {formatTime} from '../../utils/time/formatTime';
 import {renderMessageContent} from '../../helpers/messages/renderMessageContent';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const MessageItem = ({
   item,
@@ -47,13 +48,40 @@ const MessageItem = ({
           isSent ? styles.sentMessage : styles.receivedMessage,
         ]}>
         {renderMessageContent(item, isSent)}
-        <Text style={styles.timeText}>{formatTime(item.timestamp)}</Text>
+        <View style={styles.timeStatusRow}>
+          <Text style={styles.timeText}>{formatTime(item.timestamp)}</Text>
+          {isSent && <TickIcon status={item.status} anim={fadeAnim} />}
+        </View>
       </View>
     </Animated.View>
   );
 };
 
 export default MessageItem;
+
+// TickIcon component for message status
+export const TickIcon = ({status, anim}) => {
+  if (status === 'read') {
+    return (
+      <Animated.View style={{opacity: anim}}>
+        <Icon name="checkmark-done" size={16} color="#4BB543" />
+      </Animated.View>
+    );
+  } else if (status === 'delivered') {
+    return (
+      <Animated.View style={{opacity: anim}}>
+        <Icon name="checkmark-done" size={16} color="#bbb" />
+      </Animated.View>
+    );
+  } else if (status === 'sent') {
+    return (
+      <Animated.View style={{opacity: anim}}>
+        <Icon name="checkmark" size={16} color="#bbb" />
+      </Animated.View>
+    );
+  }
+  return null;
+};
 
 export const styles = StyleSheet.create({
   messageContainer: {
@@ -122,5 +150,11 @@ export const styles = StyleSheet.create({
     color: '#ddd',
     textAlign: 'right',
     marginTop: 4,
+  },
+  timeStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 4, // for RN 0.71+, otherwise use marginLeft on icon
   },
 });

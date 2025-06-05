@@ -1,4 +1,4 @@
-import {KeyboardAvoidingView, Platform, StyleSheet, View, ActivityIndicator, Modal, Pressable} from 'react-native';
+import {KeyboardAvoidingView, Platform, StyleSheet, View, TouchableOpacity, Text, ActivityIndicator, Modal, Pressable, Image} from 'react-native';
 import React, {useEffect, useState} from 'react';
 import ChatsContainer from './components/ChatsContainer';
 import ContactHeader from './components/ContactHeader';

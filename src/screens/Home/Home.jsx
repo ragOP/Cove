@@ -88,7 +88,6 @@ const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
   const previewMessage = getMessagePreview(lastMessage, userId, isGroup);
   const lastMessageTime = lastMessage.timestamp;
 
-  console.log('previewMessage:', lastMessage);
   return (
     <Pressable
       onPress={onPress}
@@ -169,6 +168,7 @@ const Home = () => {
     search: '',
     page: 1,
     per_page: 20,
+    contact_type: 'all', // renamed from filter to contact_type
   });
   const pendingRequestsCount = 3;
   const {
@@ -202,6 +202,36 @@ const Home = () => {
     0,
   );
 
+  // Dynamic filter chips structure
+  const chatFilters = [
+    {
+      key: 'all',
+      label: 'All',
+      show: true,
+      getCount: () => null,
+    },
+    {
+      key: 'unread',
+      label: 'Unread',
+      show: totalUnread > 0,
+      getCount: () => totalUnread,
+    },
+    {
+      key: 'favorites',
+      label: 'Favorites',
+      show: true, // Always show for now
+      getCount: () => null, // Optionally add count if you track favorite count
+    },
+  ];
+
+  // Filter contacts based on params.contact_type
+  let filteredContacts = contacts;
+  if (params.contact_type === 'unread') {
+    filteredContacts = contacts.filter(c => c.unreadCount > 0);
+  } else if (params.contact_type === 'favorites') {
+    filteredContacts = contacts.filter(c => c.isFavorite);
+  }
+
   const handleContactPress = item => {
     setSelectedId(item._id);
     navigation.navigate(Paths.CONTACT_CHAT, {contact: item});
@@ -219,6 +249,7 @@ const Home = () => {
       search: '',
       page: 1,
       per_page: 20,
+      contact_type: 'all',
     });
     await refetch();
     setRefreshing(false);
@@ -294,24 +325,35 @@ const Home = () => {
         iconColor="#D28A8C"
         placeholderTextColor="#D28A8C"
       />
-      {totalUnread > 0 && (
-        <View style={styles.chipRow}>
-          <Chip
-            style={styles.unreadChip}
-            textStyle={styles.unreadChipText}
-            selectedColor="#fff">
-            All
-          </Chip>
-          <Chip
-            style={styles.unreadChip}
-            textStyle={styles.unreadChipText}
-            selectedColor="#fff">
-            Unread ({totalUnread})
-          </Chip>
-        </View>
-      )}
+      {/* Dynamic filter chips row */}
+      <View style={styles.chipRow}>
+        {chatFilters.map(filter => {
+          const selected = params.contact_type === filter.key;
+          return (
+            <Chip
+              key={filter.key}
+              style={[
+                styles.unreadChip,
+                selected && styles.unreadChipSelected,
+              ]}
+              textStyle={[
+                styles.unreadChipText,
+                selected && styles.unreadChipTextSelected,
+              ]}
+              selected={selected}
+              selectedColor="#fff"
+              onPress={() => {
+                setParams(prev => ({ ...prev, contact_type: filter.key }));
+              }}
+            >
+              {filter.label}
+              {filter.show && filter.getCount() !== null ? ` (${filter.getCount()})` : ''}
+            </Chip>
+          );
+        })}
+      </View>
       <FlatList
-        data={contacts}
+        data={filteredContacts}
         keyExtractor={item => item._id}
         renderItem={({item}) => (
           <ContactRow
@@ -393,10 +435,20 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 2,
     paddingVertical: 0,
+    transitionProperty: 'background-color',
+    transitionDuration: '200ms',
+  },
+  unreadChipSelected: {
+    backgroundColor: '#D28A8C', // Use Add Contact button color
   },
   unreadChipText: {
     color: '#fff',
     fontSize: 14,
+    transitionProperty: 'color',
+    transitionDuration: '200ms',
+  },
+  unreadChipTextSelected: {
+    color: '#fff', // White text for selected chip
   },
   searchBar: {
     marginHorizontal: 16,
