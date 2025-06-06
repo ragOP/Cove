@@ -33,7 +33,6 @@ import {formatChatTime} from '../../utils/message/formatChatTime';
 import {getUserPendingRequests} from '../../apis/getUserPendingRequests';
 import useDebounce from '../../hooks/useDebounce';
 
-// --- ContactRow Component ---
 const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
   const scale = useRef(new Animated.Value(1)).current;
   const rippleAnim = useRef(new Animated.Value(0)).current;
@@ -84,7 +83,6 @@ const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
     outputRange: [selected || isHeld ? '#232323' : 'transparent', '#292929'],
   });
 
-  console.log('>>>', item);
   const display = getChatDisplayInfo(item, userId);
   const unreadCount = item.unreadCount || 0;
   const lastMessage = item.lastMessage || null;
@@ -117,10 +115,19 @@ const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
           {Array.isArray(previewMessage) ? (
             <View style={styles.previewMessage}>
               <Icon name="checkmark-done" size={16} color="#4BB543" />
-              <Text style={styles.previewText}>{previewMessage[1]}</Text>
+              <Text
+                style={styles.previewText}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                allowFontScaling={false}
+              >
+                {typeof previewMessage[1] === 'string' ? previewMessage[1] : String(previewMessage[1])}
+              </Text>
             </View>
           ) : (
-            <Text style={styles.previewText}>{previewMessage}</Text>
+            <Text style={styles.previewText} numberOfLines={1} ellipsizeMode="tail" allowFontScaling={false}>
+              {typeof previewMessage === 'string' ? previewMessage : String(previewMessage)}
+            </Text>
           )}
         </View>
         <View style={styles.contactMeta}>
@@ -137,20 +144,33 @@ const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
 };
 
 // --- SelectedContactBar Component ---
-const SelectedContactBar = ({selectedContacts, onClose, onDelete, onFavorite}) => {
-  if (!selectedContacts || selectedContacts.length === 0) { return null; }
+const SelectedContactBar = ({
+  selectedContacts,
+  onClose,
+  onDelete,
+  onFavorite,
+}) => {
+  if (!selectedContacts || selectedContacts.length === 0) {
+    return null;
+  }
   return (
     <View style={styles.selectedBarContainer}>
       <TouchableOpacity onPress={onClose} style={styles.iconBtn}>
         <Icon name="close" size={24} color="#fff" />
       </TouchableOpacity>
       <View style={styles.selectedContactInfoCount}>
-        <Text style={styles.selectedContactCount}>{selectedContacts.length}</Text>
+        <Text style={styles.selectedContactCount}>
+          {selectedContacts.length}
+        </Text>
       </View>
-      <TouchableOpacity onPress={() => onFavorite(selectedContacts)} style={styles.iconBtn}>
+      <TouchableOpacity
+        onPress={() => onFavorite(selectedContacts)}
+        style={styles.iconBtn}>
         <Icon name="star-outline" size={22} color="#D28A8C" />
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => onDelete(selectedContacts)} style={styles.iconBtn}>
+      <TouchableOpacity
+        onPress={() => onDelete(selectedContacts)}
+        style={styles.iconBtn}>
         <Icon name="trash" size={22} color="#f55" />
       </TouchableOpacity>
     </View>
@@ -270,8 +290,8 @@ const Home = () => {
     {
       key: 'favorites',
       label: 'Favorites',
-      show: true, // Always show for now
-      getCount: () => null, // Optionally add count if you track favorite count
+      show: true,
+      getCount: () => null,
     },
   ];
 

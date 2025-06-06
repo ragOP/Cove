@@ -7,7 +7,13 @@ import {Text} from 'react-native-paper';
 import {useNavigation} from '@react-navigation/native';
 import UserAvatar from '../../../components/CustomAvatar/UserAvatar';
 
-const ContactHeader = ({name, username, profilePicture, activeTab, onTabChange}) => {
+const ContactHeader = ({
+  name,
+  username,
+  profilePicture,
+  activeTab,
+  onTabChange,
+}) => {
   const navigation = useNavigation();
 
   return (
@@ -30,33 +36,51 @@ const ContactHeader = ({name, username, profilePicture, activeTab, onTabChange})
           <FeatherIcon name="more-horizontal" size={30} color="#fff" />
         </View>
       </View>
-      {/* Tab toggle row (controlled by parent) */}
+
       <View style={styles.tabToggleRow}>
         <TouchableOpacity
-          style={[styles.tabToggleBtn, activeTab === 'chat' && styles.tabActive]}
+          style={[
+            styles.tabToggleBtn,
+            activeTab === 'chat' && styles.tabActive,
+          ]}
           onPress={() => onTabChange('chat')}
-          activeOpacity={0.85}
-        >
+          activeOpacity={0.85}>
           <Icon
             name="chatbubble-ellipses"
             size={22}
             color={activeTab === 'chat' ? '#D28A8C' : 'rgba(255,255,255,0.5)'}
             style={styles.tabIconMargin}
           />
-          <Text style={[styles.tabToggleText, activeTab === 'chat' && styles.tabActiveText]}>Chat</Text>
+          <Text
+            style={[
+              styles.tabToggleText,
+              activeTab === 'chat' && styles.tabActiveText,
+            ]}>
+            Chat
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tabToggleBtn, activeTab === 'gallery' && styles.tabActive]}
+          style={[
+            styles.tabToggleBtn,
+            activeTab === 'gallery' && styles.tabActive,
+          ]}
           onPress={() => onTabChange('gallery')}
-          activeOpacity={0.85}
-        >
+          activeOpacity={0.85}>
           <MaterialIcon
             name="card-multiple-outline"
             size={22}
-            color={activeTab === 'gallery' ? '#D28A8C' : 'rgba(255,255,255,0.5)'}
+            color={
+              activeTab === 'gallery' ? '#D28A8C' : 'rgba(255,255,255,0.5)'
+            }
             style={styles.tabIconMargin}
           />
-          <Text style={[styles.tabToggleText, activeTab === 'gallery' && styles.tabActiveText]}>Gallery</Text>
+          <Text
+            style={[
+              styles.tabToggleText,
+              activeTab === 'gallery' && styles.tabActiveText,
+            ]}>
+            Gallery
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -106,7 +130,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  // Tab toggle styles
   tabToggleRow: {
     flexDirection: 'row',
     backgroundColor: '#000',

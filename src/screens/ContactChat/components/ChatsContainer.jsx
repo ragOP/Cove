@@ -107,10 +107,8 @@ const ChatsContainer = ({conversationId, conversations, setConversations, onRepl
     enabled: !!conversationId,
   });
 
-  console.log('ChatsContainer - conversations:', conversations);
-
   useEffect(() => {
-    if (!isLoading && flatListRef.current) {
+    if (!isLoading && flatListRef?.current) {
       setTimeout(() => {
         flatListRef.current.scrollToEnd({animated: false});
       }, 100);

@@ -23,8 +23,8 @@ const MessageItem = ({
     }).start();
   }, [fadeAnim, index]);
 
-  // Sender label logic
   let senderLabel = null;
+
   if (showSenderLabel) {
     senderLabel = (
       <Text style={styles.senderLabel}>
@@ -59,7 +59,6 @@ const MessageItem = ({
 
 export default MessageItem;
 
-// TickIcon component for message status
 export const TickIcon = ({status, anim}) => {
   if (status === 'read') {
     return (
@@ -88,11 +87,10 @@ export const styles = StyleSheet.create({
     maxWidth: '80%',
     borderRadius: 18,
     padding: 10,
-    // Remove horizontal margin so highlight covers full row
   },
   messageWrapper: {
     marginBottom: 12,
-    width: '100%', // Make highlight cover full row
+    width: '100%',
   },
   senderLabel: {
     color: '#D28A8C',
@@ -154,7 +152,7 @@ export const styles = StyleSheet.create({
   timeStatusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
-    gap: 4, // for RN 0.71+, otherwise use marginLeft on icon
+    justifyContent: 'flex-end',
+    gap: 4,
   },
 });

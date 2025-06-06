@@ -12,12 +12,9 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import {sendMessage} from '../../../apis/sendMessage';
 import {useSelector} from 'react-redux';
-import Clipboard from '@react-native-clipboard/clipboard';
-
 import {prepareMessagePayload} from '../../../helpers/messages/prepareMessagePayload';
 import {selectFiles} from '../../../helpers/files/selectFiles';
 import {uploadFiles} from '../../../helpers/files/uploadFiles';
-import SelectedMessageBar from './SelectedMessageBar';
 
 const SendChat = ({
   conversationId,

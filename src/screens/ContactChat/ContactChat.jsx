@@ -4,13 +4,11 @@ import {
   StyleSheet,
   View,
   TouchableOpacity,
-  Text,
-  ActivityIndicator,
   Modal,
   Pressable,
   Image,
 } from 'react-native';
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import ChatsContainer from './components/ChatsContainer';
 import ContactHeader from './components/ContactHeader';
 import SendChat from './components/SendChat';
@@ -20,7 +18,6 @@ import {useSelector} from 'react-redux';
 import SelectedMessageBar from './components/SelectedMessageBar';
 import Clipboard from '@react-native-clipboard/clipboard';
 import GallerySection from './components/GallerySection';
-import {getUserMedia} from '../../apis/userMedia';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const ContactChat = () => {
@@ -36,19 +33,7 @@ const ContactChat = () => {
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [replyMessage, setReplyMessage] = useState(null);
   const [tab, setTab] = useState('chat');
-  const [galleryMedia, setGalleryMedia] = useState([]);
-  const [galleryLoading, setGalleryLoading] = useState(false);
   const [previewedMedia, setPreviewedMedia] = useState(null);
-
-  // Fetch gallery media when tab changes to gallery
-  useEffect(() => {
-    if (tab === 'gallery' && galleryMedia.length === 0) {
-      setGalleryLoading(true);
-      getUserMedia({userId: contactDetails._id})
-        .then(setGalleryMedia)
-        .finally(() => setGalleryLoading(false));
-    }
-  }, [tab, contactDetails._id, galleryMedia.length]);
 
   const handleSelectMessage = msg => setSelectedMessage(msg);
   const handleClearSelected = () => setSelectedMessage(null);
@@ -86,7 +71,7 @@ const ContactChat = () => {
             onTabChange={setTab}
           />
         )}
-        {/* Main content: only swap chat/gallery area */}
+
         {tab === 'chat' ? (
           <>
             <ChatsContainer
@@ -108,17 +93,11 @@ const ContactChat = () => {
           </>
         ) : (
           <View style={styles.galleryContainer}>
-            {galleryLoading ? (
-              <View style={styles.galleryLoading}>
-                <ActivityIndicator size="large" color="#D28A8C" />
-              </View>
-            ) : (
-              <GallerySection
-                media={galleryMedia}
-                onMediaPress={setPreviewedMedia}
-              />
-            )}
-            {/* Full image preview modal */}
+            <GallerySection
+              onMediaPress={setPreviewedMedia}
+              id={contactDetails._id}
+            />
+
             {previewedMedia && previewedMedia.type === 'image' && (
               <Modal
                 visible={!!previewedMedia}
