@@ -33,6 +33,8 @@ const SendChat = ({
   const [captions, setCaptions] = useState({});
   const [activeFileIdx, setActiveFileIdx] = useState(null);
 
+  console.log('CONVERSATIONS', conversations);
+
   const handleSelectFiles = async () => {
     try {
       const files = await selectFiles();
@@ -96,31 +98,67 @@ const SendChat = ({
         }));
       }
       setUploading(false);
-      const payloads = prepareMessagePayload({
-        text: selectedFiles.length > 0 ? '' : message,
-        files: uploadedFiles,
-        senderId: userId,
-        receiverId,
-        replyTo: replyMessage?._id || replyMessage?.id || undefined,
-      });
 
-      for (const payload of payloads) {
-        const apiResponse = await sendMessage({payload});
-        if (apiResponse?.response?.success) {
-          const data = apiResponse.response.data;
-          setConversations && setConversations(prev => [...(prev || []), data]);
-        } else {
-          console.error(
-            'Failed to send message:',
-            apiResponse?.response?.message,
-          );
+      if (selectedFiles.length === 0 && message.trim()) {
+        // Only text message
+
+        const payloads = prepareMessagePayload({
+          text: message,
+          files: [],
+          senderId: userId,
+          receiverId,
+          replyTo: replyMessage?._id || replyMessage?.id || undefined,
+        });
+
+        for (const payload of payloads) {
+          const apiResponse = await sendMessage({payload});
+          if (apiResponse?.response?.success) {
+            setConversations &&
+              setConversations(prev => [
+                ...(prev || []),
+                apiResponse.response.data,
+              ]);
+          } else {
+            console.error(
+              'Failed to send message:',
+              apiResponse?.response?.message,
+            );
+          }
+        }
+      } else if (uploadedFiles.length > 0) {
+        for (let i = 0; i < uploadedFiles.length; i++) {
+          const file = uploadedFiles[i];
+          const payload = prepareMessagePayload({
+            text: file.caption || '',
+            files: [file],
+            senderId: userId,
+            receiverId,
+            replyTo: replyMessage?._id || replyMessage?.id || undefined,
+          })[0];
+          console.log('Sending file payload:', payload);
+          const apiResponse = await sendMessage({payload});
+          console.log('API RESPONSE', apiResponse);
+          if (apiResponse?.response?.success) {
+            setConversations &&
+              setConversations(prev => [
+                ...(prev || []),
+                apiResponse.response.data,
+              ]);
+          } else {
+            console.error(
+              'Failed to send file message:',
+              apiResponse?.response?.message,
+            );
+          }
         }
       }
       setMessage('');
       setSelectedFiles([]);
       setCaptions({});
       setActiveFileIdx(null);
-      if (replyMessage && onCancelReply) onCancelReply();
+      if (replyMessage && onCancelReply) {
+        onCancelReply();
+      }
     } catch (error) {
       setUploading(false);
       console.error('Error sending message:', error);

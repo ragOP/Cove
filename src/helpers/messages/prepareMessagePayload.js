@@ -5,11 +5,11 @@ export const prepareMessagePayload = ({
   files = [],
 }) => {
   if (files.length) {
-    // For now, only images, but can be extended for other types
     return files.map(file => ({
       receiverId,
       // senderId: userId,
-      content: file.url,
+      content: file.caption || '',
+      mediaUrl: file.url,
       type: file.fileType.startsWith('image') ? 'image' : 'file',
       meta: {
         originalName: file.originalName,
@@ -18,7 +18,6 @@ export const prepareMessagePayload = ({
       },
     }));
   }
-  // Text message
   return [
     {
       receiverId,

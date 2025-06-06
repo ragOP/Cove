@@ -6,6 +6,8 @@ import {styles} from '../../components/Messages/MessageItem';
 export function renderMessageContent(item, isSent) {
   const textStyle = isSent ? styles.sentText : styles.receivedText;
 
+  // console.log('Rendering message content:', item);
+
   switch (item.type) {
     case 'text':
       return <Text style={textStyle}>{item.content}</Text>;
@@ -13,10 +15,13 @@ export function renderMessageContent(item, isSent) {
       return (
         <View>
           <Image
-            source={{uri: item.content}}
+            source={{uri: item.mediaUrl}}
             style={styles.imageMessage}
             resizeMode="cover"
           />
+          {item.content && item.content.trim() !== '' && (
+            <Text style={textStyle}>{item.content}</Text>
+          )}
         </View>
       );
     case 'video':
