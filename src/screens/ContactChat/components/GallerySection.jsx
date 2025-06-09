@@ -3,7 +3,6 @@ import React, {useState} from 'react';
 import {
   View,
   FlatList,
-  Image,
   StyleSheet,
   Dimensions,
   TouchableOpacity,
@@ -13,10 +12,57 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import {getUserMedia} from '../../../apis/getUserMedia';
 import PrimaryLoader from '../../../components/loaders/PrimaryLoader';
+import CustomImage from '../../../components/Image/CustomImage';
+import ImagePlaceholder from '../../../components/Placeholder/ImagePlaceholder';
 
 const numColumns = 3;
 const {width} = Dimensions.get('window');
 const itemSize = (width - 32 - (numColumns - 1) * 6) / numColumns;
+
+// Move GalleryItem outside GallerySection to avoid unstable nested component
+const GalleryItem = ({item, onPress, styles}) => {
+  const [error, setError] = React.useState(false);
+  if (item.type === 'image') {
+    return (
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() => onPress?.(item)}
+        activeOpacity={0.85}>
+        {error ? (
+          <ImagePlaceholder style={styles.image} />
+        ) : (
+          <CustomImage
+            source={{uri: item.mediaUrl}}
+            style={styles.image}
+            onError={() => setError(true)}
+          />
+        )}
+      </TouchableOpacity>
+    );
+  }
+  // video
+  return (
+    <TouchableOpacity
+      style={styles.item}
+      onPress={() => onPress?.(item)}
+      activeOpacity={0.85}>
+      <View style={styles.videoThumb}>
+        {error ? (
+          <ImagePlaceholder style={styles.image} />
+        ) : (
+          <CustomImage
+            source={{uri: item.thumb}}
+            style={styles.image}
+            onError={() => setError(true)}
+          />
+        )}
+        <View style={styles.playIconWrap}>
+          <Icon name="play-circle" size={32} color="#fff" />
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 const GallerySection = ({onMediaPress, id}) => {
   const [params, setParams] = useState({
@@ -34,32 +80,6 @@ const GallerySection = ({onMediaPress, id}) => {
     queryFn: () => getUserMedia({id, params}),
     select: data => data?.response?.data || [],
   });
-
-  const renderItem = ({item}) => (
-    <TouchableOpacity
-      style={styles.item}
-      onPress={() => onMediaPress?.(item)}
-      activeOpacity={0.85}>
-      {item.type === 'image' ? (
-        <Image
-          source={{uri: item.url}}
-          style={styles.image}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={styles.videoThumb}>
-          <Image
-            source={{uri: item.thumb}}
-            style={styles.image}
-            resizeMode="cover"
-          />
-          <View style={styles.playIconWrap}>
-            <Icon name="play-circle" size={32} color="#fff" />
-          </View>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
 
   if (isLoadingMedia) {
     return (
@@ -89,11 +109,15 @@ const GallerySection = ({onMediaPress, id}) => {
     );
   }
 
+  console.log('Media List:', mediaList);
+
   return (
     <FlatList
       data={mediaList}
       keyExtractor={item => item.id}
-      renderItem={renderItem}
+      renderItem={({item}) => (
+        <GalleryItem item={item} onPress={onMediaPress} styles={styles} />
+      )}
       numColumns={numColumns}
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}

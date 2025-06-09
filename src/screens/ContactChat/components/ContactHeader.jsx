@@ -1,5 +1,5 @@
 import React from 'react';
-import {StyleSheet, View, TouchableOpacity} from 'react-native';
+import {StyleSheet, View, TouchableOpacity, Pressable} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import FeatherIcon from 'react-native-vector-icons/Feather';
@@ -7,11 +7,18 @@ import {Text, Menu} from 'react-native-paper';
 import {useNavigation} from '@react-navigation/native';
 import UserAvatar from '../../../components/CustomAvatar/UserAvatar';
 
-// Outlined white icons for menu
-const AccountOutlineIcon = props => <MaterialIcon name="account-outline" {...props} color="#fff" />;
-const BlockHelperIcon = props => <MaterialIcon name="block-helper" {...props} color="#fff" />;
-const AlertCircleOutlineIcon = props => <MaterialIcon name="alert-circle-outline" {...props} color="#fff" />;
-const MuteIcon = props => <MaterialIcon name="bell-off-outline" {...props} color="#fff" />;
+const AccountOutlineIconWhite = props => (
+  <MaterialIcon name="account-outline" {...props} color="#fff" />
+);
+const BlockHelperIconWhite = props => (
+  <MaterialIcon name="block-helper" {...props} color="#fff" />
+);
+const AlertCircleOutlineIconWhite = props => (
+  <MaterialIcon name="alert-circle-outline" {...props} color="#fff" />
+);
+const MuteIconWhite = props => (
+  <MaterialIcon name="bell-off-outline" {...props} color="#fff" />
+);
 
 const ContactHeader = ({
   name,
@@ -43,7 +50,8 @@ const ContactHeader = ({
   };
   const handleViewProfile = () => {
     // TODO: Implement view profile logic
-    closeMenu();
+    // navigation.navigate('Profile', ...); // Example navigation
+    setMenuVisible(false); // Ensure menu closes
   };
 
   return (
@@ -63,41 +71,58 @@ const ContactHeader = ({
         </View>
         <View style={styles.iconsContainer}>
           <TouchableOpacity onPress={handleCall} style={styles.iconBtn}>
-            <Icon name="call-outline" size={26} color="#fff" />
+            <Icon name="call-outline" size={26} color="#D28A8C" />
           </TouchableOpacity>
           <Menu
             visible={menuVisible}
             onDismiss={closeMenu}
             anchor={
-              <TouchableOpacity onPress={openMenu} style={styles.iconBtn}>
+              <Pressable
+                onPress={openMenu}
+                style={({pressed}) => [
+                  styles.iconBtn,
+                  pressed && {backgroundColor: 'rgba(210,138,140,0.13)'},
+                ]}
+                android_ripple={{color: '#D28A8C'}}>
                 <FeatherIcon name="more-horizontal" size={30} color="#fff" />
-              </TouchableOpacity>
+              </Pressable>
             }
-            contentStyle={styles.menuContent}
-          >
+            contentStyle={styles.menuContent}>
             <Menu.Item
               onPress={handleViewProfile}
               title="View Profile"
-              leadingIcon={AccountOutlineIcon}
+              leadingIcon={AccountOutlineIconWhite}
               titleStyle={styles.menuItemTitle}
+              style={styles.menuItem}
             />
             <Menu.Item
-              onPress={() => { /* TODO: Implement mute notifications */ closeMenu(); }}
+              onPress={() => {
+                closeMenu(); /* TODO: Implement mute notifications */
+              }}
               title="Mute Notifications"
-              leadingIcon={MuteIcon}
+              leadingIcon={MuteIconWhite}
               titleStyle={styles.menuItemTitle}
+              style={styles.menuItem}
             />
             <Menu.Item
-              onPress={handleBlock}
+              onPress={() => {
+                closeMenu();
+                handleBlock();
+              }}
               title="Block"
-              leadingIcon={BlockHelperIcon}
+              leadingIcon={BlockHelperIconWhite}
               titleStyle={styles.menuItemTitle}
+              style={styles.menuItem}
             />
             <Menu.Item
-              onPress={handleReport}
+              onPress={() => {
+                closeMenu();
+                handleReport();
+              }}
               title="Report"
-              leadingIcon={AlertCircleOutlineIcon}
+              leadingIcon={AlertCircleOutlineIconWhite}
               titleStyle={styles.menuItemTitle}
+              style={styles.menuItem}
             />
           </Menu>
         </View>
@@ -190,12 +215,38 @@ const styles = StyleSheet.create({
   avatarStyle: {
     backgroundColor: '#fff',
   },
+  iconBtn: {
+    padding: 8,
+    borderRadius: 20,
+    marginHorizontal: 2,
+  },
+  menuContent: {
+    backgroundColor: '#D28A8C',
+    borderRadius: 16,
+    minWidth: 210,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#232323',
+  },
+  menuItem: {
+    borderRadius: 12,
+    marginVertical: 2,
+    marginHorizontal: 4,
+    backgroundColor: 'transparent',
+  },
+  menuItemTitle: {
+    color: '#fff',
+    fontWeight: '500',
+    fontSize: 16,
+    letterSpacing: 0.1,
+  },
   nameText: {color: '#fff', fontSize: 18, fontWeight: 'bold'},
   usernameText: {
-    color: '#fff',
+    color: '#bbb',
     fontSize: 14,
   },
-
   tabToggleRow: {
     flexDirection: 'row',
     backgroundColor: '#000',
@@ -227,19 +278,5 @@ const styles = StyleSheet.create({
   },
   tabIconMargin: {
     marginRight: 6,
-  },
-  iconBtn: {
-    padding: 6,
-    marginHorizontal: 2,
-  },
-  menuContent: {
-    backgroundColor: '#232323',
-    borderRadius: 12,
-    minWidth: 210,
-  },
-  menuItemTitle: {
-    color: '#fff',
-    fontWeight: '500',
-    fontSize: 16,
   },
 });

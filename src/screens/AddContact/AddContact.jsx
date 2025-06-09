@@ -16,7 +16,6 @@ import {
   Avatar,
   IconButton,
   Button,
-  ActivityIndicator,
 } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -29,6 +28,7 @@ import {getInitials} from '../../utils/name/getInitials';
 import {sendFriendRequest} from '../../apis/sendFriendRequest';
 import {useDispatch} from 'react-redux';
 import {showSnackbar} from '../../redux/slice/snackbarSlice';
+import PrimaryLoader from '../../components/loaders/PrimaryLoader';
 
 const SUGGESTED_USERS = [
   {
@@ -523,7 +523,7 @@ const AddContact = () => {
             <Text style={styles.sectionTitle}>Search Results</Text>
             {isSearchingUsers || isRefetching ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color="#fff" />
+                <PrimaryLoader size={20} />
                 <Text style={styles.loadingText}>Searching...</Text>
               </View>
             ) : searchedUsers.length === 0 ? (
@@ -562,7 +562,7 @@ const AddContact = () => {
           </View>
           {isLoadingSuggested || isRefetchingSuggested ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#fff" />
+              <PrimaryLoader />
               <Text style={styles.loadingText}>Loading suggestions...</Text>
             </View>
           ) : filteredSuggested.length === 0 ? (
@@ -618,7 +618,7 @@ const AddContact = () => {
           {contactsPermission === 'granted' &&
             (contactsLoading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color="#fff" />
+                <PrimaryLoader />
                 <Text style={styles.loadingText}>Loading contacts...</Text>
               </View>
             ) : filteredContacts.length === 0 ? (

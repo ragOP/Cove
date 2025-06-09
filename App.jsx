@@ -44,7 +44,7 @@ const AuthStack = () => (
 
 const RootNavigator = () => {
   const token = useSelector(state => state.auth.token);
-console.log('Token from Redux:', token);
+
   return (
     <NavigationContainer>
       {token ? <AppStack /> : <AuthStack />}

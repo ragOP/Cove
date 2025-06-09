@@ -1,5 +1,5 @@
 import {StyleSheet, Text, TouchableOpacity} from 'react-native';
-import {ActivityIndicator} from 'react-native-paper';
+import PrimaryLoader from '../loaders/PrimaryLoader';
 
 export const START = 'start';
 export const END = 'end';
@@ -19,13 +19,9 @@ const CustomButton = ({
       onPress={onClick}
       disabled={disabled}
       accessibilityLabel={title}>
-      {isLoading && loadingPlacement === START && (
-        <ActivityIndicator size="small" color="#fff" />
-      )}
+      {isLoading && loadingPlacement === START && <PrimaryLoader size={16} />}
       <Text style={[styles.buttonText, textStyle]}>{title}</Text>
-      {isLoading && loadingPlacement === END && (
-        <ActivityIndicator size="small" color="#fff" />
-      )}
+      {isLoading && loadingPlacement === END && <PrimaryLoader size={16} />}
     </TouchableOpacity>
   );
 };

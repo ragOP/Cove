@@ -1,16 +1,24 @@
 import React from 'react';
 import {Text, Image, View} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {styles} from '../../components/Messages/MessageItem';
+import {styles} from './MessageItem';
+import ChatText from './ChatText';
 
-export function renderMessageContent(item, isSent) {
+
+// Inline styles for ChatText
+const chatTextStyles = {
+  videoIcon: { marginBottom: 4 },
+};
+
+// Custom Text wrapper for chat: handles links, emails, phones, mentions, hashtags, emojis, etc.
+function RenderMessageContent({ item, isSent }) {
   const textStyle = isSent ? styles.sentText : styles.receivedText;
 
   // console.log('Rendering message content:', item);
 
   switch (item.type) {
     case 'text':
-      return <Text style={textStyle}>{item.content}</Text>;
+      return <ChatText text={item.content} style={textStyle} />;
     case 'image':
       return (
         <View>
@@ -20,7 +28,7 @@ export function renderMessageContent(item, isSent) {
             resizeMode="cover"
           />
           {item.content && item.content.trim() !== '' && (
-            <Text style={textStyle}>{item.content}</Text>
+            <ChatText text={item.content} style={textStyle} />
           )}
         </View>
       );
@@ -31,7 +39,7 @@ export function renderMessageContent(item, isSent) {
             name="videocam"
             size={32}
             color="#fff"
-            style={{marginBottom: 4}}
+            style={chatTextStyles.videoIcon}
           />
           <Text style={textStyle}>Video message</Text>
         </View>
@@ -40,3 +48,5 @@ export function renderMessageContent(item, isSent) {
       return <Text style={textStyle}>Unsupported message type</Text>;
   }
 }
+
+export default RenderMessageContent;

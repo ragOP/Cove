@@ -4,7 +4,6 @@ import {
   View,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -14,9 +13,10 @@ import {useSelector} from 'react-redux';
 import MessageItem from '../../../components/Messages/MessageItem';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {useSharedValue, useAnimatedStyle, withTiming, runOnJS} from 'react-native-reanimated';
+import useChatSocket from '../../../hooks/useChatSocket';
+import PrimaryLoader from '../../../components/loaders/PrimaryLoader';
 
 const SCROLL_TO_BOTTOM_THRESHOLD = 10;
-const THEME_COLOR = '#D28A8C';
 
 function ChatMessageRow({
   item,
@@ -138,10 +138,29 @@ const ChatsContainer = ({conversationId, conversations, setConversations, onRepl
     setRefreshing(false);
   };
 
+  // --- SOCKET HOOK INTEGRATION ---
+  useChatSocket({
+    conversationId,
+    onMessageReceived: (message) => {
+      // Add new message to conversations
+      setConversations && setConversations(prev => [...(prev || []), message]);
+    },
+    onMessageUpdated: (updatedMsg) => {
+      // Update message in conversations
+      setConversations && setConversations(prev => prev.map(msg =>
+        (msg._id === updatedMsg._id ? { ...msg, ...updatedMsg } : msg)
+      ));
+    },
+    onMessageDeleted: (deletedId) => {
+      // Remove message from conversations
+      setConversations && setConversations(prev => prev.filter(msg => msg._id !== deletedId));
+    },
+  });
+
   if (isLoading) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#fff" />
+        <PrimaryLoader />
       </View>
     );
   }
@@ -167,7 +186,13 @@ const ChatsContainer = ({conversationId, conversations, setConversations, onRepl
               showDateLabel={showDateLabel}
               userId={userId}
               onReply={onReply}
-              onSelectMessage={onSelectMessage}
+              onSelectMessage={item => {
+                if (selectedMessage && selectedMessage._id === item._id) {
+                  onSelectMessage(null); 
+                } else {
+                  onSelectMessage(item);
+                }
+              }}
               selected={isSelected}
             />
           );

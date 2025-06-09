@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
-  ActivityIndicator,
   Text,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -15,6 +14,7 @@ import {useSelector} from 'react-redux';
 import {prepareMessagePayload} from '../../../helpers/messages/prepareMessagePayload';
 import {selectFiles} from '../../../helpers/files/selectFiles';
 import {uploadFiles} from '../../../helpers/files/uploadFiles';
+import PrimaryLoader from '../../../components/loaders/PrimaryLoader';
 
 const SendChat = ({
   conversationId,
@@ -32,8 +32,6 @@ const SendChat = ({
   const [uploading, setUploading] = useState(false);
   const [captions, setCaptions] = useState({});
   const [activeFileIdx, setActiveFileIdx] = useState(null);
-
-  console.log('CONVERSATIONS', conversations);
 
   const handleSelectFiles = async () => {
     try {
@@ -100,8 +98,6 @@ const SendChat = ({
       setUploading(false);
 
       if (selectedFiles.length === 0 && message.trim()) {
-        // Only text message
-
         const payloads = prepareMessagePayload({
           text: message,
           files: [],
@@ -135,9 +131,9 @@ const SendChat = ({
             receiverId,
             replyTo: replyMessage?._id || replyMessage?.id || undefined,
           })[0];
-          console.log('Sending file payload:', payload);
+
           const apiResponse = await sendMessage({payload});
-          console.log('API RESPONSE', apiResponse);
+
           if (apiResponse?.response?.success) {
             setConversations &&
               setConversations(prev => [
@@ -288,7 +284,7 @@ const SendChat = ({
           onPress={handleSend}
           disabled={isSendingMessage || uploading}>
           {isSendingMessage || uploading ? (
-            <ActivityIndicator color="#fff" size={20} />
+            <PrimaryLoader size={20} />
           ) : (
             <Icon name="send" size={24} color="#fff" />
           )}

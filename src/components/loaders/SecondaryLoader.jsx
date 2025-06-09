@@ -1,10 +1,10 @@
 import React from 'react';
 import {View, StyleSheet} from 'react-native';
-import {ActivityIndicator} from 'react-native-paper';
+import PrimaryLoader from '../loaders/PrimaryLoader';
 
 const SecondaryLoader = ({size = 'small', style = {}}) => (
   <View style={[styles.container, style]}>
-    <ActivityIndicator size={size} color="#fff" />
+    <PrimaryLoader size={size} />
   </View>
 );
 

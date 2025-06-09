@@ -2,7 +2,7 @@ import {useEffect, useRef} from 'react';
 import {Animated, Text, View, StyleSheet} from 'react-native';
 import {formatDateLabel} from '../../utils/date/formatDateLabel';
 import {formatTime} from '../../utils/time/formatTime';
-import {renderMessageContent} from '../../helpers/messages/renderMessageContent';
+import RenderMessageContent from './RenderMessageContent';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 const MessageItem = ({
@@ -47,7 +47,7 @@ const MessageItem = ({
           styles.messageContainer,
           isSent ? styles.sentMessage : styles.receivedMessage,
         ]}>
-        {renderMessageContent(item, isSent)}
+        <RenderMessageContent item={item} isSent={isSent} />
         <View style={styles.timeStatusRow}>
           <Text style={styles.timeText}>{formatTime(item.timestamp)}</Text>
           {isSent && <TickIcon status={item.status} anim={fadeAnim} />}
@@ -132,7 +132,7 @@ export const styles = StyleSheet.create({
     marginRight: 12,
   },
   imageMessage: {
-    width: 180,
+    width: '100%',
     height: 180,
     borderRadius: 12,
     marginBottom: 4,
