@@ -3,15 +3,15 @@ import {Text, Image, View} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {styles} from './MessageItem';
 import ChatText from './ChatText';
-
+import CustomImage from '../Image/CustomImage';
 
 // Inline styles for ChatText
 const chatTextStyles = {
-  videoIcon: { marginBottom: 4 },
+  videoIcon: {marginBottom: 4},
 };
 
 // Custom Text wrapper for chat: handles links, emails, phones, mentions, hashtags, emojis, etc.
-function RenderMessageContent({ item, isSent }) {
+function RenderMessageContent({item, isSent}) {
   const textStyle = isSent ? styles.sentText : styles.receivedText;
 
   // console.log('Rendering message content:', item);
@@ -22,9 +22,10 @@ function RenderMessageContent({ item, isSent }) {
     case 'image':
       return (
         <View>
-          <Image
+          <CustomImage
             source={{uri: item.mediaUrl}}
             style={styles.imageMessage}
+            showPreview={true}
             resizeMode="cover"
           />
           {item.content && item.content.trim() !== '' && (

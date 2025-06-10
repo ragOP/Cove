@@ -146,7 +146,7 @@ const ChatsContainer = ({
   };
 
   const scrollToBottom = () => {
-    if (flatListRef.current) {
+    if (flatListRef?.current) {
       flatListRef.current.scrollToEnd({animated: true});
     }
   };
@@ -162,7 +162,7 @@ const ChatsContainer = ({
       setConversations && setConversations(prev => [...(prev || []), message]);
     },
     onTypingStatusUpdate: status => {
-      setIsTyping(!!status?.isTyping);
+      setIsTyping(status);
     },
   });
 
@@ -180,8 +180,11 @@ const ChatsContainer = ({
         ref={flatListRef}
         data={
           isTyping
-            ? [...conversations, {_id: 'typing-indicator', isTyping: true}]
-            : conversations
+            ? [
+                ...(conversations || []),
+                {_id: 'typing-indicator', isTyping: true},
+              ]
+            : conversations || []
         }
         keyExtractor={item => item._id || item.localId || 'typing-indicator'}
         renderItem={({item, index}) => {
@@ -221,7 +224,7 @@ const ChatsContainer = ({
         contentContainerStyle={styles.chatContainer}
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => {
-          if (flatListRef.current && conversations?.length > 0) {
+          if (flatListRef?.current && conversations?.length > 0) {
             flatListRef.current.scrollToEnd({animated: false});
           }
         }}

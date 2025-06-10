@@ -54,6 +54,7 @@ const GalleryItem = ({item, onPress, styles}) => {
             source={{uri: item.thumb}}
             style={styles.image}
             onError={() => setError(true)}
+            
           />
         )}
         <View style={styles.playIconWrap}>

@@ -19,7 +19,8 @@ import SelectedMessageBar from './components/SelectedMessageBar';
 import Clipboard from '@react-native-clipboard/clipboard';
 import GallerySection from './components/GallerySection';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import useChatSocket from './components/ChatsContainer';
+import useChatSocket from '../../hooks/useChatSocket';
+import { dedupeMessages } from '../../utils/messages/dedupeMessages';
 
 const ContactChat = () => {
   const route = useRoute();
@@ -36,13 +37,9 @@ const ContactChat = () => {
   const [tab, setTab] = useState('chat');
   const [previewedMedia, setPreviewedMedia] = useState(null);
 
-  // Add typing indicator socket logic
   const {emitTypingStatus} = useChatSocket({
     onMessageReceived: message => {
-      setConversations(prev => [...(prev || []), message]);
-    },
-    onTypingStatusUpdate: status => {
-      // Optionally, you can handle a global typing indicator here if needed
+      setConversations(prev => dedupeMessages([...(prev || []), message]));
     },
   });
 
@@ -120,7 +117,7 @@ const ContactChat = () => {
                   style={styles.previewOverlay}
                   onPress={() => setPreviewedMedia(null)}>
                   <Image
-                    source={{uri: previewedMedia.url}}
+                    source={{uri: previewedMedia.mediaUrl}}
                     style={styles.fullPreviewImage}
                     resizeMode="contain"
                   />

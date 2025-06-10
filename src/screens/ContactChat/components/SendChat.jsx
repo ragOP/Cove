@@ -23,7 +23,7 @@ const SendChat = ({
   receiverId,
   replyMessage,
   onCancelReply,
-  emitTypingStatus, // <-- receive as prop
+  emitTypingStatus,
 }) => {
   const userId = useSelector(state => state.auth.user?.id);
 
@@ -267,8 +267,9 @@ const SendChat = ({
       }
       onChangeText={text => {
         handleCaptionChange(text);
+        console.log(emitTypingStatus)
         if (emitTypingStatus) {
-          emitTypingStatus(!!text && text.trim().length > 0);
+          emitTypingStatus(!!text && text.trim().length > 0, receiverId);
         }
       }}
       selectionColor="#fff"

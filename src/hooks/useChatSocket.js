@@ -3,7 +3,10 @@ import {useSelector} from 'react-redux';
 import {selectToken} from '../redux/slice/authSlice';
 import useSocket from './useSocket';
 
-export default function useChatSocket({onMessageReceived, onTypingStatusUpdate}) {
+export default function useChatSocket({
+  onMessageReceived,
+  onTypingStatusUpdate,
+}) {
   const token = useSelector(selectToken);
   const socket = useSocket({token});
 
@@ -17,8 +20,9 @@ export default function useChatSocket({onMessageReceived, onTypingStatusUpdate})
       console.log('[SOCKET CONNECTED]', socket.id);
       socket.emit('get_my_info');
       socket.on('get_my_info', handleGetMyInfo);
-      socket.on('private_message', handlePrivateMessage);
+    //   socket.on('private_message', handlePrivateMessage);
       socket.on('typing_status_update', handleTypingStatusUpdate);
+      socket.on('new_message', handleNewMessage);
       socket.on('connect_error', handleError);
       socket.on('error', handleError);
       socket.on('disconnect', handleDisconnect);
@@ -32,14 +36,14 @@ export default function useChatSocket({onMessageReceived, onTypingStatusUpdate})
       });
     };
 
-    const handlePrivateMessage = message => {
+    const handleNewMessage = message => {
       console.log('[PRIVATE MESSAGE]', message);
       onMessageReceived?.(message);
     };
 
-    const handleTypingStatusUpdate = status => {
-      console.log('[TYPING STATUS UPDATE]', status);
-      onTypingStatusUpdate?.(status);
+    const handleTypingStatusUpdate = data => {
+      console.log('[TYPING STATUS UPDATE]', data);
+      onTypingStatusUpdate?.(data?.isTyping);
     };
 
     const handleError = err => {
@@ -60,7 +64,7 @@ export default function useChatSocket({onMessageReceived, onTypingStatusUpdate})
     return () => {
       socket.off('connect', handleConnect);
       socket.off('get_my_info', handleGetMyInfo);
-      socket.off('private_message', handlePrivateMessage);
+      socket.off('private_message', handleNewMessage);
       socket.off('typing_status_update', handleTypingStatusUpdate);
       socket.off('connect_error', handleError);
       socket.off('error', handleError);
@@ -68,10 +72,10 @@ export default function useChatSocket({onMessageReceived, onTypingStatusUpdate})
     };
   }, [socket, token, onMessageReceived, onTypingStatusUpdate]);
 
-  // Add emitTypingStatus method for sending typing events
-  const emitTypingStatus = isTyping => {
+  const emitTypingStatus = (isTyping, receiverId) => {
+    console.log('[EMIT TYPING STATUS]', {isTyping, receiverId});
     if (socket && socket.connected) {
-      socket.emit('typing_status', {isTyping});
+      socket.emit('typing_status', {isTyping, receiverId});
     }
   };
 

@@ -132,7 +132,7 @@ export const styles = StyleSheet.create({
     marginRight: 12,
   },
   imageMessage: {
-    width: '100%',
+    width: 240,
     height: 180,
     borderRadius: 12,
     marginBottom: 4,
