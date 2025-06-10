@@ -1,5 +1,5 @@
 import {StyleSheet, Text, TouchableOpacity} from 'react-native';
-import PrimaryLoader from '../loaders/PrimaryLoader';
+import PrimaryLoader from '../Loaders/PrimaryLoader';
 
 export const START = 'start';
 export const END = 'end';

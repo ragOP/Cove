@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {getUserMedia} from '../../../apis/getUserMedia';
-import PrimaryLoader from '../../../components/loaders/PrimaryLoader';
+import PrimaryLoader from '../../../components/Loaders/PrimaryLoader';
 import CustomImage from '../../../components/Image/CustomImage';
 import ImagePlaceholder from '../../../components/Placeholder/ImagePlaceholder';
 

@@ -14,7 +14,7 @@ import {useSelector} from 'react-redux';
 import {prepareMessagePayload} from '../../../helpers/messages/prepareMessagePayload';
 import {selectFiles} from '../../../helpers/files/selectFiles';
 import {uploadFiles} from '../../../helpers/files/uploadFiles';
-import PrimaryLoader from '../../../components/loaders/PrimaryLoader';
+import PrimaryLoader from '../../../components/Loaders/PrimaryLoader';
 
 const SendChat = ({
   conversationId,
@@ -23,6 +23,7 @@ const SendChat = ({
   receiverId,
   replyMessage,
   onCancelReply,
+  emitTypingStatus, // <-- receive as prop
 }) => {
   const userId = useSelector(state => state.auth.user?.id);
 
@@ -264,7 +265,12 @@ const SendChat = ({
           ? captions[activeFileIdx] || ''
           : message
       }
-      onChangeText={handleCaptionChange}
+      onChangeText={text => {
+        handleCaptionChange(text);
+        if (emitTypingStatus) {
+          emitTypingStatus(!!text && text.trim().length > 0);
+        }
+      }}
       selectionColor="#fff"
       returnKeyType="send"
       autoFocus={false}

@@ -5,16 +5,23 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  Text,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useQuery} from '@tanstack/react-query';
 import {getConversations} from '../../../apis/getConversations';
 import {useSelector} from 'react-redux';
 import MessageItem from '../../../components/Messages/MessageItem';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, {useSharedValue, useAnimatedStyle, withTiming, runOnJS} from 'react-native-reanimated';
+import {Gesture, GestureDetector} from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  runOnJS,
+} from 'react-native-reanimated';
 import useChatSocket from '../../../hooks/useChatSocket';
-import PrimaryLoader from '../../../components/loaders/PrimaryLoader';
+import PrimaryLoader from '../../../components/Loaders/PrimaryLoader';
+import BlinkingDots from '../../../components/Loaders/BlinkingDots';
 
 const SCROLL_TO_BOTTOM_THRESHOLD = 10;
 
@@ -32,7 +39,8 @@ function ChatMessageRow({
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
-      backgroundColor: held.value || selected ? 'rgba(210,138,140,0.13)' : 'transparent',
+      backgroundColor:
+        held.value || selected ? 'rgba(210,138,140,0.13)' : 'transparent',
       transform: [{translateX: translateX.value}],
     };
   });
@@ -45,7 +53,10 @@ function ChatMessageRow({
       }
     })
     .onEnd(e => {
-      if (e.translationX > 60 && Math.abs(e.translationX) > Math.abs(e.translationY)) {
+      if (
+        e.translationX > 60 &&
+        Math.abs(e.translationX) > Math.abs(e.translationY)
+      ) {
         translateX.value = withTiming(0, {duration: 150});
         onReply && runOnJS(onReply)(item);
       } else {
@@ -85,10 +96,18 @@ function ChatMessageRow({
   );
 }
 
-const ChatsContainer = ({conversationId, conversations, setConversations, onReply, onSelectMessage, selectedMessage}) => {
+const ChatsContainer = ({
+  conversationId,
+  conversations,
+  setConversations,
+  onReply,
+  onSelectMessage,
+  selectedMessage,
+}) => {
   const flatListRef = useRef(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const userId = useSelector(state => state.auth.user?.id);
 
   const {isLoading, refetch} = useQuery({
@@ -139,20 +158,11 @@ const ChatsContainer = ({conversationId, conversations, setConversations, onRepl
   };
 
   useChatSocket({
-    conversationId,
-    onMessageReceived: (message) => {
-      console.log('New message received:', message);
+    onMessageReceived: message => {
       setConversations && setConversations(prev => [...(prev || []), message]);
     },
-    onMessageUpdated: (updatedMsg) => {
-      // Update message in conversations
-      setConversations && setConversations(prev => prev.map(msg =>
-        (msg._id === updatedMsg._id ? { ...msg, ...updatedMsg } : msg)
-      ));
-    },
-    onMessageDeleted: (deletedId) => {
-      // Remove message from conversations
-      setConversations && setConversations(prev => prev.filter(msg => msg._id !== deletedId));
+    onTypingStatusUpdate: status => {
+      setIsTyping(!!status?.isTyping);
     },
   });
 
@@ -168,16 +178,28 @@ const ChatsContainer = ({conversationId, conversations, setConversations, onRepl
     <View style={styles.container}>
       <FlatList
         ref={flatListRef}
-        data={conversations}
-        keyExtractor={item => item._id || item.localId}
+        data={
+          isTyping
+            ? [...conversations, {_id: 'typing-indicator', isTyping: true}]
+            : conversations
+        }
+        keyExtractor={item => item._id || item.localId || 'typing-indicator'}
         renderItem={({item, index}) => {
+          if (item.isTyping) {
+            return (
+              <View style={[styles.fullRow, styles.alignStart]}>
+                <BlinkingDots isSender={false} />
+              </View>
+            );
+          }
           const currentDate = new Date(item.timestamp).toDateString();
           const previousDate =
             index > 0
               ? new Date(conversations[index - 1].timestamp).toDateString()
               : null;
           const showDateLabel = index === 0 || currentDate !== previousDate;
-          const isSelected = selectedMessage && (item._id === selectedMessage._id);
+          const isSelected =
+            selectedMessage && item._id === selectedMessage._id;
           return (
             <ChatMessageRow
               item={item}
@@ -185,11 +207,11 @@ const ChatsContainer = ({conversationId, conversations, setConversations, onRepl
               showDateLabel={showDateLabel}
               userId={userId}
               onReply={onReply}
-              onSelectMessage={item => {
-                if (selectedMessage && selectedMessage._id === item._id) {
-                  onSelectMessage(null); 
+              onSelectMessage={msg => {
+                if (selectedMessage && selectedMessage._id === msg._id) {
+                  onSelectMessage(null);
                 } else {
-                  onSelectMessage(item);
+                  onSelectMessage(msg);
                 }
               }}
               selected={isSelected}
@@ -251,5 +273,24 @@ const styles = StyleSheet.create({
   fullRow: {
     width: '100%',
     paddingHorizontal: 0,
+  },
+  typingIndicatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(56,56,56,0.85)',
+    borderRadius: 12,
+    marginBottom: 4,
+    alignSelf: 'flex-start',
+  },
+  typingText: {
+    color: '#fff',
+    fontSize: 14,
+    fontStyle: 'italic',
+    marginLeft: 8,
+  },
+  alignStart: {
+    alignItems: 'flex-start',
   },
 });

@@ -19,6 +19,7 @@ import SelectedMessageBar from './components/SelectedMessageBar';
 import Clipboard from '@react-native-clipboard/clipboard';
 import GallerySection from './components/GallerySection';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import useChatSocket from './components/ChatsContainer';
 
 const ContactChat = () => {
   const route = useRoute();
@@ -34,6 +35,16 @@ const ContactChat = () => {
   const [replyMessage, setReplyMessage] = useState(null);
   const [tab, setTab] = useState('chat');
   const [previewedMedia, setPreviewedMedia] = useState(null);
+
+  // Add typing indicator socket logic
+  const {emitTypingStatus} = useChatSocket({
+    onMessageReceived: message => {
+      setConversations(prev => [...(prev || []), message]);
+    },
+    onTypingStatusUpdate: status => {
+      // Optionally, you can handle a global typing indicator here if needed
+    },
+  });
 
   const handleSelectMessage = msg => setSelectedMessage(msg);
   const handleClearSelected = () => setSelectedMessage(null);
@@ -89,6 +100,7 @@ const ContactChat = () => {
               receiverId={contactDetails._id}
               replyMessage={replyMessage}
               onCancelReply={() => setReplyMessage(null)}
+              emitTypingStatus={emitTypingStatus}
             />
           </>
         ) : (

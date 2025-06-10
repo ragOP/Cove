@@ -28,7 +28,7 @@ import {getInitials} from '../../utils/name/getInitials';
 import {sendFriendRequest} from '../../apis/sendFriendRequest';
 import {useDispatch} from 'react-redux';
 import {showSnackbar} from '../../redux/slice/snackbarSlice';
-import PrimaryLoader from '../../components/loaders/PrimaryLoader';
+import PrimaryLoader from '../../components/Loaders/PrimaryLoader';
 
 const SUGGESTED_USERS = [
   {
