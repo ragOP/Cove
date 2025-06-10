@@ -138,11 +138,10 @@ const ChatsContainer = ({conversationId, conversations, setConversations, onRepl
     setRefreshing(false);
   };
 
-  // --- SOCKET HOOK INTEGRATION ---
   useChatSocket({
     conversationId,
     onMessageReceived: (message) => {
-      // Add new message to conversations
+      console.log('New message received:', message);
       setConversations && setConversations(prev => [...(prev || []), message]);
     },
     onMessageUpdated: (updatedMsg) => {

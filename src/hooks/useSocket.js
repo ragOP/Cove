@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
+import {useEffect, useRef} from 'react';
 import io from 'socket.io-client';
+import { BACKEND_URL } from '../apis/backendUrl';
 
-// TEMP SOCKET URL (replace with actual in production)
-const SOCKET_URL = 'https://temp-chat-socket.example.com';
+const SOCKET_URL =  BACKEND_URL;
 
 /**
  * useSocket - Scalable, global socket hook for multiple namespaces/types
@@ -16,8 +16,8 @@ const SOCKET_URL = 'https://temp-chat-socket.example.com';
  * @returns {object} socket instance (always stable)
  */
 export default function useSocket({
-  namespace = '',
   options = {},
+  token,
   onConnect,
   onDisconnect,
   onError,
@@ -31,19 +31,26 @@ export default function useSocket({
     }
 
     // Connect to socket with namespace
-    const socket = io(`${SOCKET_URL}${namespace}`, {
+    const socket = io(`${SOCKET_URL}`, {
       transports: ['websocket'],
       reconnection: true,
       reconnectionAttempts: 5,
       autoConnect: true,
+      auth: {token},
       ...options,
     });
     socketRef.current = socket;
 
     // Standard event listeners
-    if (onConnect) { socket.on('connect', onConnect); }
-    if (onDisconnect) { socket.on('disconnect', onDisconnect); }
-    if (onError) { socket.on('error', onError); }
+    if (onConnect) {
+      socket.on('connect', onConnect);
+    }
+    if (onDisconnect) {
+      socket.on('disconnect', onDisconnect);
+    }
+    if (onError) {
+      socket.on('error', onError);
+    }
 
     return () => {
       if (socketRef.current) {
@@ -52,7 +59,7 @@ export default function useSocket({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [namespace, JSON.stringify(options)]);
+  }, [token, JSON.stringify(options)]);
 
   return socketRef.current;
 }

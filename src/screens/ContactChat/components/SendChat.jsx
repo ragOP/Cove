@@ -131,8 +131,10 @@ const SendChat = ({
             receiverId,
             replyTo: replyMessage?._id || replyMessage?.id || undefined,
           })[0];
-
+          console.log('Sending payload:', payload);
           const apiResponse = await sendMessage({payload});
+
+          console.log('API response:', apiResponse);
 
           if (apiResponse?.response?.success) {
             setConversations &&

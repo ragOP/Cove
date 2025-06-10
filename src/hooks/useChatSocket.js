@@ -1,65 +1,62 @@
-import { useEffect, useRef } from 'react';
-import io from 'socket.io-client';
+import {useEffect} from 'react';
+import {useSelector} from 'react-redux';
+import {selectToken} from '../redux/slice/authSlice';
+import useSocket from './useSocket';
 
-// TEMP SOCKET URL (replace with actual in production)
-const SOCKET_URL = 'https://temp-chat-socket.example.com';
-
-/**
- * useChatSocket - React hook for managing chat socket connection and events
- * @param {string} conversationId - Current conversation ID
- * @param {function} onMessageReceived - Callback for new message
- * @param {function} onMessageUpdated - Callback for message update (optional)
- * @param {function} onMessageDeleted - Callback for message delete (optional)
- * @returns {object} socket instance (for advanced usage)
- */
-export default function useChatSocket({
-  conversationId,
-  onMessageReceived,
-  onMessageUpdated,
-  onMessageDeleted,
-}) {
-  const socketRef = useRef(null);
+export default function useChatSocket({onMessageReceived}) {
+  const token = useSelector(selectToken);
+  const socket = useSocket({token});
 
   useEffect(() => {
-    // Connect to socket
-    socketRef.current = io(SOCKET_URL, {
-      transports: ['websocket'],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      autoConnect: true,
-    });
+    if (!socket || !token) return;
 
-    // Join conversation room
-    if (conversationId) {
-      socketRef.current.emit('join_conversation', { conversationId });
+    const handleUserInfo = data => {
+      console.log('[USER INFO]', data);
+      socket.emit('user_info', {
+        userId: data.user._id,
+        socketId: socket.id,
+        isOnline: true,
+      });
+    };
+
+    const handlePrivateMessage = message => {
+      console.log('[PRIVATE MESSAGE]', message);
+      onMessageReceived?.(message);
+    };
+
+    const handleError = err => {
+      console.error('[SOCKET ERROR]', err);
+    };
+
+    const handleDisconnect = reason => {
+      console.warn('[SOCKET DISCONNECT]', reason);
+    };
+
+    const handleConnect = () => {
+      console.log('[SOCKET CONNECTED]', socket.id);
+      socket.emit('get_my_info');
+    };
+
+    socket.on('user_info', handleUserInfo);
+    socket.on('new_message', handlePrivateMessage);
+    socket.on('connect_error', handleError);
+    socket.on('error', handleError);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('connect', handleConnect);
+
+    if (socket.connected) {
+      handleConnect();
     }
 
-    // Listen for new messages
-    socketRef.current.on('new_message', (message) => {
-      onMessageReceived && onMessageReceived(message);
-    });
-
-    // Listen for message updates (edit, status, etc)
-    socketRef.current.on('update_message', (message) => {
-      onMessageUpdated && onMessageUpdated(message);
-    });
-
-    // Listen for message deletion
-    socketRef.current.on('delete_message', (messageId) => {
-      onMessageDeleted && onMessageDeleted(messageId);
-    });
-
-    // Cleanup on unmount or conversation change
     return () => {
-      if (socketRef.current) {
-        if (conversationId) {
-          socketRef.current.emit('leave_conversation', { conversationId });
-        }
-        socketRef.current.disconnect();
-      }
+      socket.off('connect', handleConnect);
+      socket.off('user_info', handleUserInfo);
+      socket.off('private_message', handlePrivateMessage);
+      socket.off('connect_error', handleError);
+      socket.off('error', handleError);
+      socket.off('disconnect', handleDisconnect);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId]);
+  }, [socket, token, onMessageReceived]);
 
-  return socketRef.current;
+  return socket;
 }
