@@ -20,7 +20,7 @@ export default function useChatSocket({
       console.log('[SOCKET CONNECTED]', socket.id);
       socket.emit('get_my_info');
       socket.on('get_my_info', handleGetMyInfo);
-    //   socket.on('private_message', handlePrivateMessage);
+      //   socket.on('private_message', handlePrivateMessage);
       socket.on('typing_status_update', handleTypingStatusUpdate);
       socket.on('new_message', handleNewMessage);
       socket.on('connect_error', handleError);
@@ -64,7 +64,6 @@ export default function useChatSocket({
     return () => {
       socket.off('connect', handleConnect);
       socket.off('get_my_info', handleGetMyInfo);
-      socket.off('private_message', handleNewMessage);
       socket.off('typing_status_update', handleTypingStatusUpdate);
       socket.off('connect_error', handleError);
       socket.off('error', handleError);

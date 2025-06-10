@@ -15,6 +15,7 @@ import {prepareMessagePayload} from '../../../helpers/messages/prepareMessagePay
 import {selectFiles} from '../../../helpers/files/selectFiles';
 import {uploadFiles} from '../../../helpers/files/uploadFiles';
 import PrimaryLoader from '../../../components/Loaders/PrimaryLoader';
+import {dedupeMessages} from '../../../utils/messages/dedupeMessages';
 
 const SendChat = ({
   conversationId,
@@ -111,10 +112,9 @@ const SendChat = ({
           const apiResponse = await sendMessage({payload});
           if (apiResponse?.response?.success) {
             setConversations &&
-              setConversations(prev => [
-                ...(prev || []),
-                apiResponse.response.data,
-              ]);
+              setConversations(prev =>
+                dedupeMessages([...(prev || []), apiResponse.response.data]),
+              );
           } else {
             console.error(
               'Failed to send message:',
@@ -139,10 +139,9 @@ const SendChat = ({
 
           if (apiResponse?.response?.success) {
             setConversations &&
-              setConversations(prev => [
-                ...(prev || []),
-                apiResponse.response.data,
-              ]);
+              setConversations(prev =>
+                dedupeMessages([...(prev || []), apiResponse.response.data]),
+              );
           } else {
             console.error(
               'Failed to send file message:',
@@ -267,7 +266,6 @@ const SendChat = ({
       }
       onChangeText={text => {
         handleCaptionChange(text);
-        console.log(emitTypingStatus)
         if (emitTypingStatus) {
           emitTypingStatus(!!text && text.trim().length > 0, receiverId);
         }

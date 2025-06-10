@@ -33,6 +33,20 @@ function RenderMessageContent({item, isSent}) {
           )}
         </View>
       );
+    case 'text-image':
+      return (
+        <View>
+          <CustomImage
+            source={{uri: item.mediaUrl}}
+            style={styles.imageMessage}
+            showPreview={true}
+            resizeMode="cover"
+          />
+          {item.content && item.content.trim() !== '' && (
+            <ChatText text={item.content} style={textStyle} />
+          )}
+        </View>
+      );
     case 'video':
       return (
         <View style={styles.videoContainer}>

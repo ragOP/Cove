@@ -22,6 +22,7 @@ import Animated, {
 import useChatSocket from '../../../hooks/useChatSocket';
 import PrimaryLoader from '../../../components/Loaders/PrimaryLoader';
 import BlinkingDots from '../../../components/Loaders/BlinkingDots';
+import {dedupeMessages} from '../../../utils/messages/dedupeMessages';
 
 const SCROLL_TO_BOTTOM_THRESHOLD = 10;
 
@@ -116,7 +117,7 @@ const ChatsContainer = ({
       const apiResponse = await getConversations({id: conversationId});
       if (apiResponse?.response?.success) {
         const data = apiResponse.response.data?.[0]?.messages;
-        setConversations?.(data);
+        setConversations?.(dedupeMessages(data));
         return data || [];
       } else {
         setConversations?.([]);
@@ -159,7 +160,8 @@ const ChatsContainer = ({
 
   useChatSocket({
     onMessageReceived: message => {
-      setConversations && setConversations(prev => [...(prev || []), message]);
+      setConversations &&
+        setConversations(prev => dedupeMessages([...(prev || []), message]));
     },
     onTypingStatusUpdate: status => {
       setIsTyping(status);
