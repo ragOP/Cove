@@ -59,7 +59,6 @@ export default function useChatSocket({
       handleConnect();
     }
 
-    // Cleanup listeners on unmount or deps change
     return () => {
       socket.off('connect', handleConnect);
       socket.off('get_my_info', handleGetMyInfo);

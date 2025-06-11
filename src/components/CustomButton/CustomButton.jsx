@@ -19,9 +19,13 @@ const CustomButton = ({
       onPress={onClick}
       disabled={disabled}
       accessibilityLabel={title}>
-      {isLoading && loadingPlacement === START && <PrimaryLoader size={16} />}
+      {isLoading && loadingPlacement === START && (
+        <PrimaryLoader size={16} color="#fff" />
+      )}
       <Text style={[styles.buttonText, textStyle]}>{title}</Text>
-      {isLoading && loadingPlacement === END && <PrimaryLoader size={16} />}
+      {isLoading && loadingPlacement === END && (
+        <PrimaryLoader size={16} color="#fff" />
+      )}
     </TouchableOpacity>
   );
 };

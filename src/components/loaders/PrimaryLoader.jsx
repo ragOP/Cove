@@ -2,9 +2,9 @@ import React from 'react';
 import {View, StyleSheet} from 'react-native';
 import {ActivityIndicator} from 'react-native-paper';
 
-const PrimaryLoader = ({size = 'large', style = {}}) => (
+const PrimaryLoader = ({size = 'large', style = {}, color = '#D28A8C'}) => (
   <View style={[styles.container, style]}>
-    <ActivityIndicator size={size} color="#D28A8C" />
+    <ActivityIndicator size={size} color={color} />
   </View>
 );
 
