@@ -5,7 +5,6 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  Text,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useQuery} from '@tanstack/react-query';
@@ -104,6 +103,8 @@ const ChatsContainer = ({
   onReply,
   onSelectMessage,
   selectedMessage,
+  setUserConversationId,
+  shouldRefetch, // new prop
 }) => {
   const flatListRef = useRef(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
@@ -111,12 +112,17 @@ const ChatsContainer = ({
   const [isTyping, setIsTyping] = useState(false);
   const userId = useSelector(state => state.auth.user?.id);
 
+  console.log('ChatsContainer mounted with conversationId:', conversations);
+
   const {isLoading, refetch} = useQuery({
     queryKey: ['user_conversations', conversationId],
     queryFn: async () => {
       const apiResponse = await getConversations({id: conversationId});
       if (apiResponse?.response?.success) {
-        const data = apiResponse.response.data?.[0]?.messages;
+        const responseData = apiResponse.response.data;
+        const data = responseData?.[0]?.messages;
+
+        setUserConversationId(responseData?.[0]?._id);
         setConversations?.(dedupeMessages(data));
         return data || [];
       } else {
@@ -126,6 +132,14 @@ const ChatsContainer = ({
     },
     enabled: !!conversationId,
   });
+
+  // Refetch when shouldRefetch changes (from ContactChat focus)
+  useEffect(() => {
+    if (shouldRefetch && conversationId) {
+      refetch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldRefetch, conversationId]);
 
   useEffect(() => {
     if (!isLoading && flatListRef?.current) {

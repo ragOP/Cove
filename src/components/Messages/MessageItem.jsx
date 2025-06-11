@@ -15,6 +15,10 @@ const MessageItem = ({
   const isSent = item.sender._id === userId;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  const status = item.status || 'sent';
+
+  console.log('MessageItem', item);
+
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -72,7 +76,7 @@ export const TickIcon = ({status, anim}) => {
         <Icon name="checkmark-done" size={16} color="#bbb" />
       </Animated.View>
     );
-  } else if (status === 'sent') {
+  } else if (status === 'sent' || status === 'unread') {
     return (
       <Animated.View style={{opacity: anim}}>
         <Icon name="checkmark" size={16} color="#bbb" />

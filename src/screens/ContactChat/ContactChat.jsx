@@ -20,7 +20,9 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import GallerySection from './components/GallerySection';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import useChatSocket from '../../hooks/useChatSocket';
-import { dedupeMessages } from '../../utils/messages/dedupeMessages';
+import {dedupeMessages} from '../../utils/messages/dedupeMessages';
+import {useQuery} from '@tanstack/react-query';
+import {readChat} from '../../apis/readChat';
 
 const ContactChat = () => {
   const route = useRoute();
@@ -36,6 +38,7 @@ const ContactChat = () => {
   const [replyMessage, setReplyMessage] = useState(null);
   const [tab, setTab] = useState('chat');
   const [previewedMedia, setPreviewedMedia] = useState(null);
+  const [userConversationId, setUserConversationId] = useState(null);
 
   const {emitTypingStatus} = useChatSocket({
     onMessageReceived: message => {
@@ -51,6 +54,16 @@ const ContactChat = () => {
     handleClearSelected();
   };
   const handleDeleteSelected = msg => handleClearSelected();
+
+  useQuery({
+    queryKey: ['read_chat', userConversationId],
+    queryFn: async () => {
+      if (userConversationId) {
+        return readChat({conversationId: userConversationId});
+      }
+    },
+    enabled: !!userConversationId,
+  });
 
   if (!contactDetails) {
     return null;
@@ -89,6 +102,7 @@ const ContactChat = () => {
               onSelectMessage={handleSelectMessage}
               selectedMessage={selectedMessage}
               onReply={msg => setReplyMessage(msg)}
+              setUserConversationId={setUserConversationId}
             />
             <SendChat
               conversationId={conversationId}

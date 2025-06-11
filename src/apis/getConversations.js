@@ -6,6 +6,7 @@ export const getConversations = async ({id}) => {
     const apiResponse = await apiService({
       endpoint: `${endpoints.conversations}/${id}`,
     });
+    console.log('getConversations response:', id, apiResponse);
 
     return apiResponse;
   } catch (error) {
