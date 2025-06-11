@@ -15,7 +15,6 @@ export default function useChatSocket({
       return;
     }
 
-    // Listen for connect event before attaching other listeners
     const handleConnect = () => {
       console.log('[SOCKET CONNECTED]', socket.id);
       socket.emit('get_my_info');
@@ -72,9 +71,11 @@ export default function useChatSocket({
   }, [socket, token, onMessageReceived, onTypingStatusUpdate]);
 
   const emitTypingStatus = (isTyping, receiverId) => {
-    console.log('[EMIT TYPING STATUS]', {isTyping, receiverId});
     if (socket && socket.connected) {
-      socket.emit('typing_status', {isTyping, receiverId});
+      socket.emit('typing_status', {
+        isTyping: isTyping,
+        receiverId: receiverId,
+      });
     }
   };
 

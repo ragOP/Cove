@@ -15,10 +15,6 @@ const MessageItem = ({
   const isSent = item.sender._id === userId;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const status = item.status || 'sent';
-
-  console.log('MessageItem', item);
-
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,

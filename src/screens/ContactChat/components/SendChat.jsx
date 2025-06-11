@@ -80,6 +80,8 @@ const SendChat = ({
   };
 
   const handleSend = async () => {
+    emitTypingStatus(false, receiverId);
+
     if (isSendingMessage) {
       return;
     }

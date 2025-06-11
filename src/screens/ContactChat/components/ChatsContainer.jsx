@@ -25,7 +25,7 @@ import {dedupeMessages} from '../../../utils/messages/dedupeMessages';
 
 const SCROLL_TO_BOTTOM_THRESHOLD = 10;
 
-function ChatMessageRow({
+const ChatMessageRow = ({
   item,
   index,
   showDateLabel,
@@ -33,7 +33,7 @@ function ChatMessageRow({
   onReply,
   onSelectMessage,
   selected,
-}) {
+}) => {
   const held = useSharedValue(false);
   const translateX = useSharedValue(0);
 
@@ -94,7 +94,7 @@ function ChatMessageRow({
       </Animated.View>
     </GestureDetector>
   );
-}
+};
 
 const ChatsContainer = ({
   conversationId,
@@ -104,7 +104,6 @@ const ChatsContainer = ({
   onSelectMessage,
   selectedMessage,
   setUserConversationId,
-  shouldRefetch, // new prop
 }) => {
   const flatListRef = useRef(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
@@ -132,14 +131,6 @@ const ChatsContainer = ({
     },
     enabled: !!conversationId,
   });
-
-  // Refetch when shouldRefetch changes (from ContactChat focus)
-  useEffect(() => {
-    if (shouldRefetch && conversationId) {
-      refetch();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shouldRefetch, conversationId]);
 
   useEffect(() => {
     if (!isLoading && flatListRef?.current) {

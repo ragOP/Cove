@@ -32,6 +32,7 @@ const ContactChat = () => {
   const contact = route.params?.contact;
   const conversationId = contact?._id;
   const contactDetails = getChatDisplayInfo(contact, userId);
+  console.log('ContactChat', contactDetails);
 
   const [conversations, setConversations] = useState([]);
   const [selectedMessage, setSelectedMessage] = useState(null);
