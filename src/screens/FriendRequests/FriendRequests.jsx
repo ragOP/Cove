@@ -16,6 +16,8 @@ import {acceptFriendRequest} from '../../apis/acceptFriendRequest';
 import UserAvatar from '../../components/CustomAvatar/UserAvatar';
 import {useDispatch} from 'react-redux';
 import {showSnackbar} from '../../redux/slice/snackbarSlice';
+import PrimaryLoader from '../../components/Loaders/PrimaryLoader';
+import {getSentFriendRequests} from '../../apis/getSentFriendRequests';
 
 if (
   Platform.OS === 'android' &&
@@ -24,13 +26,13 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const FriendRequestRow = ({item, onAccept, onDecline}) => (
+const FriendRequestRow = ({item, onAccept, onDecline, isAcceptingId}) => (
   <View style={styles.card}>
     <View style={styles.avatarContainer}>
       <UserAvatar
-        profilePicture={item.profilePicture}
-        name={item.name}
-        id={item._id}
+        profilePicture={item.sender?.profilePicture}
+        name={item.sender?.name}
+        id={item.sender?._id}
       />
       {item.mutual > 0 && (
         <View style={styles.mutualBadge}>
@@ -44,14 +46,26 @@ const FriendRequestRow = ({item, onAccept, onDecline}) => (
       )}
     </View>
     <View style={styles.userInfo}>
-      <Text style={styles.name}>{item.name}</Text>
-      <Text style={styles.username}>@{item.username}</Text>
+      <Text style={styles.name}>{item.sender?.name}</Text>
+      <Text style={styles.username}>@{item.sender?.username}</Text>
     </View>
     <View style={styles.actions}>
       <TouchableOpacity
         onPress={() => onAccept(item._id)}
-        style={styles.acceptBtn}>
-        <MaterialCommunityIcons name="check" size={20} color="#fff" />
+        style={styles.acceptBtn}
+        disabled={isAcceptingId === item._id}>
+        {isAcceptingId === item._id ? (
+          <PrimaryLoader
+            size={20}
+            style={{
+              backgroundColor: 'transparent',
+              margin: 0,
+              padding: 0,
+            }}
+          />
+        ) : (
+          <MaterialCommunityIcons name="check" size={20} color="#fff" />
+        )}
       </TouchableOpacity>
       <TouchableOpacity
         onPress={() => onDecline(item.id)}
@@ -67,7 +81,7 @@ const FriendRequests = ({navigation}) => {
 
   const [expanded, setExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [isAccepting, setIsAccepting] = useState(false);
+  const [isAcceptingId, setIsAcceptingId] = useState(null);
   const [isDeclining, setIsDeclining] = useState(false);
 
   const {
@@ -80,21 +94,28 @@ const FriendRequests = ({navigation}) => {
     select: data => data?.response?.data || [],
   });
 
+  const {
+    data: sentRequests = [],
+    refetch: refetchSent,
+    isRefetching: isRefetchingSent,
+  } = useQuery({
+    queryKey: ['sentFriendRequests'],
+    queryFn: getSentFriendRequests,
+    select: data => data?.response?.data || [],
+  });
+
   const handleAccept = async id => {
-    if (isAccepting) return;
-
+    if (isAcceptingId) { return; }
     try {
-      setIsAccepting(true);
-
+      setIsAcceptingId(id);
       const apiResponse = await acceptFriendRequest({requestId: id});
-
       if (apiResponse?.response?.success) {
         dispatch(
           showSnackbar({
             title: 'Friend Request Accepted',
             subtitle: 'You are now friends with this user.',
             type: 'success',
-          }),
+          })
         );
         refetch();
       } else {
@@ -105,13 +126,13 @@ const FriendRequests = ({navigation}) => {
             title: 'Error',
             subtitle: errorMessage,
             type: 'error',
-          }),
+          })
         );
       }
     } catch (error) {
       console.error('Error accepting friend request:', error);
     } finally {
-      setIsAccepting(false);
+      setIsAcceptingId(null);
     }
   };
 
@@ -126,35 +147,19 @@ const FriendRequests = ({navigation}) => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await refetch();
+    await Promise.all([refetch(), refetchSent()]);
     setRefreshing(false);
   };
 
   const visibleRequests = expanded ? requests : requests.slice(0, 5);
 
-  const renderItem = ({item, index}) => (
-    <>
-      <FriendRequestRow
-        item={item?.sender}
-        onAccept={handleAccept}
-        onDecline={handleDecline}
-      />
-      {index === visibleRequests.length - 1 && requests.length > 5 && (
-        <TouchableOpacity
-          onPress={handleToggleExpand}
-          style={styles.showMoreBtn}>
-          <Text style={styles.showMoreText}>
-            {expanded ? 'Show Less' : 'Show More'}
-          </Text>
-          <MaterialCommunityIcons
-            name={expanded ? 'chevron-up' : 'chevron-down'}
-            size={20}
-            color="#D28A8C"
-          />
-        </TouchableOpacity>
-      )}
-      <Divider style={styles.divider} />
-    </>
+  const renderItem = ({item}) => (
+    <FriendRequestRow
+      item={item}
+      onAccept={handleAccept}
+      onDecline={handleDecline}
+      isAcceptingId={isAcceptingId}
+    />
   );
 
   return (
@@ -190,6 +195,53 @@ const FriendRequests = ({navigation}) => {
             <Text style={styles.emptySubtitle}>
               You're all caught up! When someone sends you a friend request, it
               will appear here.
+            </Text>
+          </View>
+        }
+        showsVerticalScrollIndicator={false}
+      />
+      {/* Sent Requests Section */}
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionHeaderText}>Requests Sent</Text>
+          <Text style={styles.sectionHeaderCount}>({sentRequests.length || 0})</Text>
+        </View>
+      </View>
+      <FlatList
+        data={sentRequests}
+        keyExtractor={item => item._id}
+        renderItem={({item}) => (
+          <View style={styles.card}>
+            <View style={styles.avatarContainer}>
+              <UserAvatar
+                profilePicture={item.sender?.profilePicture}
+                name={item.sender?.name}
+                id={item.sender?._id}
+              />
+            </View>
+            <View style={styles.userInfo}>
+              <Text style={styles.name}>{item.sender?.name}</Text>
+              <Text style={styles.username}>@{item.sender?.username}</Text>
+            </View>
+            <View style={styles.actions}>
+              <MaterialCommunityIcons name="clock-outline" size={22} color="#ffb300" />
+            </View>
+          </View>
+        )}
+        contentContainerStyle={styles.listContent}
+        refreshing={isRefetchingSent}
+        onRefresh={refetchSent}
+        ListEmptyComponent={
+          <View style={styles.emptyStateContainer}>
+            <Avatar.Icon
+              icon="clock-outline"
+              size={80}
+              style={styles.emptyAvatar}
+              color="#ffb300"
+            />
+            <Text style={styles.emptyTitle}>No Sent Requests</Text>
+            <Text style={styles.emptySubtitle}>
+              You haven't sent any friend requests yet.
             </Text>
           </View>
         }
@@ -355,5 +407,32 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  sectionHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#181818',
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#232323',
+    marginBottom: 8,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 18,
+    marginBottom: 4,
+    marginLeft: 8,
+    gap: 6,
+  },
+  sectionHeaderText: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  sectionHeaderCount: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#fff',
+    marginLeft: 6,
   },
 });

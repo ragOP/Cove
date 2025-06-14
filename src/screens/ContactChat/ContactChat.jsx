@@ -8,11 +8,11 @@ import {
   Pressable,
   Image,
 } from 'react-native';
-import React, {useState} from 'react';
+import React, {useCallback, useState} from 'react';
+import {useFocusEffect, useRoute} from '@react-navigation/native';
 import ChatsContainer from './components/ChatsContainer';
 import ContactHeader from './components/ContactHeader';
 import SendChat from './components/SendChat';
-import {useRoute} from '@react-navigation/native';
 import {getChatDisplayInfo} from '../../utils/chat/getChatDisplayInfo';
 import {useSelector} from 'react-redux';
 import SelectedMessageBar from './components/SelectedMessageBar';
@@ -41,10 +41,30 @@ const ContactChat = () => {
   const [previewedMedia, setPreviewedMedia] = useState(null);
   const [userConversationId, setUserConversationId] = useState(null);
 
-  const {emitTypingStatus} = useChatSocket({
+  const onUpdateMessagesStatus = useCallback(data => {
+    if (!data?.messageId) {
+      return;
+    }
+
+    setConversations(prev => {
+      if (!Array.isArray(prev)) {
+        return prev;
+      }
+      return prev.map(msg =>
+        msg._id === data.messageId
+          ? {...msg, read: true, readBy: data.readBy, readAt: data.timestamp}
+          : msg,
+      );
+    });
+  }, []);
+
+  console.log('ContactChat mounted with conversationId:', conversations);
+
+  const {emitTypingStatus, joinChat, leaveChat} = useChatSocket({
     onMessageReceived: message => {
       setConversations(prev => dedupeMessages([...(prev || []), message]));
     },
+    onUpdateMessagesStatus,
   });
 
   const handleSelectMessage = msg => setSelectedMessage(msg);
@@ -65,6 +85,19 @@ const ContactChat = () => {
     },
     enabled: !!userConversationId,
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      if (conversationId) {
+        joinChat(conversationId);
+      }
+      return () => {
+        if (conversationId) {
+          leaveChat(conversationId);
+        }
+      };
+    }, [conversationId, joinChat, leaveChat]),
+  );
 
   if (!contactDetails) {
     return null;

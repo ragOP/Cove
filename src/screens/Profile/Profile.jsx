@@ -12,6 +12,8 @@ const Profile = ({navigation}) => {
   const user = useSelector(state => state.auth.user);
   const dispatch = useDispatch();
 
+  console.log(">>", user)
+
   const handleLogout = () => {
     dispatch(logout());
   };

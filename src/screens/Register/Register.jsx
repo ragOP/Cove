@@ -613,7 +613,9 @@ const PasswordInput = ({goNext, goBack, form, setForm, tempToken}) => {
       formData.append('name', form.name);
       formData.append('username', form.username);
       formData.append('password', form.password);
-      formData.append('dob', form.dob.toISOString());
+      if (form.dob) {
+        formData.append('dob', form.dob.toISOString());
+      }
 
       if (form.profilePicture) {
         formData.append('profilePicture', {
@@ -638,17 +640,18 @@ const PasswordInput = ({goNext, goBack, form, setForm, tempToken}) => {
           }),
         );
         const data = apiResponse?.response?.data;
-        const userData = data?.user;
+
+        console.log(data, 'data');
 
         dispatch(
           login({
             token: tempToken,
             user: {
-              id: userData?.id,
-              name: userData?.name,
-              username: userData?.username,
-              phoneNumber: userData?.phoneNumber,
-              email: userData?.email,
+              id: data?._id,
+              name: data?.name,
+              username: data?.username,
+              phoneNumber: data?.phoneNumber,
+              email: data?.email,
             },
           }),
         );

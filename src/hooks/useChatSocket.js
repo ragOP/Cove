@@ -6,9 +6,22 @@ import useSocket from './useSocket';
 export default function useChatSocket({
   onMessageReceived,
   onTypingStatusUpdate,
+  onUpdateMessagesStatus,
 }) {
   const token = useSelector(selectToken);
   const socket = useSocket({token});
+
+  const joinChat = conversationId => {
+    if (socket && socket.connected && conversationId) {
+      socket.emit('join_chat', {conversationId});
+    }
+  };
+
+  const leaveChat = conversationId => {
+    if (socket && socket.connected && conversationId) {
+      socket.emit('leave_chat', {conversationId});
+    }
+  };
 
   useEffect(() => {
     if (!socket || !token) {
@@ -22,6 +35,7 @@ export default function useChatSocket({
       //   socket.on('private_message', handlePrivateMessage);
       socket.on('typing_status_update', handleTypingStatusUpdate);
       socket.on('new_message', handleNewMessage);
+      socket.on('message_read_update', handleMessageReadUpdate);
       socket.on('connect_error', handleError);
       socket.on('error', handleError);
       socket.on('disconnect', handleDisconnect);
@@ -45,6 +59,13 @@ export default function useChatSocket({
       onTypingStatusUpdate?.(data?.isTyping);
     };
 
+    const handleMessageReadUpdate = data => {
+      // data: { messageId, chatId, readBy, timestamp }
+      if (onUpdateMessagesStatus && data?.messageId) {
+        onUpdateMessagesStatus(data);
+      }
+    };
+
     const handleError = err => {
       console.error('[SOCKET ERROR]', err);
     };
@@ -63,11 +84,18 @@ export default function useChatSocket({
       socket.off('connect', handleConnect);
       socket.off('get_my_info', handleGetMyInfo);
       socket.off('typing_status_update', handleTypingStatusUpdate);
+      socket.off('message_read_update', handleMessageReadUpdate);
       socket.off('connect_error', handleError);
       socket.off('error', handleError);
       socket.off('disconnect', handleDisconnect);
     };
-  }, [socket, token, onMessageReceived, onTypingStatusUpdate]);
+  }, [
+    socket,
+    token,
+    onMessageReceived,
+    onTypingStatusUpdate,
+    onUpdateMessagesStatus,
+  ]);
 
   const emitTypingStatus = (isTyping, receiverId) => {
     if (socket && socket.connected) {
@@ -78,5 +106,5 @@ export default function useChatSocket({
     }
   };
 
-  return {socket, emitTypingStatus};
+  return {socket, emitTypingStatus, joinChat, leaveChat};
 }

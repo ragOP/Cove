@@ -12,11 +12,7 @@ import {
   ScrollView,
   RefreshControl,
 } from 'react-native';
-import {
-  Avatar,
-  IconButton,
-  Button,
-} from 'react-native-paper';
+import {Avatar, IconButton, Button} from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {request, PERMISSIONS, RESULTS, check} from 'react-native-permissions';
@@ -29,6 +25,8 @@ import {sendFriendRequest} from '../../apis/sendFriendRequest';
 import {useDispatch} from 'react-redux';
 import {showSnackbar} from '../../redux/slice/snackbarSlice';
 import PrimaryLoader from '../../components/Loaders/PrimaryLoader';
+import {getConversations} from '../../apis/conversations';
+import { Paths } from '../../navigaton/paths';
 
 const SUGGESTED_USERS = [
   {
@@ -136,7 +134,7 @@ const searchSuggestedUsers = async () => {
   return SUGGESTED_USERS;
 };
 
-const ContactListItem = ({item, addingId, handleAdd, handleOptions}) => (
+const ContactListItem = ({item, addingId, handleAdd, handleOptions, handleNavigateToChat}) => (
   <View style={styles.userRow}>
     {item.profilePicture ? (
       <Avatar.Image size={44} source={{uri: item.profilePicture}} />
@@ -144,25 +142,34 @@ const ContactListItem = ({item, addingId, handleAdd, handleOptions}) => (
       <Avatar.Text
         size={44}
         label={getInitials(item.name) || item._id}
-        style={{backgroundColor: '#444'}}
+        style={styles.avatarFallback}
       />
     )}
     <View style={styles.userInfo}>
       <Text style={styles.name}>{item.name}</Text>
-      <Text style={styles.username}>@{item.username}</Text>
+      <Text className={styles.username}>@{item.username}</Text>
     </View>
     <TouchableOpacity
       style={styles.addBtn}
-      onPress={() => handleAdd(item)}
-      disabled={addingId === (item.id || item._id)}>
-      {addingId === (item.id || item._id) ? (
+      onPress={
+        item.isFriend
+          ? () => handleNavigateToChat(item)
+          : item.isRequestPending
+          ? undefined
+          : () => handleAdd(item)
+      }
+      disabled={
+        addingId === (item.id || item._id) || item.isFriend || item.isRequestPending
+      }
+    >
+      {item.isFriend ? (
+        <MaterialCommunityIcons name="message-processing" size={26} color="#4caf50" />
+      ) : item.isRequestPending ? (
+        <MaterialCommunityIcons name="clock-outline" size={26} color="#ffb300" />
+      ) : addingId === (item.id || item._id) ? (
         <MaterialCommunityIcons name="check-circle" size={26} color="#4caf50" />
       ) : (
-        <MaterialCommunityIcons
-          name="account-plus-outline"
-          size={26}
-          color="#fff"
-        />
+        <MaterialCommunityIcons name="account-plus-outline" size={26} color="#fff" />
       )}
     </TouchableOpacity>
     <TouchableOpacity
@@ -400,6 +407,32 @@ const AddContact = () => {
     setRefreshing(false);
   };
 
+  // Fetch contact details and navigate to chat if friend
+  const handleNavigateToChat = async user => {
+    try {
+      const apiResponse = await getConversations({id: user._id});
+      if (apiResponse?.response?.success) {
+        navigation.navigate(Paths.CONTACT_CHAT, {contact: user});
+      } else {
+        dispatch(
+          showSnackbar({
+            type: 'error',
+            title: 'Error',
+            subtitle: 'Could not fetch contact details',
+          })
+        );
+      }
+    } catch (error) {
+      dispatch(
+        showSnackbar({
+          type: 'error',
+          title: 'Error',
+          subtitle: 'Could not fetch contact details',
+        })
+      );
+    }
+  };
+
   const renderOptionsSheet = () => {
     if (!optionUser) return null;
     return (
@@ -467,6 +500,8 @@ const AddContact = () => {
       </Animated.View>
     );
   };
+
+  console.log('>>>', searchedUsers);
 
   return (
     <View style={styles.container}>
@@ -538,6 +573,7 @@ const AddContact = () => {
                   addingId={addingId}
                   handleAdd={handleAdd}
                   handleOptions={handleOptions}
+                  handleNavigateToChat={handleNavigateToChat}
                 />
               ))
             )}
@@ -580,6 +616,7 @@ const AddContact = () => {
                 addingId={addingId}
                 handleAdd={handleAdd}
                 handleOptions={handleOptions}
+                handleNavigateToChat={handleNavigateToChat}
               />
             ))
           )}
@@ -768,4 +805,5 @@ const styles = StyleSheet.create({
   optionText: {color: '#fff', fontSize: 16, fontWeight: '500'},
   optionCancel: {marginTop: 16, alignItems: 'center'},
   optionCancelText: {color: '#bbb', fontSize: 16, fontWeight: 'bold'},
+  avatarFallback: { backgroundColor: '#444' },
 });
