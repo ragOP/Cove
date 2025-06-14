@@ -8,8 +8,8 @@ import {
   Pressable,
   Image,
 } from 'react-native';
-import React, {useCallback, useState} from 'react';
-import {useFocusEffect, useRoute} from '@react-navigation/native';
+import {useRef, useState, useEffect} from 'react';
+import {useRoute} from '@react-navigation/native';
 import ChatsContainer from './components/ChatsContainer';
 import ContactHeader from './components/ContactHeader';
 import SendChat from './components/SendChat';
@@ -32,7 +32,6 @@ const ContactChat = () => {
   const contact = route.params?.contact;
   const conversationId = contact?._id;
   const contactDetails = getChatDisplayInfo(contact, userId);
-  console.log('ContactChat', contactDetails);
 
   const [conversations, setConversations] = useState([]);
   const [selectedMessage, setSelectedMessage] = useState(null);
@@ -41,7 +40,7 @@ const ContactChat = () => {
   const [previewedMedia, setPreviewedMedia] = useState(null);
   const [userConversationId, setUserConversationId] = useState(null);
 
-  const onUpdateMessagesStatus = useCallback(data => {
+  const onUpdateMessagesStatus = data => {
     if (!data?.messageId) {
       return;
     }
@@ -56,9 +55,9 @@ const ContactChat = () => {
           : msg,
       );
     });
-  }, []);
+  };
 
-  console.log('ContactChat mounted with conversationId:', conversations);
+  console.log('Contact chat mounted with conversationId:', conversations);
 
   const {emitTypingStatus, joinChat, leaveChat} = useChatSocket({
     onMessageReceived: message => {
@@ -86,18 +85,19 @@ const ContactChat = () => {
     enabled: !!userConversationId,
   });
 
-  useFocusEffect(
-    useCallback(() => {
-      if (conversationId) {
-        joinChat(conversationId);
+  const prevConversationId = useRef();
+
+  useEffect(() => {
+    if (conversationId && prevConversationId.current !== conversationId) {
+      joinChat(conversationId);
+    }
+    return () => {
+      if (prevConversationId.current && prevConversationId.current !== conversationId) {
+        leaveChat(prevConversationId.current);
       }
-      return () => {
-        if (conversationId) {
-          leaveChat(conversationId);
-        }
-      };
-    }, [conversationId, joinChat, leaveChat]),
-  );
+      prevConversationId.current = conversationId;
+    };
+  }, [conversationId, joinChat, leaveChat]);
 
   if (!contactDetails) {
     return null;

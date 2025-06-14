@@ -13,13 +13,25 @@ export default function useChatSocket({
 
   const joinChat = conversationId => {
     if (socket && socket.connected && conversationId) {
+      console.log('[JOIN CHAT]', conversationId);
       socket.emit('join_chat', {conversationId});
     }
   };
 
   const leaveChat = conversationId => {
     if (socket && socket.connected && conversationId) {
+      console.log('[LEAVE CHAT]', conversationId);
       socket.emit('leave_chat', {conversationId});
+    }
+  };
+
+  const emitTypingStatus = (isTyping, receiverId) => {
+    if (socket && socket.connected) {
+      console.log('[TYPING STATUS]', {isTyping, receiverId});
+      socket.emit('typing_status', {
+        isTyping: isTyping,
+        receiverId: receiverId,
+      });
     }
   };
 
@@ -61,6 +73,7 @@ export default function useChatSocket({
 
     const handleMessageReadUpdate = data => {
       // data: { messageId, chatId, readBy, timestamp }
+      console.log('DATA', data);
       if (onUpdateMessagesStatus && data?.messageId) {
         onUpdateMessagesStatus(data);
       }
@@ -96,15 +109,6 @@ export default function useChatSocket({
     onTypingStatusUpdate,
     onUpdateMessagesStatus,
   ]);
-
-  const emitTypingStatus = (isTyping, receiverId) => {
-    if (socket && socket.connected) {
-      socket.emit('typing_status', {
-        isTyping: isTyping,
-        receiverId: receiverId,
-      });
-    }
-  };
 
   return {socket, emitTypingStatus, joinChat, leaveChat};
 }

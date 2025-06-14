@@ -32,6 +32,7 @@ import {getMessagePreview} from '../../helpers/messages/getMessagePreview';
 import {formatChatTime} from '../../utils/message/formatChatTime';
 import {getUserPendingRequests} from '../../apis/getUserPendingRequests';
 import useDebounce from '../../hooks/useDebounce';
+import useChatListSocket from '../../hooks/useChatListSocket';
 
 const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
   const scale = useRef(new Animated.Value(1)).current;
@@ -119,14 +120,21 @@ const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
                 style={styles.previewText}
                 numberOfLines={1}
                 ellipsizeMode="tail"
-                allowFontScaling={false}
-              >
-                {typeof previewMessage[1] === 'string' ? previewMessage[1] : String(previewMessage[1])}
+                allowFontScaling={false}>
+                {typeof previewMessage[1] === 'string'
+                  ? previewMessage[1]
+                  : String(previewMessage[1])}
               </Text>
             </View>
           ) : (
-            <Text style={styles.previewText} numberOfLines={1} ellipsizeMode="tail" allowFontScaling={false}>
-              {typeof previewMessage === 'string' ? previewMessage : String(previewMessage)}
+            <Text
+              style={styles.previewText}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              allowFontScaling={false}>
+              {typeof previewMessage === 'string'
+                ? previewMessage
+                : String(previewMessage)}
             </Text>
           )}
         </View>
@@ -135,7 +143,9 @@ const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
             {formatChatTime(lastMessageTime)}
           </Text>
           {unreadCount > 0 && (
-            <Badge style={styles.badge}>+{unreadCount - 1}</Badge>
+            <Badge style={styles.badge}>
+              {unreadCount === 1 ? 1 : `+${unreadCount - 1}`}
+            </Badge>
           )}
         </View>
       </Animated.View>
@@ -221,6 +231,8 @@ const Home = () => {
     per_page: 20,
     contact_type: 'all',
   });
+  const [allContacts, setAllContacts] = useState([]);
+  const [hasMore, setHasMore] = useState(true);
 
   const {
     data: requests = [],
@@ -244,6 +256,22 @@ const Home = () => {
       const apiResponse = await getUserContacts({params});
       if (apiResponse?.response?.success) {
         const data = apiResponse.response.data || [];
+        // If page is 1, reset allContacts; else, append and dedupe
+        setAllContacts(prev => {
+          if (params.page === 1) {
+            return data;
+          } else {
+            const ids = new Set(prev.map(c => c._id));
+            const deduped = [...prev];
+            data.forEach(c => {
+              if (!ids.has(c._id)) {
+                deduped.push(c);
+              }
+            });
+            return deduped;
+          }
+        });
+        setHasMore(data.length === params.per_page);
         return data;
       } else {
         console.error('Failed to fetch contacts:', apiResponse);
@@ -266,7 +294,12 @@ const Home = () => {
       search: debouncedSearch,
       page: 1,
     }));
+    setAllContacts([]); // Reset on search
   }, [debouncedSearch]);
+
+  useEffect(() => {
+    setAllContacts([]); // Reset on filter change
+  }, [params.contact_type]);
 
   const totalUnread = contacts.reduce(
     (sum, c) => sum + (c.unreadCount > 0 ? 1 : 0),
@@ -296,11 +329,11 @@ const Home = () => {
   ];
 
   // Filter contacts based on params.contact_type
-  let filteredContacts = contacts;
+  let filteredContacts = allContacts;
   if (params.contact_type === 'unread') {
-    filteredContacts = contacts.filter(c => c.unreadCount > 0);
+    filteredContacts = allContacts.filter(c => c.unreadCount > 0);
   } else if (params.contact_type === 'favorites') {
-    filteredContacts = contacts.filter(c => c.isFavorite);
+    filteredContacts = allContacts.filter(c => c.isFavorite);
   }
 
   const handleContactPress = item => {
@@ -363,6 +396,23 @@ const Home = () => {
     closeMenu();
     dispatch(logout());
   };
+
+  useChatListSocket({
+    onChatListUpdate: updatedContact => {
+      setAllContacts(prev => {
+        const idx = prev.findIndex(c => c._id === updatedContact._id);
+        if (idx !== -1) {
+          // Update existing contact
+          const updated = [...prev];
+          updated[idx] = {...updated[idx], ...updatedContact};
+          return updated;
+        } else {
+          // Add new contact to the top
+          return [updatedContact, ...prev];
+        }
+      });
+    },
+  });
 
   return (
     <View style={styles.container}>
@@ -498,6 +548,12 @@ const Home = () => {
         }
         refreshing={refreshing}
         onRefresh={handlePageRefresh}
+        onEndReached={() => {
+          if (hasMore && !isLoadingContacts) {
+            setParams(prev => ({...prev, page: prev.page + 1}));
+          }
+        }}
+        onEndReachedThreshold={0.5}
       />
     </View>
   );

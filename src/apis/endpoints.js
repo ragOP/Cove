@@ -7,7 +7,6 @@ export const endpoints = {
   searchUsers: 'api/user/search',
   sendFriendRequest: 'api/user/add-friend',
   friendRequests: 'api/user/friend-requests',
-  sentFriendRequests: 'api/user/friend-requests/pending',
   conversations: 'api/user/one-to-one-chat',
   sendMessage: 'api/user/messages/send-message',
   uploadFile: 'api/user/upload-files',

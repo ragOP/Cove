@@ -8,7 +8,7 @@ import {
   UIManager,
   Platform,
 } from 'react-native';
-import {Text, Avatar, Divider, IconButton} from 'react-native-paper';
+import {Text, Avatar, IconButton} from 'react-native-paper';
 import {useQuery} from '@tanstack/react-query';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {getUserPendingRequests} from '../../apis/getUserPendingRequests';
@@ -51,18 +51,11 @@ const FriendRequestRow = ({item, onAccept, onDecline, isAcceptingId}) => (
     </View>
     <View style={styles.actions}>
       <TouchableOpacity
-        onPress={() => onAccept(item._id)}
+        onPress={() => onAccept(item.sender?._id)}
         style={styles.acceptBtn}
         disabled={isAcceptingId === item._id}>
         {isAcceptingId === item._id ? (
-          <PrimaryLoader
-            size={20}
-            style={{
-              backgroundColor: 'transparent',
-              margin: 0,
-              padding: 0,
-            }}
-          />
+          <PrimaryLoader size={20} color="#fff" />
         ) : (
           <MaterialCommunityIcons name="check" size={20} color="#fff" />
         )}
@@ -105,17 +98,21 @@ const FriendRequests = ({navigation}) => {
   });
 
   const handleAccept = async id => {
-    if (isAcceptingId) { return; }
+    console.log('Accepting friend request with ID:', id);
+    if (isAcceptingId) {
+      return;
+    }
     try {
       setIsAcceptingId(id);
       const apiResponse = await acceptFriendRequest({requestId: id});
+      console.log('Friend request accepted:', apiResponse, id);
       if (apiResponse?.response?.success) {
         dispatch(
           showSnackbar({
             title: 'Friend Request Accepted',
             subtitle: 'You are now friends with this user.',
             type: 'success',
-          })
+          }),
         );
         refetch();
       } else {
@@ -126,7 +123,7 @@ const FriendRequests = ({navigation}) => {
             title: 'Error',
             subtitle: errorMessage,
             type: 'error',
-          })
+          }),
         );
       }
     } catch (error) {
@@ -204,7 +201,9 @@ const FriendRequests = ({navigation}) => {
       <View style={styles.sectionHeader}>
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionHeaderText}>Requests Sent</Text>
-          <Text style={styles.sectionHeaderCount}>({sentRequests.length || 0})</Text>
+          <Text style={styles.sectionHeaderCount}>
+            ({sentRequests.length || 0})
+          </Text>
         </View>
       </View>
       <FlatList
@@ -214,17 +213,21 @@ const FriendRequests = ({navigation}) => {
           <View style={styles.card}>
             <View style={styles.avatarContainer}>
               <UserAvatar
-                profilePicture={item.sender?.profilePicture}
-                name={item.sender?.name}
-                id={item.sender?._id}
+                profilePicture={item.receiver?.profilePicture}
+                name={item.receiver?.name}
+                id={item.receiver?._id}
               />
             </View>
             <View style={styles.userInfo}>
-              <Text style={styles.name}>{item.sender?.name}</Text>
-              <Text style={styles.username}>@{item.sender?.username}</Text>
+              <Text style={styles.name}>{item.receiver?.name}</Text>
+              <Text style={styles.username}>@{item.receiver?.username}</Text>
             </View>
             <View style={styles.actions}>
-              <MaterialCommunityIcons name="clock-outline" size={22} color="#ffb300" />
+              <MaterialCommunityIcons
+                name="clock-outline"
+                size={22}
+                color="#ffb300"
+              />
             </View>
           </View>
         )}
@@ -266,8 +269,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 8,
     backgroundColor: '#181818',
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#232323',
     gap: 12,
   },
   backBtn: {
@@ -412,8 +413,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: '#181818',
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#232323',
     marginBottom: 8,
   },
   sectionHeaderRow: {

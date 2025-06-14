@@ -112,6 +112,7 @@ const SendChat = ({
 
         for (const payload of payloads) {
           const apiResponse = await sendMessage({payload});
+          console.log('API response:', apiResponse);
           if (apiResponse?.response?.success) {
             setConversations &&
               setConversations(prev =>

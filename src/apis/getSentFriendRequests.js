@@ -4,7 +4,7 @@ import {endpoints} from './endpoints';
 export const getSentFriendRequests = async () => {
   try {
     const apiResponse = await apiService({
-      endpoint: endpoints.sentFriendRequests,
+      endpoint: `${endpoints.friendRequests}/sent`,
     });
 
     console.log('getSentFriendRequests response:', apiResponse);

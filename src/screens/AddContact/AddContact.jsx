@@ -148,6 +148,7 @@ const ContactListItem = ({item, addingId, handleAdd, handleOptions, handleNaviga
     <View style={styles.userInfo}>
       <Text style={styles.name}>{item.name}</Text>
       <Text className={styles.username}>@{item.username}</Text>
+      <Text style={styles.userId}>{item._id}</Text>
     </View>
     <TouchableOpacity
       style={styles.addBtn}
@@ -748,6 +749,7 @@ const styles = StyleSheet.create({
   userInfo: {flex: 1, marginLeft: 16, justifyContent: 'center'},
   name: {fontWeight: 'bold', fontSize: 16, color: '#fff'},
   username: {color: '#bbb', fontSize: 14, marginTop: 2},
+  userId: {color: '#888', fontSize: 12, marginTop: 2},
   addBtn: {
     marginLeft: 8,
     backgroundColor: '#383838',
