@@ -1,22 +1,21 @@
 import {useEffect} from 'react';
+import {useSocketContext} from '../context/SocketContext';
 import {useSelector} from 'react-redux';
-import {selectToken} from '../redux/slice/authSlice';
-import useSocket from './useSocket';
+import {selectUser} from '../redux/slice/authSlice';
 
 export default function useChatListSocket({onChatListUpdate}) {
-  const token = useSelector(selectToken);
-  const socket = useSocket({token});
+  const socket = useSocketContext();
+  const user = useSelector(selectUser);
 
   useEffect(() => {
-    if (!socket || !token) {
+    if (!socket) {
       return;
     }
 
-    const handleChatListUpdate = chatObj => {
-      console.log('[CHAT LIST UPDATE]', chatObj);
-      if (onChatListUpdate) {
-        onChatListUpdate(chatObj);
-      }
+    const handleChatListUpdate = data => {
+      const chatObj = data?.data?.[0] || [];
+      console.log('[CHAT LIST UPDATE]',chatObj, data);
+      onChatListUpdate?.(chatObj);
     };
 
     socket.on('chat_list_update', handleChatListUpdate);
@@ -24,7 +23,7 @@ export default function useChatListSocket({onChatListUpdate}) {
     return () => {
       socket.off('chat_list_update', handleChatListUpdate);
     };
-  }, [socket, token, onChatListUpdate]);
+  }, [socket, onChatListUpdate]);
 
   return {socket};
 }

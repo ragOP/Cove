@@ -87,7 +87,7 @@ const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
   const display = getChatDisplayInfo(item, userId);
   const unreadCount = item.unreadCount || 0;
   const lastMessage = item.lastMessage || null;
-  const isGroup = Boolean(item.participants.length > 2);
+  const isGroup = Boolean(item?.participants?.length > 2);
   const previewMessage = lastMessage
     ? getMessagePreview(lastMessage, userId, isGroup)
     : '';
@@ -397,20 +397,25 @@ const Home = () => {
     dispatch(logout());
   };
 
+  const handleChatListUpdate = updatedContact => {
+    console.log('Chat list update received:', updatedContact);
+    setAllContacts(prev => {
+      // Fast path: update in place if found, else unshift
+      for (let i = 0; i < prev.length; i++) {
+        if (prev[i]._id === updatedContact._id) {
+          const updated = prev.slice();
+          updated[i] = {...prev[i], ...updatedContact};
+          return updated;
+        }
+      }
+      return [updatedContact, ...prev];
+    });
+  };
+  console.log(allContacts);
+
   useChatListSocket({
     onChatListUpdate: updatedContact => {
-      setAllContacts(prev => {
-        const idx = prev.findIndex(c => c._id === updatedContact._id);
-        if (idx !== -1) {
-          // Update existing contact
-          const updated = [...prev];
-          updated[idx] = {...updated[idx], ...updatedContact};
-          return updated;
-        } else {
-          // Add new contact to the top
-          return [updatedContact, ...prev];
-        }
-      });
+      handleChatListUpdate(updatedContact);
     },
   });
 

@@ -22,8 +22,9 @@ const MuteIconWhite = props => (
 
 const ContactHeader = ({
   name,
-  username,
   profilePicture,
+  isOnline,
+  lastSeen,
   activeTab,
   onTabChange,
 }) => {
@@ -54,6 +55,22 @@ const ContactHeader = ({
     setMenuVisible(false); // Ensure menu closes
   };
 
+  function formatLastSeen(date) {
+    if (!date) { return ''; }
+    const d = new Date(date);
+    const now = new Date();
+    if (
+      d.getDate() === now.getDate() &&
+      d.getMonth() === now.getMonth() &&
+      d.getFullYear() === now.getFullYear()
+    ) {
+      // Today
+      return `last seen today at ${d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`;
+    } else {
+      return `last seen on ${d.toLocaleDateString()} at ${d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`;
+    }
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.detailsIconsContainer}>
@@ -65,7 +82,11 @@ const ContactHeader = ({
             <UserAvatar profilePicture={profilePicture} size={40} name={name} />
             <View style={styles.profileNameUsername}>
               <Text style={styles.nameText}>{name}</Text>
-              {username && <Text style={styles.usernameText}>@{username}</Text>}
+              {isOnline ? (
+                <Text style={[styles.usernameText, styles.onlineText]}>online</Text>
+              ) : lastSeen ? (
+                <Text style={styles.usernameText}>{formatLastSeen(lastSeen)}</Text>
+              ) : null}
             </View>
           </View>
         </View>
@@ -246,6 +267,9 @@ const styles = StyleSheet.create({
   usernameText: {
     color: '#bbb',
     fontSize: 14,
+  },
+  onlineText: {
+    color: '#4cd137',
   },
   tabToggleRow: {
     flexDirection: 'row',

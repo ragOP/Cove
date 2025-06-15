@@ -1,27 +1,36 @@
 import {useEffect} from 'react';
+import {useSocketContext} from '../context/SocketContext';
 import {useSelector} from 'react-redux';
-import {selectToken} from '../redux/slice/authSlice';
-import useSocket from './useSocket';
+import {selectUser} from '../redux/slice/authSlice';
 
 export default function useChatSocket({
   onMessageReceived,
   onTypingStatusUpdate,
   onUpdateMessagesStatus,
+  onUpdateUserStatus,
 }) {
-  const token = useSelector(selectToken);
-  const socket = useSocket({token});
+  const socket = useSocketContext();
+  const user = useSelector(selectUser);
 
-  const joinChat = conversationId => {
-    if (socket && socket.connected && conversationId) {
-      console.log('[JOIN CHAT]', conversationId);
-      socket.emit('join_chat', {conversationId});
+  const joinChat = (conversationId, userId, receiverId) => {
+    if (!conversationId || !userId) {
+      return;
+    }
+
+    if (socket && socket.connected) {
+      console.log('[JOIN CHAT]', socket.id);
+      socket.emit('join_chat', {conversationId, userId, receiverId});
     }
   };
 
-  const leaveChat = conversationId => {
+  const leaveChat = (conversationId, userId) => {
+    if (!conversationId || !userId) {
+      return;
+    }
+
     if (socket && socket.connected && conversationId) {
-      console.log('[LEAVE CHAT]', conversationId);
-      socket.emit('leave_chat', {conversationId});
+      console.log('[LEAVE CHAT]', socket.id);
+      socket.emit('leave_chat', {conversationId, userId});
     }
   };
 
@@ -36,67 +45,44 @@ export default function useChatSocket({
   };
 
   useEffect(() => {
-    if (!socket || !token) {
+    if (!socket) {
       return;
     }
-
-    const handleConnect = () => {
-      console.log('[SOCKET CONNECTED]', socket.id);
-      socket.emit('get_my_info');
-      socket.on('get_my_info', handleGetMyInfo);
-      //   socket.on('private_message', handlePrivateMessage);
-      socket.on('typing_status_update', handleTypingStatusUpdate);
-      socket.on('new_message', handleNewMessage);
-      socket.on('message_read_update', handleMessageReadUpdate);
-      socket.on('connect_error', handleError);
-      socket.on('error', handleError);
-      socket.on('disconnect', handleDisconnect);
+    const handleGetUserInfo = data => {
+      console.log('[GET MY INFO]', data);
+      onUpdateUserStatus?.(data);
     };
-
-    const handleGetMyInfo = data => {
-      socket.emit('user_info', {
-        userId: data.user._id,
-        socketId: socket.id,
-        isOnline: true,
-      });
-    };
-
     const handleNewMessage = message => {
-      console.log('[PRIVATE MESSAGE]', message);
+      console.log('[NEW MESSAGE]', message);
       onMessageReceived?.(message);
     };
-
     const handleTypingStatusUpdate = data => {
       console.log('[TYPING STATUS UPDATE]', data);
       onTypingStatusUpdate?.(data?.isTyping);
     };
-
     const handleMessageReadUpdate = data => {
-      // data: { messageId, chatId, readBy, timestamp }
-      console.log('DATA', data);
-      if (onUpdateMessagesStatus && data?.messageId) {
-        onUpdateMessagesStatus(data);
-      }
+      console.log('[MESSAGE READ DATA]', data);
+      onUpdateMessagesStatus?.(data);
     };
-
     const handleError = err => {
       console.error('[SOCKET ERROR]', err);
     };
-
     const handleDisconnect = reason => {
       console.warn('[SOCKET DISCONNECT]', reason);
     };
 
-    socket.on('connect', handleConnect);
-
-    if (socket.connected) {
-      handleConnect();
-    }
+    socket.on('get_user_info', handleGetUserInfo);
+    socket.on('typing_status_update', handleTypingStatusUpdate);
+    socket.on('new_message', handleNewMessage);
+    socket.on('message_read_update', handleMessageReadUpdate);
+    socket.on('connect_error', handleError);
+    socket.on('error', handleError);
+    socket.on('disconnect', handleDisconnect);
 
     return () => {
-      socket.off('connect', handleConnect);
-      socket.off('get_my_info', handleGetMyInfo);
+      socket.off('get_user_info', handleGetUserInfo);
       socket.off('typing_status_update', handleTypingStatusUpdate);
+      socket.off('new_message', handleNewMessage);
       socket.off('message_read_update', handleMessageReadUpdate);
       socket.off('connect_error', handleError);
       socket.off('error', handleError);
@@ -104,10 +90,10 @@ export default function useChatSocket({
     };
   }, [
     socket,
-    token,
     onMessageReceived,
     onTypingStatusUpdate,
     onUpdateMessagesStatus,
+    onUpdateUserStatus,
   ]);
 
   return {socket, emitTypingStatus, joinChat, leaveChat};

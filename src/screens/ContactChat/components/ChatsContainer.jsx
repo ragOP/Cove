@@ -111,8 +111,6 @@ const ChatsContainer = ({
   const [isTyping, setIsTyping] = useState(false);
   const userId = useSelector(state => state.auth.user?.id);
 
-  console.log('ChatsContainer mounted with conversationId:', conversations);
-
   const {isLoading, refetch} = useQuery({
     queryKey: ['user_conversations', conversationId],
     queryFn: async () => {
@@ -135,7 +133,7 @@ const ChatsContainer = ({
   useEffect(() => {
     if (!isLoading && flatListRef?.current) {
       setTimeout(() => {
-        flatListRef.current.scrollToEnd({animated: false});
+        flatListRef.current?.scrollToEnd({animated: false});
       }, 100);
     }
   }, [isLoading, conversations?.length]);
@@ -153,7 +151,7 @@ const ChatsContainer = ({
 
   const scrollToBottom = () => {
     if (flatListRef?.current) {
-      flatListRef.current.scrollToEnd({animated: true});
+      flatListRef.current?.scrollToEnd({animated: true});
     }
   };
 
@@ -232,7 +230,7 @@ const ChatsContainer = ({
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => {
           if (flatListRef?.current && conversations?.length > 0) {
-            flatListRef.current.scrollToEnd({animated: false});
+            flatListRef.current?.scrollToEnd({animated: false});
           }
         }}
         onScroll={handleScroll}

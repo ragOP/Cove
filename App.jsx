@@ -19,20 +19,26 @@ import FriendRequests from './src/screens/FriendRequests/FriendRequests';
 import {PaperProvider} from 'react-native-paper';
 import CustomSnackbar from './src/components/Snackbar/CustomSnackbar';
 import Profile from './src/screens/Profile/Profile';
+import {SocketProvider} from './src/context/SocketContext';
 
 export const queryClient = new QueryClient();
 
 const Stack = createNativeStackNavigator();
 
-const AppStack = () => (
-  <Stack.Navigator screenOptions={{headerShown: false}}>
-    <Stack.Screen name={Paths.HOME} component={Home} />
-    <Stack.Screen name={Paths.CONTACT_CHAT} component={ContactChat} />
-    <Stack.Screen name={Paths.ADD_CONTACT} component={AddContact} />
-    <Stack.Screen name={Paths.FRIEND_REQUESTS} component={FriendRequests} />
-    <Stack.Screen name={Paths.PROFILE} component={Profile} />
-  </Stack.Navigator>
-);
+const AppStack = () => {
+  const token = useSelector(state => state.auth.token);
+  return (
+    <SocketProvider token={token}>
+      <Stack.Navigator screenOptions={{headerShown: false}}>
+        <Stack.Screen name={Paths.HOME} component={Home} />
+        <Stack.Screen name={Paths.CONTACT_CHAT} component={ContactChat} />
+        <Stack.Screen name={Paths.ADD_CONTACT} component={AddContact} />
+        <Stack.Screen name={Paths.FRIEND_REQUESTS} component={FriendRequests} />
+        <Stack.Screen name={Paths.PROFILE} component={Profile} />
+      </Stack.Navigator>
+    </SocketProvider>
+  );
+};
 
 const AuthStack = () => (
   <Stack.Navigator screenOptions={{headerShown: false}}>

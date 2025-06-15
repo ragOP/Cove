@@ -39,6 +39,10 @@ const ContactChat = () => {
   const [tab, setTab] = useState('chat');
   const [previewedMedia, setPreviewedMedia] = useState(null);
   const [userConversationId, setUserConversationId] = useState(null);
+  const [userStatus, setUserStatus] = useState({
+    isOnline: false,
+    lastSeen: null,
+  });
 
   const onUpdateMessagesStatus = data => {
     if (!data?.messageId) {
@@ -57,13 +61,18 @@ const ContactChat = () => {
     });
   };
 
-  console.log('Contact chat mounted with conversationId:', conversations);
-
   const {emitTypingStatus, joinChat, leaveChat} = useChatSocket({
     onMessageReceived: message => {
       setConversations(prev => dedupeMessages([...(prev || []), message]));
     },
     onUpdateMessagesStatus,
+    onUpdateUserStatus: status => {
+      console.log('User status updated:', status);
+      setUserStatus({
+        isOnline: status.isOnline,
+        lastSeen: status.lastSeen,
+      });
+    },
   });
 
   const handleSelectMessage = msg => setSelectedMessage(msg);
@@ -88,16 +97,14 @@ const ContactChat = () => {
   const prevConversationId = useRef();
 
   useEffect(() => {
-    if (conversationId && prevConversationId.current !== conversationId) {
-      joinChat(conversationId);
-    }
+    // // console.log(conversationId, prevConversationId?.current);
+    // if (conversationId && prevConversationId?.current !== conversationId) {
+      joinChat(conversationId, userId, contactDetails?._id);
+    // }
     return () => {
-      if (prevConversationId.current && prevConversationId.current !== conversationId) {
-        leaveChat(prevConversationId.current);
-      }
-      prevConversationId.current = conversationId;
+      leaveChat(conversationId, userId);
     };
-  }, [conversationId, joinChat, leaveChat]);
+  }, [conversationId]);
 
   if (!contactDetails) {
     return null;
@@ -122,6 +129,8 @@ const ContactChat = () => {
             name={contactDetails.name}
             username={contactDetails.username}
             profilePicture={contactDetails.profilePicture}
+            isOnline={userStatus.isOnline}
+            lastSeen={userStatus.lastSeen}
             activeTab={tab}
             onTabChange={setTab}
           />
