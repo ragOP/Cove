@@ -14,7 +14,7 @@ export default function useChatListSocket({onChatListUpdate}) {
 
     const handleChatListUpdate = data => {
       const chatObj = data?.data?.[0] || [];
-      console.log('[CHAT LIST UPDATE]',chatObj, data);
+      console.log('[CHAT LIST UPDATE]', chatObj, data);
       onChatListUpdate?.(chatObj);
     };
 

@@ -6,7 +6,7 @@ export const getUserPendingRequests = async ({}) => {
     const apiResponse = await apiService({
       endpoint: `${endpoints.friendRequests}/pending`,
     });
-    console.log('getUserPendingRequests response:', apiResponse);
+
     return apiResponse;
   } catch (error) {
     console.error(error);

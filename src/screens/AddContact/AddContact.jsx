@@ -19,6 +19,7 @@ import {request, PERMISSIONS, RESULTS, check} from 'react-native-permissions';
 import {useNavigation} from '@react-navigation/native';
 import {useQuery} from '@tanstack/react-query';
 import {searchUsers} from '../../apis/searchUsers';
+import {fetchSuggestedUsers} from '../../apis/fetchSuggestedUsers';
 import useDebounce from '../../hooks/useDebounce';
 import {getInitials} from '../../utils/name/getInitials';
 import {sendFriendRequest} from '../../apis/sendFriendRequest';
@@ -26,115 +27,22 @@ import {useDispatch} from 'react-redux';
 import {showSnackbar} from '../../redux/slice/snackbarSlice';
 import PrimaryLoader from '../../components/Loaders/PrimaryLoader';
 import {getConversations} from '../../apis/conversations';
-import { Paths } from '../../navigaton/paths';
-
-const SUGGESTED_USERS = [
-  {
-    id: '1',
-    name: 'Alice Johnson',
-    username: 'alicej',
-    profilePicture: 'https://randomuser.me/api/portraits/women/1.jpg',
-  },
-  {
-    id: '2',
-    name: 'Bob Smith',
-    username: 'bobsmith',
-    profilePicture: 'https://randomuser.me/api/portraits/men/2.jpg',
-  },
-  {
-    id: '3',
-    name: 'Charlie Lee',
-    username: 'charlielee',
-    profilePicture: 'https://randomuser.me/api/portraits/men/3.jpg',
-  },
-  {
-    id: '4',
-    name: 'Diana Prince',
-    username: 'dianap',
-    profilePicture: 'https://randomuser.me/api/portraits/women/4.jpg',
-  },
-  {
-    id: '5',
-    name: 'Eve Adams',
-    username: 'evea',
-    profilePicture: 'https://randomuser.me/api/portraits/women/5.jpg',
-  },
-  {
-    id: '6',
-    name: 'Frank Miller',
-    username: 'frankm',
-    profilePicture: 'https://randomuser.me/api/portraits/men/6.jpg',
-  },
-  {
-    id: '7',
-    name: 'Grace Hopper',
-    username: 'graceh',
-    profilePicture: 'https://randomuser.me/api/portraits/women/7.jpg',
-  },
-  {
-    id: '8',
-    name: 'Henry Ford',
-    username: 'henryf',
-    profilePicture: 'https://randomuser.me/api/portraits/men/8.jpg',
-  },
-];
-
-const IMPORT_CONTACT_USERS = [
-  {
-    id: '101',
-    name: 'Ivy Lane',
-    phone: '+1234567890',
-    profilePicture: 'https://randomuser.me/api/portraits/women/9.jpg',
-    onCove: true,
-  },
-  {
-    id: '102',
-    name: 'Jack Black',
-    phone: '+1987654321',
-    profilePicture: 'https://randomuser.me/api/portraits/men/10.jpg',
-    onCove: false,
-  },
-  {
-    id: '103',
-    name: 'Karen White',
-    phone: '+1122334455',
-    profilePicture: 'https://randomuser.me/api/portraits/women/11.jpg',
-    onCove: true,
-  },
-  {
-    id: '104',
-    name: 'Leo King',
-    phone: '+1098765432',
-    profilePicture: 'https://randomuser.me/api/portraits/men/12.jpg',
-    onCove: false,
-  },
-  {
-    id: '105',
-    name: 'Mona Lisa',
-    phone: '+1231231234',
-    profilePicture: 'https://randomuser.me/api/portraits/women/13.jpg',
-    onCove: false,
-  },
-  {
-    id: '106',
-    name: 'Nate River',
-    phone: '+3213214321',
-    profilePicture: 'https://randomuser.me/api/portraits/men/14.jpg',
-    onCove: true,
-  },
-];
+import {Paths} from '../../navigaton/paths';
+import Contacts from 'react-native-contacts';
+import {checkContactsOnCove} from '../../apis/checkContactsOnCove';
 
 const contactOptions = [
   {key: 'add', label: 'Add Friend', icon: 'account-plus-outline'},
   {key: 'block', label: 'Block', icon: 'block-helper'},
 ];
 
-const searchSuggestedUsers = async () => {
-  await new Promise(res => setTimeout(res, 200));
-  return SUGGESTED_USERS;
-};
-
-const ContactListItem = ({item, addingId, handleAdd, handleOptions, handleNavigateToChat}) => (
+const ContactListItem = ({
+  item,
+  addingId,
+  handleAdd,
+  handleOptions,
+  handleNavigateToChat,
+}) => (
   <View style={styles.userRow}>
     {item.profilePicture ? (
       <Avatar.Image size={44} source={{uri: item.profilePicture}} />
@@ -147,8 +55,7 @@ const ContactListItem = ({item, addingId, handleAdd, handleOptions, handleNaviga
     )}
     <View style={styles.userInfo}>
       <Text style={styles.name}>{item.name}</Text>
-      <Text className={styles.username}>@{item.username}</Text>
-      <Text style={styles.userId}>{item._id}</Text>
+      <Text style={styles.username}>@{item.username}</Text>
     </View>
     <TouchableOpacity
       style={styles.addBtn}
@@ -160,17 +67,30 @@ const ContactListItem = ({item, addingId, handleAdd, handleOptions, handleNaviga
           : () => handleAdd(item)
       }
       disabled={
-        addingId === (item.id || item._id) || item.isFriend || item.isRequestPending
-      }
-    >
+        addingId === (item.id || item._id) ||
+        item.isFriend ||
+        item.isRequestPending
+      }>
       {item.isFriend ? (
-        <MaterialCommunityIcons name="message-processing" size={26} color="#4caf50" />
+        <MaterialCommunityIcons
+          name="message-processing"
+          size={26}
+          color="#4caf50"
+        />
       ) : item.isRequestPending ? (
-        <MaterialCommunityIcons name="clock-outline" size={26} color="#ffb300" />
+        <MaterialCommunityIcons
+          name="clock-outline"
+          size={26}
+          color="#ffb300"
+        />
       ) : addingId === (item.id || item._id) ? (
         <MaterialCommunityIcons name="check-circle" size={26} color="#4caf50" />
       ) : (
-        <MaterialCommunityIcons name="account-plus-outline" size={26} color="#fff" />
+        <MaterialCommunityIcons
+          name="account-plus-outline"
+          size={26}
+          color="#fff"
+        />
       )}
     </TouchableOpacity>
     <TouchableOpacity
@@ -244,6 +164,7 @@ const AddContact = () => {
   const [optionUser, setOptionUser] = useState(null);
   const optionAnim = useRef(new Animated.Value(0)).current;
   const [refreshing, setRefreshing] = useState(false);
+  const [importedContacts, setImportedContacts] = useState([]);
 
   const debouncedSearch = useDebounce(search, 400);
 
@@ -270,14 +191,14 @@ const AddContact = () => {
   });
 
   const {
-    data: filteredSuggested = [],
+    data: suggestedContacts = [],
     isLoading: isLoadingSuggested,
     refetch: refetchSuggested,
     isRefetching: isRefetchingSuggested,
   } = useQuery({
     queryKey: ['suggested-users'],
-    queryFn: () => searchSuggestedUsers(),
-    initialData: SUGGESTED_USERS,
+    queryFn: fetchSuggestedUsers,
+    select: data => data?.response?.data || [],
   });
 
   const requestContactsPermission = async () => {
@@ -319,7 +240,52 @@ const AddContact = () => {
     checkPermission();
   }, []);
 
-  const filteredContacts = IMPORT_CONTACT_USERS.filter(
+  useEffect(() => {
+    const fetchAndCheckContacts = async () => {
+      if (contactsPermission === 'granted') {
+        setContactsLoading(true);
+        try {
+          const deviceContacts = await Contacts.getAll();
+
+          const contactsToCheck = deviceContacts
+            .map(c => ({
+              name: c.displayName || c.givenName || '',
+              phone: (c.phoneNumbers[0]?.number || '').replace(/\s|-/g, ''),
+            }))
+            .filter(c => c.phone);
+
+          const apiResponse = await checkContactsOnCove({
+            contacts: contactsToCheck,
+          });
+
+          if (apiResponse?.response?.success) {
+            const checkedObj = apiResponse.response.data;
+            console.log('Checked contacts on Cove:', checkedObj);
+            const merged = contactsToCheck.map(c => {
+              const onCove = checkedObj[c.phone] || false;
+              console.log(c.phone,checkedObj, 'onCove:', checkedObj[c.phone]);
+              return {
+                ...c,
+                onCove,
+                id: c.phone,
+              };
+            });
+            setImportedContacts(merged);
+          } else {
+            setImportedContacts([]);
+          }
+        } catch (e) {
+          setImportedContacts([]);
+        }
+        setContactsLoading(false);
+      }
+    };
+    fetchAndCheckContacts();
+  }, [contactsPermission]);
+
+  console.log('Imported Contacts:', importedContacts);
+
+  const filteredContacts = importedContacts.filter(
     user =>
       user.name.toLowerCase().includes(search.toLowerCase()) ||
       user.phone.includes(search),
@@ -368,7 +334,7 @@ const AddContact = () => {
   };
 
   const handleInvite = (phone, name) => {
-    const smsBody = `Hey ${name}, join me on Cove! Download the app: https://yourapp.link`;
+    const smsBody = `Hey ${name}, join me on Cove! Download the app: https://cove.link`;
     let url = `sms:${phone}${
       Platform.OS === 'ios' ? '&' : '?'
     }body=${encodeURIComponent(smsBody)}`;
@@ -408,7 +374,6 @@ const AddContact = () => {
     setRefreshing(false);
   };
 
-  // Fetch contact details and navigate to chat if friend
   const handleNavigateToChat = async user => {
     try {
       const apiResponse = await getConversations({id: user._id});
@@ -420,7 +385,7 @@ const AddContact = () => {
             type: 'error',
             title: 'Error',
             subtitle: 'Could not fetch contact details',
-          })
+          }),
         );
       }
     } catch (error) {
@@ -429,7 +394,7 @@ const AddContact = () => {
           type: 'error',
           title: 'Error',
           subtitle: 'Could not fetch contact details',
-        })
+        }),
       );
     }
   };
@@ -501,8 +466,6 @@ const AddContact = () => {
       </Animated.View>
     );
   };
-
-  console.log('>>>', searchedUsers);
 
   return (
     <View style={styles.container}>
@@ -585,9 +548,9 @@ const AddContact = () => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
-              Suggested ({filteredSuggested.length || 0})
+              Suggested ({suggestedContacts.length || 0})
             </Text>
-            {filteredSuggested.length > 4 && (
+            {suggestedContacts.length > 4 && (
               <TouchableOpacity
                 style={styles.showMoreBtn}
                 onPress={() => setShowAllSuggested(!showAllSuggested)}>
@@ -602,14 +565,14 @@ const AddContact = () => {
               <PrimaryLoader />
               <Text style={styles.loadingText}>Loading suggestions...</Text>
             </View>
-          ) : filteredSuggested.length === 0 ? (
+          ) : suggestedContacts.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No suggestions found</Text>
             </View>
           ) : (
             (showAllSuggested
-              ? filteredSuggested
-              : filteredSuggested.slice(0, 4)
+              ? suggestedContacts
+              : suggestedContacts.slice(0, 4)
             ).map(item => (
               <ContactListItem
                 key={item.id}
@@ -748,7 +711,7 @@ const styles = StyleSheet.create({
   },
   userInfo: {flex: 1, marginLeft: 16, justifyContent: 'center'},
   name: {fontWeight: 'bold', fontSize: 16, color: '#fff'},
-  username: {color: '#bbb', fontSize: 14, marginTop: 2},
+  username: {color: '#fff', fontSize: 14, marginTop: 2},
   userId: {color: '#888', fontSize: 12, marginTop: 2},
   addBtn: {
     marginLeft: 8,
@@ -807,5 +770,5 @@ const styles = StyleSheet.create({
   optionText: {color: '#fff', fontSize: 16, fontWeight: '500'},
   optionCancel: {marginTop: 16, alignItems: 'center'},
   optionCancelText: {color: '#bbb', fontSize: 16, fontWeight: 'bold'},
-  avatarFallback: { backgroundColor: '#444' },
+  avatarFallback: {backgroundColor: '#444'},
 });

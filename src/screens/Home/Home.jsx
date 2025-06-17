@@ -249,6 +249,7 @@ const Home = () => {
   const {
     data: contacts = [],
     isLoading: isLoadingContacts,
+    isFetching: isFetchingContacts,
     refetch,
   } = useQuery({
     queryKey: ['contacts', params],
@@ -256,7 +257,7 @@ const Home = () => {
       const apiResponse = await getUserContacts({params});
       if (apiResponse?.response?.success) {
         const data = apiResponse.response.data || [];
-        // If page is 1, reset allContacts; else, append and dedupe
+
         setAllContacts(prev => {
           if (params.page === 1) {
             return data;
@@ -398,9 +399,7 @@ const Home = () => {
   };
 
   const handleChatListUpdate = updatedContact => {
-    console.log('Chat list update received:', updatedContact);
     setAllContacts(prev => {
-      // Fast path: update in place if found, else unshift
       for (let i = 0; i < prev.length; i++) {
         if (prev[i]._id === updatedContact._id) {
           const updated = prev.slice();
@@ -411,7 +410,6 @@ const Home = () => {
       return [updatedContact, ...prev];
     });
   };
-  console.log(allContacts);
 
   useChatListSocket({
     onChatListUpdate: updatedContact => {
@@ -430,7 +428,7 @@ const Home = () => {
         />
       ) : (
         <View style={styles.headerRow}>
-          <Text style={styles.headerText}>All Chats</Text>
+          <Text style={styles.headerText}>Cove</Text>
           <View style={styles.headerInnerRow}>
             <TouchableOpacity
               style={styles.friendRequestBtn}
@@ -536,7 +534,7 @@ const Home = () => {
             : styles.listContent
         }
         ListEmptyComponent={
-          isLoadingContacts ? (
+          (isLoadingContacts || isFetchingContacts) ? (
             <View style={styles.loadingContainer}>
               <Avatar.Icon
                 icon="message-text"
@@ -583,10 +581,10 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
     flex: 1,
-    textAlign: 'center',
-    marginLeft: 72,
+    marginLeft: 10,
+    // color: '#D28A8C',
+    color: '#fff',
   },
   plusIcon: {
     margin: 0,
@@ -609,7 +607,7 @@ const styles = StyleSheet.create({
     transitionDuration: '200ms',
   },
   unreadChipSelected: {
-    backgroundColor: '#D28A8C', // Use Add Contact button color
+    backgroundColor: '#D28A8C',
   },
   unreadChipText: {
     color: '#fff',
@@ -618,7 +616,7 @@ const styles = StyleSheet.create({
     transitionDuration: '200ms',
   },
   unreadChipTextSelected: {
-    color: '#fff', // White text for selected chip
+    color: '#fff',
   },
   searchBar: {
     marginHorizontal: 16,
@@ -727,7 +725,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 64,
+    paddingTop: '50%',
   },
   loadingAvatar: {
     backgroundColor: '#232323',

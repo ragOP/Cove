@@ -1,5 +1,5 @@
 import {SafeAreaView, StyleSheet} from 'react-native';
-import React from 'react';
+import React, {useEffect} from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import Splash from './src/screens/Splash/Splash';
 import Register from './src/screens/Register/Register';
@@ -20,6 +20,11 @@ import {PaperProvider} from 'react-native-paper';
 import CustomSnackbar from './src/components/Snackbar/CustomSnackbar';
 import Profile from './src/screens/Profile/Profile';
 import {SocketProvider} from './src/context/SocketContext';
+import {
+  setupNotificationChannel,
+  setupFCMForegroundHandler,
+  setupNotificationOpenedHandler,
+} from './src/notifications/notificationService';
 
 export const queryClient = new QueryClient();
 
@@ -60,6 +65,15 @@ const RootNavigator = () => {
 };
 
 const App = () => {
+  useEffect(() => {
+    setupNotificationChannel();
+    setupFCMForegroundHandler();
+    setupNotificationOpenedHandler(data => {
+      console.log('Notification tapped:', data);
+      // TODO: Navigate to chat or relevant screen
+    });
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Provider store={store}>

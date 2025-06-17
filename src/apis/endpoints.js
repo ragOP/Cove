@@ -11,4 +11,6 @@ export const endpoints = {
   sendMessage: 'api/user/messages/send-message',
   uploadFile: 'api/user/upload-files',
   readChat: 'api/user/read-chat',
+  checkContacts: 'api/user/check-contacts',
+  suggestedUsers: 'api/user/suggested-users',
 };
