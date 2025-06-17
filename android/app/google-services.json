@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "953251009743",
+    "project_id": "cove-2fc3d",
+    "storage_bucket": "cove-2fc3d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:953251009743:android:5f4f4807731d38b1ac93ba",
+        "android_client_info": {
+          "package_name": "com.coveapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTLB5aipGFPTQljn7Z1nCihqS5j7R99gI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

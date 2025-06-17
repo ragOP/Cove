@@ -20,11 +20,13 @@ import {PaperProvider} from 'react-native-paper';
 import CustomSnackbar from './src/components/Snackbar/CustomSnackbar';
 import Profile from './src/screens/Profile/Profile';
 import {SocketProvider} from './src/context/SocketContext';
-import {
-  setupNotificationChannel,
-  setupFCMForegroundHandler,
-  setupNotificationOpenedHandler,
-} from './src/notifications/notificationService';
+import messaging from '@react-native-firebase/messaging';
+import {PermissionsAndroid, Platform} from 'react-native';
+// import {
+//   setupNotificationChannel,
+//   setupFCMForegroundHandler,
+//   setupNotificationOpenedHandler,
+// } from './src/notifications/notificationService';
 
 export const queryClient = new QueryClient();
 
@@ -32,6 +34,36 @@ const Stack = createNativeStackNavigator();
 
 const AppStack = () => {
   const token = useSelector(state => state.auth.token);
+
+  async function requestUserPermission() {
+    const authStatus = await messaging().requestPermission();
+    const enabled =
+      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+    if (enabled) {
+      console.log('Authorization status:', authStatus);
+    }
+  }
+
+  const getToken = async () => {
+    try {
+      const fcmToken = await messaging().getToken();
+      if (fcmToken) {
+        console.log('FCM Token:', fcmToken);
+      } else {
+        console.log('No FCM token received');
+      }
+    } catch (error) {
+      console.error('Error getting FCM token:', error);
+    }
+  };
+
+  useEffect(() => {
+    requestUserPermission();
+    getToken();
+  }, []);
+
   return (
     <SocketProvider token={token}>
       <Stack.Navigator screenOptions={{headerShown: false}}>
@@ -64,14 +96,29 @@ const RootNavigator = () => {
   );
 };
 
+const requestNotificationPermission = async () => {
+  if (Platform.OS === 'android' && Platform.Version >= 33) {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+      );
+      if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+        console.warn('Notification permission not granted');
+      }
+    } catch (err) {
+      console.warn('Notification permission error:', err);
+    }
+  }
+};
+
 const App = () => {
   useEffect(() => {
-    setupNotificationChannel();
-    setupFCMForegroundHandler();
-    setupNotificationOpenedHandler(data => {
-      console.log('Notification tapped:', data);
-      // TODO: Navigate to chat or relevant screen
-    });
+    requestNotificationPermission();
+    // setupNotificationChannel();
+    // setupFCMForegroundHandler();
+    // setupNotificationOpenedHandler(data => {
+    //   console.log('Notification tapped:', data);
+    // });
   }, []);
 
   return (
