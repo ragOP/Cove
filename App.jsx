@@ -1,5 +1,5 @@
 import {SafeAreaView, StyleSheet} from 'react-native';
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import Splash from './src/screens/Splash/Splash';
 import Register from './src/screens/Register/Register';
@@ -22,11 +22,7 @@ import Profile from './src/screens/Profile/Profile';
 import {SocketProvider} from './src/context/SocketContext';
 import messaging from '@react-native-firebase/messaging';
 import {PermissionsAndroid, Platform} from 'react-native';
-// import {
-//   setupNotificationChannel,
-//   setupFCMForegroundHandler,
-//   setupNotificationOpenedHandler,
-// } from './src/notifications/notificationService';
+import useFcmSocket from './src/hooks/useFcmSocket';
 
 export const queryClient = new QueryClient();
 
@@ -46,22 +42,8 @@ const AppStack = () => {
     }
   }
 
-  const getToken = async () => {
-    try {
-      const fcmToken = await messaging().getToken();
-      if (fcmToken) {
-        console.log('FCM Token:', fcmToken);
-      } else {
-        console.log('No FCM token received');
-      }
-    } catch (error) {
-      console.error('Error getting FCM token:', error);
-    }
-  };
-
   useEffect(() => {
     requestUserPermission();
-    getToken();
   }, []);
 
   return (

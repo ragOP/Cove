@@ -28,7 +28,6 @@ export const SocketProvider = ({token, children}) => {
     });
   }
 
-  // Listen for app state changes
   useEffect(() => {
     const handleAppStateChange = nextAppState => {
       setAppState(nextAppState);
@@ -40,7 +39,6 @@ export const SocketProvider = ({token, children}) => {
     return () => subscription.remove();
   }, []);
 
-  // Centralized connect/disconnect logic
   useEffect(() => {
     const socket = socketRef.current;
     if (token && appState === 'active') {
@@ -55,7 +53,6 @@ export const SocketProvider = ({token, children}) => {
     }
   }, [token, appState]);
 
-  // Robust error and disconnect handling
   useEffect(() => {
     const socket = socketRef.current;
     const onConnectError = err => {
@@ -80,7 +77,7 @@ export const SocketProvider = ({token, children}) => {
   // For debugging
   useEffect(() => {
     console.log('[SocketProvider] socketRef.current:', socketRef.current);
-  }, [socketRef?.current]);
+  }, []);
 
   return (
     <SocketContext.Provider value={socketRef.current}>

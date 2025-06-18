@@ -29,6 +29,7 @@ import {TOKEN} from '../../constants/AUTH';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {Avatar, Button} from 'react-native-paper';
 import {showSnackbar} from '../../redux/slice/snackbarSlice';
+import messaging from '@react-native-firebase/messaging';
 
 const PhoneNumberForm = ({goNext, form, setForm}) => {
   const phoneInput = useRef(null);
@@ -138,6 +139,20 @@ const PhoneNumberVerification = ({
     setOtp(currentOtp);
   };
 
+  const getToken = async () => {
+    try {
+      const fcmToken = await messaging().getToken();
+      if (fcmToken) {
+        return fcmToken;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error getting FCM token:', error);
+      return null;
+    }
+  };
+
   const onVerifyOtp = async () => {
     if (isValidating) {
       return;
@@ -149,6 +164,7 @@ const PhoneNumberVerification = ({
       const payload = {
         phoneNumber: form.phoneNumber,
         otp: otp,
+        FCMToken: getToken(),
       };
 
       const apiResponse = await onRegister({payload});
@@ -159,6 +175,7 @@ const PhoneNumberVerification = ({
         const data = apiResponse?.response?.data;
         const token = data?.token;
         const userData = data?.user;
+        const fcmToken = data?.FCMToken;
 
         setTempToken(token);
 
@@ -196,6 +213,7 @@ const PhoneNumberVerification = ({
                 username: userData?.username,
                 phoneNumber: userData?.phoneNumber,
                 email: userData?.email,
+                fcmToken: fcmToken,
               },
             }),
           );
@@ -613,6 +631,7 @@ const PasswordInput = ({goNext, goBack, form, setForm, tempToken}) => {
       formData.append('name', form.name);
       formData.append('username', form.username);
       formData.append('password', form.password);
+
       if (form.dob) {
         formData.append('dob', form.dob.toISOString());
       }

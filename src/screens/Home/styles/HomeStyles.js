@@ -1,0 +1,328 @@
+import {StyleSheet} from 'react-native';
+
+const HomeStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#181818',
+    paddingTop: 12,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 8,
+    justifyContent: 'space-between',
+  },
+  headerInnerRow: {flexDirection: 'row', alignItems: 'center'},
+  headerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    flex: 1,
+    marginLeft: 10,
+    color: '#fff',
+    fontFamily: 'Lobster-Regular',
+  },
+  plusIcon: {
+    margin: 0,
+  },
+  optionsIcon: {
+    margin: 0,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  unreadChip: {
+    backgroundColor: '#000',
+    borderRadius: 16,
+    paddingHorizontal: 2,
+    paddingVertical: 0,
+    transitionProperty: 'background-color',
+    transitionDuration: '200ms',
+  },
+  unreadChipSelected: {
+    backgroundColor: '#D28A8C',
+  },
+  unreadChipText: {
+    color: '#fff',
+    fontSize: 14,
+    transitionProperty: 'color',
+    transitionDuration: '200ms',
+  },
+  unreadChipTextSelected: {
+    color: '#fff',
+  },
+  searchBarContainer: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  searchBar: {
+    backgroundColor: '#000',
+    color: '#fff',
+  },
+  listContent: {
+    paddingHorizontal: 0,
+    paddingBottom: 16,
+  },
+  pressable: {
+    width: '100%',
+    alignSelf: 'stretch',
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 0,
+    overflow: 'hidden',
+    width: '100%',
+    backgroundColor: 'transparent',
+  },
+  contactInfo: {
+    flex: 1,
+    marginLeft: 16,
+    justifyContent: 'center',
+    gap: 6,
+  },
+  contactName: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#fff',
+  },
+  previewMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  previewText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  previewTextBold: {
+    fontWeight: 'bold',
+  },
+  contactMessage: {
+    color: 'rgba(255, 255, 255, 0.55)',
+    fontSize: 14,
+    marginTop: 2,
+  },
+  contactMeta: {
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  contactTime: {
+    fontSize: 12,
+    color: '#888',
+  },
+  badge: {
+    backgroundColor: '#fff',
+    color: '#000',
+    fontWeight: 'bold',
+  },
+  emptyStateContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    paddingTop: 32,
+  },
+  emptyAvatar: {
+    backgroundColor: '#232323',
+    marginBottom: 24,
+    opacity: 0.92,
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 15,
+    color: '#bbb',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  emptyButton: {
+    backgroundColor: '#D28A8C',
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 6,
+    alignSelf: 'center',
+    elevation: 2,
+  },
+  emptyButtonLabel: {fontWeight: 'bold'},
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: '50%',
+  },
+  loadingAvatar: {
+    backgroundColor: '#232323',
+  },
+  loadingText: {
+    color: '#bbb',
+    marginTop: 16,
+    fontSize: 16,
+  },
+  friendRequestBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  friendRequestIconWrapper: {
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  friendRequestCountBubble: {
+    position: 'absolute',
+    top: -8,
+    right: -15,
+    backgroundColor: '#D28A8C',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#232323',
+    zIndex: 2,
+    paddingHorizontal: 4,
+  },
+  friendRequestCountText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  emptyAvata: {
+    backgroundColor: '#232323',
+    marginBottom: 24,
+    opacity: 0.92,
+    alignSelf: 'center',
+  },
+  // --- Styles for SelectedContactBar ---
+  selectedBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#232323',
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  iconBtn: {
+    padding: 6,
+    marginHorizontal: 2,
+  },
+  selectedContactInfoCount: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectedContactCount: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  menuContent: {
+    backgroundColor: '#232323',
+  },
+  menuItemTitle: {
+    color: '#fff',
+  },
+  emptyListContent: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+    paddingBottom: 16,
+  },
+  searchPageFull: {
+    flex: 1,
+    backgroundColor: '#181818',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 100,
+  },
+  searchPageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  universalSearchHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingTop: 16,
+    paddingBottom: 12,
+    backgroundColor: '#181818',
+    borderBottomWidth: 1,
+    borderBottomColor: '#232323',
+  },
+  universalSearchBackBtn: {
+    paddingRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  universalSearchBarContainer: {
+    flex: 1,
+  },
+  universalSearchBar: {
+    backgroundColor: '#232323',
+    color: '#fff',
+    borderRadius: 24,
+    marginLeft: 0,
+    marginRight: 0,
+    elevation: 0,
+  },
+  universalSearchInput: {
+    fontSize: 16,
+    color: '#fff',
+  },
+  universalSearchRowWrapper: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  universalSearchSeparator: {
+    height: 8,
+  },
+  universalSearchLoadingContainer: {
+    alignItems: 'center',
+    marginTop: 32,
+  },
+  universalSearchLoadingText: {
+    fontSize: 15,
+    color: '#bbb',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginTop: 12,
+  },
+  universalSearchEmptyText: {
+    fontSize: 15,
+    color: '#bbb',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginTop: 32,
+  },
+  universalSearchListContent: {
+    paddingBottom: 32,
+    paddingTop: 8,
+  },
+});
+
+export default HomeStyles;

@@ -2,6 +2,14 @@
   "migIndex": 1,
   "data": [
     {
+      "path": "src/assets/fonts/Kumbh-Sans.ttf",
+      "sha1": "d12c19579d3bc91e6ba79588d67a44b046187927"
+    },
+    {
+      "path": "src/assets/fonts/Lobster-Regular.ttf",
+      "sha1": "120c751cd7a77174037c2409ab883ef7efc5edbb"
+    },
+    {
       "path": "src/assets/fonts/Sansita-Black.ttf",
       "sha1": "183fc9b248d7fe720f91b76b6018d68cc382be53"
     },
