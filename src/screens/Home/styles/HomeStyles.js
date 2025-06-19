@@ -16,7 +16,7 @@ const HomeStyles = StyleSheet.create({
   headerInnerRow: {flexDirection: 'row', alignItems: 'center'},
   headerText: {
     fontSize: 24,
-    fontWeight: 'bold',
+    // fontWeight: 'bold',
     flex: 1,
     marginLeft: 10,
     color: '#fff',

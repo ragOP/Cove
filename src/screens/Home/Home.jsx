@@ -192,7 +192,6 @@ const Home = () => {
   const handlePageRefresh = async () => {
     setRefreshing(true);
     setSelectedIds([]);
-    dispatch(setContactType('all'));
     dispatch(setPage(1));
     try {
       await refetchRequests();
