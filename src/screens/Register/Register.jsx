@@ -161,10 +161,12 @@ const PhoneNumberVerification = ({
     try {
       setIsValidating(true);
 
+      const fcmToken = await getToken();
+
       const payload = {
         phoneNumber: form.phoneNumber,
         otp: otp,
-        FCMToken: getToken(),
+        FCMToken: fcmToken,
       };
 
       const apiResponse = await onRegister({payload});
@@ -175,7 +177,6 @@ const PhoneNumberVerification = ({
         const data = apiResponse?.response?.data;
         const token = data?.token;
         const userData = data?.user;
-        const fcmToken = data?.FCMToken;
 
         setTempToken(token);
 

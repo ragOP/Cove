@@ -23,6 +23,7 @@ import useChatSocket from '../../hooks/useChatSocket';
 import {dedupeMessages} from '../../utils/messages/dedupeMessages';
 import {useQuery} from '@tanstack/react-query';
 import {readChat} from '../../apis/readChat';
+import {getUserInfo} from '../../apis/getUserInfo';
 
 const ContactChat = () => {
   const route = useRoute();
@@ -31,6 +32,7 @@ const ContactChat = () => {
 
   const contact = route.params?.contact;
   const conversationId = contact?._id;
+
   const contactDetails = getChatDisplayInfo(contact, userId);
 
   const [conversations, setConversations] = useState([]);
@@ -43,6 +45,33 @@ const ContactChat = () => {
     isOnline: false,
     lastSeen: null,
   });
+  const [isFetchingUserStatus, setIsFetchingUserStatus] = useState(false);
+
+  useEffect(() => {
+    if (!contact?._id) {
+      return;
+    }
+    const fetchUserInfo = async () => {
+      try {
+        setIsFetchingUserStatus(true);
+        const apiResponse = await getUserInfo({userId: contact._id});
+        if (apiResponse?.response?.success && apiResponse?.response?.data) {
+          const data = apiResponse.response.data;
+          setUserStatus(prev => ({
+            ...prev,
+            isOnline: data.isOnline ?? prev.isOnline,
+            lastSeen: data.lastSeen ?? prev.lastSeen,
+          }));
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsFetchingUserStatus(false);
+      }
+    };
+
+    fetchUserInfo();
+  }, [contact?._id]);
 
   const onUpdateMessagesStatus = data => {
     if (!data?.messageId) {
@@ -94,16 +123,13 @@ const ContactChat = () => {
     enabled: !!userConversationId,
   });
 
-  const prevConversationId = useRef();
-
   useEffect(() => {
-    // // console.log(conversationId, prevConversationId?.current);
-    // if (conversationId && prevConversationId?.current !== conversationId) {
-      joinChat(conversationId, userId, contactDetails?._id);
-    // }
+    joinChat(conversationId, userId, contactDetails?._id);
+
     return () => {
       leaveChat(conversationId, userId);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
 
   if (!contactDetails) {
@@ -126,6 +152,7 @@ const ContactChat = () => {
           />
         ) : (
           <ContactHeader
+            user={contactDetails}
             name={contactDetails.name}
             username={contactDetails.username}
             profilePicture={contactDetails.profilePicture}
@@ -133,6 +160,7 @@ const ContactChat = () => {
             lastSeen={userStatus.lastSeen}
             activeTab={tab}
             onTabChange={setTab}
+            isFetchingUserStatus={isFetchingUserStatus}
           />
         )}
 

@@ -77,7 +77,7 @@ export const SocketProvider = ({token, children}) => {
   // For debugging
   useEffect(() => {
     console.log('[SocketProvider] socketRef.current:', socketRef.current);
-  }, []);
+  }, [socketRef?.current]);
 
   return (
     <SocketContext.Provider value={socketRef.current}>

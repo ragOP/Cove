@@ -87,6 +87,9 @@ export const styles = StyleSheet.create({
     maxWidth: '80%',
     borderRadius: 18,
     padding: 10,
+    minHeight: 0,
+    flexShrink: 1,
+    alignSelf: 'stretch',
   },
   messageWrapper: {
     marginBottom: 12,
@@ -125,11 +128,15 @@ export const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     marginRight: 12,
+    flexShrink: 1,
+    flexWrap: 'wrap',
   },
   receivedText: {
     color: '#fff',
     fontSize: 14,
     marginRight: 12,
+    flexShrink: 1,
+    flexWrap: 'wrap',
   },
   imageMessage: {
     width: 240,

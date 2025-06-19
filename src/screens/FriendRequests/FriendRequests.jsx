@@ -13,11 +13,14 @@ import {useQuery} from '@tanstack/react-query';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {getUserPendingRequests} from '../../apis/getUserPendingRequests';
 import {acceptFriendRequest} from '../../apis/acceptFriendRequest';
+import {declineFriendRequest} from '../../apis/declineFriendRequest';
 import UserAvatar from '../../components/CustomAvatar/UserAvatar';
-import {useDispatch} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import {showSnackbar} from '../../redux/slice/snackbarSlice';
 import PrimaryLoader from '../../components/Loaders/PrimaryLoader';
 import {getSentFriendRequests} from '../../apis/getSentFriendRequests';
+import {addContact, updateContact} from '../../redux/slice/chatSlice';
+import useChatListSocket from '../../hooks/useChatListSocket';
 
 if (
   Platform.OS === 'android' &&
@@ -61,7 +64,7 @@ const FriendRequestRow = ({item, onAccept, onDecline, isAcceptingId}) => (
         )}
       </TouchableOpacity>
       <TouchableOpacity
-        onPress={() => onDecline(item.id)}
+        onPress={() => onDecline(item?._id)}
         style={styles.declineBtn}>
         <MaterialCommunityIcons name="close" size={20} color="#D28A8C" />
       </TouchableOpacity>
@@ -71,6 +74,8 @@ const FriendRequestRow = ({item, onAccept, onDecline, isAcceptingId}) => (
 
 const FriendRequests = ({navigation}) => {
   const dispatch = useDispatch();
+
+  const contacts = useSelector(state => state.chat.contacts);
 
   const [expanded, setExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -114,6 +119,10 @@ const FriendRequests = ({navigation}) => {
             type: 'success',
           }),
         );
+
+        if (apiResponse?.response?.data) {
+          dispatch(addContact(apiResponse.response.data));
+        }
         refetch();
       } else {
         const errorMessage =
@@ -133,8 +142,44 @@ const FriendRequests = ({navigation}) => {
     }
   };
 
-  const handleDecline = id => {
-    // Decline logic here
+  const handleDecline = async id => {
+    if (isDeclining) {
+      return;
+    }
+    try {
+      setIsDeclining(true);
+      const apiResponse = await declineFriendRequest({requestId: id});
+      if (apiResponse?.response?.success) {
+        dispatch(
+          showSnackbar({
+            title: 'Friend Request Declined',
+            subtitle: 'You have declined this friend request.',
+            type: 'info',
+          }),
+        );
+        refetch();
+      } else {
+        const errorMessage =
+          apiResponse?.response?.message || 'Failed to decline friend request.';
+        dispatch(
+          showSnackbar({
+            title: 'Error',
+            subtitle: errorMessage,
+            type: 'error',
+          }),
+        );
+      }
+    } catch (error) {
+      dispatch(
+        showSnackbar({
+          title: 'Error',
+          subtitle: 'Failed to decline friend request.',
+          type: 'error',
+        }),
+      );
+    } finally {
+      setIsDeclining(false);
+    }
   };
 
   const handleToggleExpand = () => {
@@ -148,8 +193,25 @@ const FriendRequests = ({navigation}) => {
     setRefreshing(false);
   };
 
-  const visibleRequests = expanded ? requests : requests.slice(0, 5);
+  const handleChatListUpdate = updatedContact => {
+    if (!updatedContact || !updatedContact._id) {
+      return;
+    }
 
+    const exists = contacts.some(c => c._id === updatedContact._id);
+    if (exists) {
+      dispatch(updateContact(updatedContact));
+    } else {
+      dispatch(addContact(updatedContact));
+    }
+  };
+
+  useChatListSocket({
+    onChatListUpdate: handleChatListUpdate,
+  });
+
+  const visibleRequests = expanded ? requests : requests.slice(0, 5);
+  console.log('>>>', visibleRequests);
   const renderItem = ({item}) => (
     <FriendRequestRow
       item={item}

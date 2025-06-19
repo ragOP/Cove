@@ -1,16 +1,14 @@
 import React from 'react';
-import {Text, Image, View} from 'react-native';
+import {Text, View} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {styles} from './MessageItem';
 import ChatText from './ChatText';
 import CustomImage from '../Image/CustomImage';
 
-// Inline styles for ChatText
 const chatTextStyles = {
   videoIcon: {marginBottom: 4},
 };
 
-// Custom Text wrapper for chat: handles links, emails, phones, mentions, hashtags, emojis, etc.
 function RenderMessageContent({item, isSent}) {
   const textStyle = isSent ? styles.sentText : styles.receivedText;
 

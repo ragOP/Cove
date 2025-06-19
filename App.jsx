@@ -1,5 +1,5 @@
 import {SafeAreaView, StyleSheet} from 'react-native';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import Splash from './src/screens/Splash/Splash';
 import Register from './src/screens/Register/Register';
@@ -19,17 +19,18 @@ import FriendRequests from './src/screens/FriendRequests/FriendRequests';
 import {PaperProvider} from 'react-native-paper';
 import CustomSnackbar from './src/components/Snackbar/CustomSnackbar';
 import Profile from './src/screens/Profile/Profile';
+import ProfileViewScreen from './src/screens/Profile/ProfileViewScreen';
 import {SocketProvider} from './src/context/SocketContext';
 import messaging from '@react-native-firebase/messaging';
 import {PermissionsAndroid, Platform} from 'react-native';
-import useFcmSocket from './src/hooks/useFcmSocket';
+import useNotificationSocket from './src/hooks/useNotificationSocket';
 
 export const queryClient = new QueryClient();
 
 const Stack = createNativeStackNavigator();
 
 const AppStack = () => {
-  const token = useSelector(state => state.auth.token);
+  useNotificationSocket();
 
   async function requestUserPermission() {
     const authStatus = await messaging().requestPermission();
@@ -47,15 +48,14 @@ const AppStack = () => {
   }, []);
 
   return (
-    <SocketProvider token={token}>
-      <Stack.Navigator screenOptions={{headerShown: false}}>
-        <Stack.Screen name={Paths.HOME} component={Home} />
-        <Stack.Screen name={Paths.CONTACT_CHAT} component={ContactChat} />
-        <Stack.Screen name={Paths.ADD_CONTACT} component={AddContact} />
-        <Stack.Screen name={Paths.FRIEND_REQUESTS} component={FriendRequests} />
-        <Stack.Screen name={Paths.PROFILE} component={Profile} />
-      </Stack.Navigator>
-    </SocketProvider>
+    <Stack.Navigator screenOptions={{headerShown: false}}>
+      <Stack.Screen name={Paths.HOME} component={Home} />
+      <Stack.Screen name={Paths.CONTACT_CHAT} component={ContactChat} />
+      <Stack.Screen name={Paths.ADD_CONTACT} component={AddContact} />
+      <Stack.Screen name={Paths.FRIEND_REQUESTS} component={FriendRequests} />
+      <Stack.Screen name={Paths.PROFILE} component={Profile} />
+      <Stack.Screen name="ProfileView" component={ProfileViewScreen} />
+    </Stack.Navigator>
   );
 };
 
@@ -72,7 +72,13 @@ const RootNavigator = () => {
 
   return (
     <NavigationContainer>
-      {token ? <AppStack /> : <AuthStack />}
+      {token ? (
+        <SocketProvider token={token}>
+          <AppStack />
+        </SocketProvider>
+      ) : (
+        <AuthStack />
+      )}
       <CustomSnackbar />
     </NavigationContainer>
   );

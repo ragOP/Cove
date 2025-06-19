@@ -22,9 +22,6 @@ const chatSlice = createSlice({
       state.loading = false;
       state.error = null;
       state.isFetched = true;
-      if (typeof action.payload.contactType === 'string') {
-        state.contactType = action.payload.contactType;
-      }
     },
     appendContacts: (state, action) => {
       const newContacts = action.payload.contacts.filter(

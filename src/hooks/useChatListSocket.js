@@ -1,11 +1,11 @@
 import {useEffect} from 'react';
 import {useSocketContext} from '../context/SocketContext';
-import {useSelector} from 'react-redux';
-import {selectUser} from '../redux/slice/authSlice';
 
-export default function useChatListSocket({onChatListUpdate}) {
+export default function useChatListSocket({
+  onChatListUpdate,
+  onFriendRequestReceived,
+}) {
   const socket = useSocketContext();
-  const user = useSelector(selectUser);
 
   useEffect(() => {
     if (!socket) {
@@ -18,12 +18,19 @@ export default function useChatListSocket({onChatListUpdate}) {
       onChatListUpdate?.(chatObj);
     };
 
+    const handleFriendRequestReceived = data => {
+      console.log('[FRIEND REQUEST RECEIVED]', data);
+      onFriendRequestReceived?.(data?.data);
+    };
+
     socket.on('chat_list_update', handleChatListUpdate);
+    socket.on('friend_request_received', handleFriendRequestReceived);
 
     return () => {
       socket.off('chat_list_update', handleChatListUpdate);
+      socket.off('friend_request_received', handleFriendRequestReceived);
     };
-  }, [socket, onChatListUpdate]);
+  }, [socket, onChatListUpdate, onFriendRequestReceived]);
 
   return {socket};
 }

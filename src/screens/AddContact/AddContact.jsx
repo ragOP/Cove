@@ -260,10 +260,8 @@ const AddContact = () => {
 
           if (apiResponse?.response?.success) {
             const checkedObj = apiResponse.response.data;
-            console.log('Checked contacts on Cove:', checkedObj);
             const merged = contactsToCheck.map(c => {
               const onCove = checkedObj[c.phone] || false;
-              console.log(c.phone,checkedObj, 'onCove:', checkedObj[c.phone]);
               return {
                 ...c,
                 onCove,
@@ -282,8 +280,6 @@ const AddContact = () => {
     };
     fetchAndCheckContacts();
   }, [contactsPermission]);
-
-  console.log('Imported Contacts:', importedContacts);
 
   const filteredContacts = importedContacts.filter(
     user =>

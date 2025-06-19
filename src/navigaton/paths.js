@@ -9,4 +9,5 @@ export const Paths = Object.freeze({
   FRIEND_REQUESTS: 'FriendRequests',
   SETTINGS: 'Settings',
   PROFILE: 'Profile',
+  ProfileView: 'ProfileView',
 });

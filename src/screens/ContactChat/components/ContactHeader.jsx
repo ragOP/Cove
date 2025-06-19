@@ -6,6 +6,7 @@ import FeatherIcon from 'react-native-vector-icons/Feather';
 import {Text, Menu} from 'react-native-paper';
 import {useNavigation} from '@react-navigation/native';
 import UserAvatar from '../../../components/CustomAvatar/UserAvatar';
+import {Paths} from '../../../navigaton/paths';
 
 const AccountOutlineIconWhite = props => (
   <MaterialIcon name="account-outline" {...props} color="#fff" />
@@ -27,6 +28,8 @@ const ContactHeader = ({
   lastSeen,
   activeTab,
   onTabChange,
+  isFetchingUserStatus,
+  user
 }) => {
   const navigation = useNavigation();
   const [menuVisible, setMenuVisible] = React.useState(false);
@@ -50,13 +53,14 @@ const ContactHeader = ({
     closeMenu();
   };
   const handleViewProfile = () => {
-    // TODO: Implement view profile logic
-    // navigation.navigate('Profile', ...); // Example navigation
-    setMenuVisible(false); // Ensure menu closes
+    setMenuVisible(false);
+    navigation.navigate(Paths.ProfileView, {user: user});
   };
 
   function formatLastSeen(date) {
-    if (!date) { return ''; }
+    if (!date) {
+      return '';
+    }
     const d = new Date(date);
     const now = new Date();
     if (
@@ -65,9 +69,15 @@ const ContactHeader = ({
       d.getFullYear() === now.getFullYear()
     ) {
       // Today
-      return `last seen today at ${d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`;
+      return `last seen today at ${d.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })}`;
     } else {
-      return `last seen on ${d.toLocaleDateString()} at ${d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`;
+      return `last seen on ${d.toLocaleDateString()} at ${d.toLocaleTimeString(
+        [],
+        {hour: '2-digit', minute: '2-digit'},
+      )}`;
     }
   }
 
@@ -81,11 +91,19 @@ const ContactHeader = ({
           <View style={styles.profileContainer}>
             <UserAvatar profilePicture={profilePicture} size={40} name={name} />
             <View style={styles.profileNameUsername}>
-              <Text style={styles.nameText}>{name}</Text>
-              {isOnline ? (
-                <Text style={[styles.usernameText, styles.onlineText]}>online</Text>
+              <TouchableOpacity onPress={handleViewProfile} activeOpacity={0.7}>
+                <Text style={styles.nameText}>{name}</Text>
+              </TouchableOpacity>
+              {isFetchingUserStatus ? (
+                <View style={styles.statusLoader} />
+              ) : isOnline ? (
+                <Text style={[styles.usernameText, styles.onlineText]}>
+                  online
+                </Text>
               ) : lastSeen ? (
-                <Text style={styles.usernameText}>{formatLastSeen(lastSeen)}</Text>
+                <Text style={styles.usernameText}>
+                  {formatLastSeen(lastSeen)}
+                </Text>
               ) : null}
             </View>
           </View>
@@ -118,7 +136,7 @@ const ContactHeader = ({
             />
             <Menu.Item
               onPress={() => {
-                closeMenu(); /* TODO: Implement mute notifications */
+                closeMenu();
               }}
               title="Mute Notifications"
               leadingIcon={MuteIconWhite}
@@ -262,6 +280,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 16,
     letterSpacing: 0.1,
+  },
+  statusLoader: {
+    width: 60,
+    height: 12,
+    backgroundColor: '#222',
+    borderRadius: 6,
   },
   nameText: {color: '#fff', fontSize: 18, fontWeight: 'bold'},
   usernameText: {

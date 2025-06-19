@@ -164,7 +164,6 @@ const HomeStyles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: '50%',
   },
   loadingAvatar: {
     backgroundColor: '#232323',

@@ -12,9 +12,9 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
-import {useQuery} from '@tanstack/react-query';
 import {logout} from '../../redux/slice/authSlice';
 import {getUserContacts} from '../../apis/getUserContacts';
+import {useIsFetching, useQuery} from '@tanstack/react-query';
 import {getUserPendingRequests} from '../../apis/getUserPendingRequests';
 import useChatListSocket from '../../hooks/useChatListSocket';
 import {
@@ -52,8 +52,6 @@ const Home = () => {
   const hasMore = useSelector(state => state.chat.hasMore);
   const isFetched = useSelector(state => state.chat.isFetched);
 
-  console.log('Contacts:', contacts);
-
   const userId = useSelector(state => state.auth.user?.id);
 
   const [selectedIds, setSelectedIds] = useState([]);
@@ -68,10 +66,12 @@ const Home = () => {
     queryFn: getUserPendingRequests,
     select: data => data?.response?.data || [],
   });
-
-  const pendingRequestsCount = requests.length || 0;
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(
+    requests.length || 0,
+  );
 
   useEffect(() => {
+    console.log('IS FETCHING');
     const fetchContacts = async () => {
       try {
         dispatch(setLoading(true));
@@ -82,6 +82,7 @@ const Home = () => {
             contact_type: contactType,
           },
         });
+
         if (apiResponse?.response?.success) {
           dispatch(
             setContacts({
@@ -216,16 +217,27 @@ const Home = () => {
     }
     dispatch(updateContact(updatedContact));
     const exists = contacts.some(c => c._id === updatedContact._id);
-    if (!exists) {
+    if (exists) {
+      dispatch(updateContact(updatedContact));
+    } else {
       dispatch(addContact(updatedContact));
+    }
+  };
+
+  const handlePendingRequestCountUpdate = data => {
+    if (data?.count) {
+      setPendingRequestsCount(data?.count);
     }
   };
 
   useChatListSocket({
     onChatListUpdate: handleChatListUpdate,
+    onFriendRequestReceived: handlePendingRequestCountUpdate,
   });
 
-  console.log(loading, isFetched, contacts);
+  useEffect(() => {
+    setPendingRequestsCount(requests.length || 0);
+  }, [requests]);
 
   return (
     <View style={HomeStyles.container}>
@@ -334,7 +346,9 @@ const Home = () => {
               selected={selected}
               selectedColor="#fff"
               onPress={() => {
-                dispatch(setContactType(filter.key));
+                if (contactType !== filter.key) {
+                  dispatch(setContactType(filter.key));
+                }
               }}>
               {filter.label}
               {filter.show && filter.getCount() !== null
