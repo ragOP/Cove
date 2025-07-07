@@ -7,7 +7,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
  * Usage: For fallback UI, not for standard images.
  */
 const ImagePlaceholder = ({ style, iconSize = 40 }) => (
-  <View style={[style, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#232323' }]}> 
+  <View style={[style, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#232323' }]}>
     <Icon name="image" size={iconSize} color="#bbb" />
   </View>
 );

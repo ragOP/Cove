@@ -2,6 +2,7 @@ import {useEffect} from 'react';
 import {useSocketContext} from '../context/SocketContext';
 import {useSelector} from 'react-redux';
 import {selectUser} from '../redux/slice/authSlice';
+import {playSoundEffect} from '../utils/sound';
 
 export default function useChatSocket({
   onMessageReceived,
@@ -53,7 +54,7 @@ export default function useChatSocket({
       onUpdateUserStatus?.(data);
     };
     const handleNewMessage = message => {
-      console.log('[NEW MESSAGE]', message);
+      playSoundEffect('receive');
       onMessageReceived?.(message);
     };
     const handleTypingStatusUpdate = data => {

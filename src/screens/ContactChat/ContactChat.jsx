@@ -24,6 +24,7 @@ import {dedupeMessages} from '../../utils/messages/dedupeMessages';
 import {useQuery} from '@tanstack/react-query';
 import {readChat} from '../../apis/readChat';
 import {getUserInfo} from '../../apis/getUserInfo';
+import MediaPreview from '../../components/MediaPreview/MediaPreview';
 
 const ContactChat = () => {
   const route = useRoute();
@@ -188,32 +189,14 @@ const ContactChat = () => {
         ) : (
           <View style={styles.galleryContainer}>
             <GallerySection
-              onMediaPress={setPreviewedMedia}
+              onMediaPress={item => setPreviewedMedia(item ? { type: item.type, uri: item.type === 'image' ? item.mediaUrl : item.mediaUrl || item.url } : null)}
               id={contactDetails._id}
             />
-
-            {previewedMedia && previewedMedia.type === 'image' && (
-              <Modal
-                visible={!!previewedMedia}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setPreviewedMedia(null)}>
-                <Pressable
-                  style={styles.previewOverlay}
-                  onPress={() => setPreviewedMedia(null)}>
-                  <Image
-                    source={{uri: previewedMedia.mediaUrl}}
-                    style={styles.fullPreviewImage}
-                    resizeMode="contain"
-                  />
-                  <TouchableOpacity
-                    style={styles.previewCloseBtn}
-                    onPress={() => setPreviewedMedia(null)}>
-                    <Icon name="close" size={32} color="#fff" />
-                  </TouchableOpacity>
-                </Pressable>
-              </Modal>
-            )}
+            <MediaPreview
+              visible={!!previewedMedia}
+              media={previewedMedia}
+              onClose={() => setPreviewedMedia(null)}
+            />
           </View>
         )}
       </View>

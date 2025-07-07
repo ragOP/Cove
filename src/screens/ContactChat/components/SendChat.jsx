@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -9,13 +9,16 @@ import {
   Text,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {sendMessage} from '../../../apis/sendMessage';
-import {useSelector} from 'react-redux';
-import {prepareMessagePayload} from '../../../helpers/messages/prepareMessagePayload';
-import {selectFiles} from '../../../helpers/files/selectFiles';
-import {uploadFiles} from '../../../helpers/files/uploadFiles';
+import { sendMessage } from '../../../apis/sendMessage';
+import { useSelector } from 'react-redux';
+import { prepareMessagePayload } from '../../../helpers/messages/prepareMessagePayload';
+import { selectFiles } from '../../../helpers/files/selectFiles';
+import { uploadFiles } from '../../../helpers/files/uploadFiles';
 import PrimaryLoader from '../../../components/Loaders/PrimaryLoader';
-import {dedupeMessages} from '../../../utils/messages/dedupeMessages';
+import { dedupeMessages } from '../../../utils/messages/dedupeMessages';
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+import { playSoundEffect } from '../../../utils/sound';
+import MediaPreview from '../../../components/MediaPreview/MediaPreview';
 
 const SendChat = ({
   conversationId,
@@ -34,6 +37,7 @@ const SendChat = ({
   const [uploading, setUploading] = useState(false);
   const [captions, setCaptions] = useState({});
   const [activeFileIdx, setActiveFileIdx] = useState(null);
+  const [mediaPreview, setMediaPreview] = useState(null);
 
   const handleSelectFiles = async () => {
     try {
@@ -60,7 +64,7 @@ const SendChat = ({
       return newFiles;
     });
     setCaptions(prev => {
-      const newCaptions = {...prev};
+      const newCaptions = { ...prev };
       delete newCaptions[idx];
       const shifted = {};
       Object.keys(newCaptions).forEach(key => {
@@ -71,9 +75,11 @@ const SendChat = ({
     });
   };
 
+  // console.log(playSound('send'))
+
   const handleCaptionChange = text => {
     if (activeFileIdx !== null) {
-      setCaptions(prev => ({...prev, [activeFileIdx]: text}));
+      setCaptions(prev => ({ ...prev, [activeFileIdx]: text }));
     } else {
       setMessage(text);
     }
@@ -111,13 +117,15 @@ const SendChat = ({
         });
 
         for (const payload of payloads) {
-          const apiResponse = await sendMessage({payload});
+          const apiResponse = await sendMessage({ payload });
           console.log('API response:', apiResponse);
           if (apiResponse?.response?.success) {
             setConversations &&
               setConversations(prev =>
                 dedupeMessages([...(prev || []), apiResponse.response.data]),
               );
+            playSoundEffect('send');
+            ReactNativeHapticFeedback.trigger('impactLight');
           } else {
             console.error(
               'Failed to send message:',
@@ -136,7 +144,7 @@ const SendChat = ({
             replyTo: replyMessage?._id || replyMessage?.id || undefined,
           })[0];
           console.log('Sending payload:', payload);
-          const apiResponse = await sendMessage({payload});
+          const apiResponse = await sendMessage({ payload });
 
           console.log('API response:', apiResponse);
 
@@ -181,10 +189,17 @@ const SendChat = ({
               styles.previewItem,
               activeFileIdx === idx && styles.activePreviewItem,
             ]}
-            onPress={() => setActiveFileIdx(idx)}
+            onPress={() => {
+              setActiveFileIdx(idx);
+              if (file.type && file.type.startsWith('image')) {
+                setMediaPreview({ type: 'image', uri: file.uri });
+              } else if (file.type && file.type.startsWith('video')) {
+                setMediaPreview({ type: 'video', uri: file.uri });
+              }
+            }}
             activeOpacity={0.8}>
             {file.type && file.type.startsWith('image') ? (
-              <Image source={{uri: file.uri}} style={styles.previewImage} />
+              <Image source={{ uri: file.uri }} style={styles.previewImage} />
             ) : (
               <Icon name="document" size={32} color="#fff" />
             )}
@@ -194,11 +209,16 @@ const SendChat = ({
                 e.stopPropagation && e.stopPropagation();
                 handleRemoveFile(idx);
               }}
-              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Icon name="close-circle" size={24} color="#f55" />
             </TouchableOpacity>
           </TouchableOpacity>
         ))}
+        <MediaPreview
+          visible={!!mediaPreview}
+          media={mediaPreview}
+          onClose={() => setMediaPreview(null)}
+        />
       </ScrollView>
     );
   };
@@ -222,21 +242,21 @@ const SendChat = ({
       <View
         style={[
           styles.replyPreviewBar,
-          {backgroundColor: replyBarBg, borderLeftColor: replyBarBorder},
+          { backgroundColor: replyBarBg, borderLeftColor: replyBarBorder },
         ]}>
         <View
-          style={[styles.replyIndicator, {backgroundColor: replyBarBorder}]}
+          style={[styles.replyIndicator, { backgroundColor: replyBarBorder }]}
         />
         <View style={styles.replyContent}>
           <Text
-            style={[styles.replyLabel, {color: replyLabelColor}]}
+            style={[styles.replyLabel, { color: replyLabelColor }]}
             numberOfLines={1}>
             {senderLabel}
           </Text>
           <View style={styles.replyRow}>
             {isImage && (
               <Image
-                source={{uri: replyMessage.content}}
+                source={{ uri: replyMessage.content }}
                 style={styles.replyThumb}
               />
             )}

@@ -7,16 +7,20 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import UserAvatar from '../../components/CustomAvatar/UserAvatar';
 import {Paths} from '../../navigaton/paths';
+import MediaPreview from '../../components/MediaPreview/MediaPreview';
+import { format } from 'date-fns';
 
 const Profile = ({navigation}) => {
   const user = useSelector(state => state.auth.user);
   const dispatch = useDispatch();
-
-  console.log(">>", user)
+  const [previewVisible, setPreviewVisible] = React.useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
   };
+
+  const createdAt = user?.createdAt ? new Date(user.createdAt) : new Date();
+  const formattedDate = format(createdAt, 'EEEE, d MMMM yyyy');
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -31,12 +35,15 @@ const Profile = ({navigation}) => {
         <Text style={styles.topBarTitle}>Profile</Text>
       </View>
       <View style={styles.header}>
-        <UserAvatar
-          profilePicture={user?.profilePicture}
-          name={user?.name}
-          id={user?.id}
-          size={96}
-        />
+        <Text style={styles.dateLabel}>{formattedDate}</Text>
+        <TouchableOpacity onPress={() => setPreviewVisible(true)} activeOpacity={0.85}>
+          <UserAvatar
+            profilePicture={user?.profilePicture}
+            name={user?.name}
+            id={user?.id}
+            size={96}
+          />
+        </TouchableOpacity>
         <Text style={styles.name}>{user?.name}</Text>
         <Text style={styles.username}>@{user?.username}</Text>
         <Text style={styles.phone}>{user?.phoneNumber}</Text>
@@ -104,6 +111,11 @@ const Profile = ({navigation}) => {
         <MaterialCommunityIcons name="heart" size={18} color="#D28A8C" style={styles.madeWithIcon} />
         <Text style={styles.madeWithText}>Made with love • v1.0</Text>
       </View>
+      <MediaPreview
+        visible={previewVisible}
+        media={user?.profilePicture ? { type: 'image', uri: user.profilePicture } : null}
+        onClose={() => setPreviewVisible(false)}
+      />
     </ScrollView>
   );
 };
@@ -154,6 +166,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,
+  },
+  dateLabel: {
+    color: '#bbb',
+    fontSize: 13,
+    alignSelf: 'center',
+    marginBottom: 6,
+    marginTop: -6,
+    letterSpacing: 0.2,
   },
   statsRow: {
     flexDirection: 'row',

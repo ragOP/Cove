@@ -1,4 +1,4 @@
-import React, {useRef, useEffect, useState} from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,11 +7,11 @@ import {
   RefreshControl,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {useQuery} from '@tanstack/react-query';
-import {getConversations} from '../../../apis/getConversations';
-import {useSelector} from 'react-redux';
+import { useQuery } from '@tanstack/react-query';
+import { getConversations } from '../../../apis/getConversations';
+import { useSelector } from 'react-redux';
 import MessageItem from '../../../components/Messages/MessageItem';
-import {Gesture, GestureDetector} from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -21,7 +21,7 @@ import Animated, {
 import useChatSocket from '../../../hooks/useChatSocket';
 import PrimaryLoader from '../../../components/Loaders/PrimaryLoader';
 import BlinkingDots from '../../../components/Loaders/BlinkingDots';
-import {dedupeMessages} from '../../../utils/messages/dedupeMessages';
+import { dedupeMessages } from '../../../utils/messages/dedupeMessages';
 
 const SCROLL_TO_BOTTOM_THRESHOLD = 10;
 
@@ -41,7 +41,7 @@ const ChatMessageRow = ({
     return {
       backgroundColor:
         held.value || selected ? 'rgba(210,138,140,0.13)' : 'transparent',
-      transform: [{translateX: translateX.value}],
+      transform: [{ translateX: translateX.value }],
     };
   });
 
@@ -57,14 +57,14 @@ const ChatMessageRow = ({
         e.translationX > 60 &&
         Math.abs(e.translationX) > Math.abs(e.translationY)
       ) {
-        translateX.value = withTiming(0, {duration: 150});
+        translateX.value = withTiming(0, { duration: 150 });
         onReply && runOnJS(onReply)(item);
       } else {
-        translateX.value = withTiming(0, {duration: 150});
+        translateX.value = withTiming(0, { duration: 150 });
       }
     })
     .onFinalize(() => {
-      translateX.value = withTiming(0, {duration: 150});
+      translateX.value = withTiming(0, { duration: 150 });
     });
 
   const longPressGesture = Gesture.LongPress()
@@ -104,17 +104,22 @@ const ChatsContainer = ({
   onSelectMessage,
   selectedMessage,
   setUserConversationId,
+  onLoadMore,
+  hasMore,
+  loadingMore,
+  initialLoad,
 }) => {
   const flatListRef = useRef(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const userId = useSelector(state => state.auth.user?.id);
+  const didInitialScroll = useRef(false);
 
-  const {isLoading, refetch} = useQuery({
+  const { isLoading, refetch } = useQuery({
     queryKey: ['user_conversations', conversationId],
     queryFn: async () => {
-      const apiResponse = await getConversations({id: conversationId});
+      const apiResponse = await getConversations({ id: conversationId });
       if (apiResponse?.response?.success) {
         const responseData = apiResponse.response.data;
         const data = responseData?.[0]?.messages;
@@ -131,15 +136,16 @@ const ChatsContainer = ({
   });
 
   useEffect(() => {
-    if (!isLoading && flatListRef?.current) {
+    if (!isLoading && flatListRef?.current && !didInitialScroll.current) {
       setTimeout(() => {
-        flatListRef.current?.scrollToEnd({animated: false});
+        flatListRef.current?.scrollToOffset({offset: 0, animated: false});
+        didInitialScroll.current = true;
       }, 100);
     }
   }, [isLoading, conversations?.length]);
 
   const handleScroll = event => {
-    const {layoutMeasurement, contentOffset, contentSize} = event.nativeEvent;
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
     const paddingToBottom = 40;
     const isAtBottom =
       layoutMeasurement.height + contentOffset.y >=
@@ -151,7 +157,7 @@ const ChatsContainer = ({
 
   const scrollToBottom = () => {
     if (flatListRef?.current) {
-      flatListRef.current?.scrollToEnd({animated: true});
+      flatListRef.current?.scrollToEnd({ animated: true });
     }
   };
 
@@ -159,6 +165,12 @@ const ChatsContainer = ({
     setRefreshing(true);
     await refetch();
     setRefreshing(false);
+  };
+
+  const handleEndReached = () => {
+    if (hasMore && !loadingMore && typeof onLoadMore === 'function') {
+      onLoadMore();
+    }
   };
 
   useChatSocket({
@@ -173,8 +185,10 @@ const ChatsContainer = ({
 
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <PrimaryLoader />
+      <View style={{flex: 1}}>
+        <View style={[styles.loadingContainer, {flex: 1, justifyContent: 'center', alignItems: 'center'}]}>
+          <PrimaryLoader />
+        </View>
       </View>
     );
   }
@@ -186,13 +200,13 @@ const ChatsContainer = ({
         data={
           isTyping
             ? [
-                ...(conversations || []),
-                {_id: 'typing-indicator', isTyping: true},
-              ]
+              ...(conversations || []),
+              { _id: 'typing-indicator', isTyping: true },
+            ]
             : conversations || []
         }
         keyExtractor={item => item._id || item.localId || 'typing-indicator'}
-        renderItem={({item, index}) => {
+        renderItem={({ item, index }) => {
           if (item.isTyping) {
             return (
               <View style={[styles.fullRow, styles.alignStart]}>
@@ -228,11 +242,6 @@ const ChatsContainer = ({
         }}
         contentContainerStyle={styles.chatContainer}
         showsVerticalScrollIndicator={false}
-        onContentSizeChange={() => {
-          if (flatListRef?.current && conversations?.length > 0) {
-            flatListRef.current?.scrollToEnd({animated: false});
-          }
-        }}
         onScroll={handleScroll}
         scrollEventThrottle={16}
         refreshControl={
@@ -241,6 +250,16 @@ const ChatsContainer = ({
             onRefresh={onRefresh}
             tintColor="#fff"
           />
+        }
+        // inverted
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.1}
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={{ padding: 12 }}>
+              <PrimaryLoader />
+            </View>
+          ) : null
         }
       />
       {showScrollToBottom && (

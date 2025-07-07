@@ -1,9 +1,16 @@
 import React, {useState} from 'react';
 import {Avatar} from 'react-native-paper';
 import {getInitials} from '../../utils/name/getInitials';
-import {StyleSheet, Modal, View, Pressable, Image} from 'react-native';
+import {StyleSheet, Pressable} from 'react-native';
+import MediaPreview from '../MediaPreview/MediaPreview';
 
-const UserAvatar = ({profilePicture, name, id, size = 44, showPreview = true}) => {
+const UserAvatar = ({
+  profilePicture,
+  name,
+  id,
+  size = 44,
+  showPreview = true,
+}) => {
   const [modalVisible, setModalVisible] = useState(false);
 
   if (profilePicture) {
@@ -13,24 +20,11 @@ const UserAvatar = ({profilePicture, name, id, size = 44, showPreview = true}) =
           <Avatar.Image size={size} source={{uri: profilePicture}} />
         </Pressable>
         {showPreview && (
-          <Modal
+          <MediaPreview
             visible={modalVisible}
-            transparent={true}
-            animationType="fade"
-            onRequestClose={() => setModalVisible(false)}>
-            <View style={styles.modalBackdrop}>
-              <View style={styles.modalContent}>
-                <Image
-                  source={{uri: profilePicture}}
-                  style={styles.modalImage}
-                  resizeMode="contain"
-                />
-                <Pressable style={styles.closeButton} onPress={() => setModalVisible(false)}>
-                  <Avatar.Icon icon="close" size={36} style={styles.closeButtonIcon} color="#fff" />
-                </Pressable>
-              </View>
-            </View>
-          </Modal>
+            media={{type: 'image', uri: profilePicture}}
+            onClose={() => setModalVisible(false)}
+          />
         )}
       </>
     );
@@ -64,7 +58,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
