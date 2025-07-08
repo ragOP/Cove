@@ -141,11 +141,12 @@ const PhoneNumberVerification = ({
 
   const getToken = async () => {
     try {
+      // Register for remote messages before getting the token (required on iOS, safe on Android)
+      await messaging().registerDeviceForRemoteMessages();
       const fcmToken = await messaging().getToken();
       if (fcmToken) {
         return fcmToken;
       }
-
       return null;
     } catch (error) {
       console.error('Error getting FCM token:', error);

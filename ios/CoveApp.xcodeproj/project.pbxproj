@@ -45,6 +45,7 @@
 		BFF1BB0A80F9910106AA4702 /* Pods-CoveApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CoveApp.release.xcconfig"; path = "Target Support Files/Pods-CoveApp/Pods-CoveApp.release.xcconfig"; sourceTree = "<group>"; };
 		CDA62F4B2E03612C0041C0EB /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		CDC19AB8F6EA42F68892456D /* Sansita-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Sansita-Italic.ttf"; path = "../src/assets/fonts/Sansita-Italic.ttf"; sourceTree = "<group>"; };
+		CDD6DB412E1D88450022AA5F /* CoveApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = CoveApp.entitlements; path = CoveApp/CoveApp.entitlements; sourceTree = "<group>"; };
 		CDE8602E2E1C791100BDB9DF /* receive.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = receive.mp3; sourceTree = "<group>"; };
 		CDE8602F2E1C791100BDB9DF /* send.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = send.mp3; sourceTree = "<group>"; };
 		D7856651939D4CB9B75BDA76 /* Sansita-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Sansita-Regular.ttf"; path = "../src/assets/fonts/Sansita-Regular.ttf"; sourceTree = "<group>"; };
@@ -68,6 +69,7 @@
 		13B07FAE1A68108700A75B9A /* CoveApp */ = {
 			isa = PBXGroup;
 			children = (
+				CDD6DB412E1D88450022AA5F /* CoveApp.entitlements */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
@@ -333,6 +335,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = CoveApp/CoveApp.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = CoveApp/Info.plist;
@@ -366,6 +369,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = CoveApp/CoveApp.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = CoveApp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;

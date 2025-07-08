@@ -526,9 +526,9 @@ const AddContact = () => {
                 <Text style={styles.emptyText}>No users found</Text>
               </View>
             ) : (
-              searchedUsers.map(item => (
+              searchedUsers.map((item, index) => (
                 <ContactListItem
-                  key={item.id || item._id}
+                  key={item.id || item._id || item.phone || index}
                   item={item}
                   addingId={addingId}
                   handleAdd={handleAdd}
@@ -569,9 +569,9 @@ const AddContact = () => {
             (showAllSuggested
               ? suggestedContacts
               : suggestedContacts.slice(0, 4)
-            ).map(item => (
+            ).map((item, index) => (
               <ContactListItem
-                key={item.id}
+                key={item.id || item._id || item.phone || index}
                 item={item}
                 addingId={addingId}
                 handleAdd={handleAdd}
@@ -623,9 +623,9 @@ const AddContact = () => {
                 <Text style={styles.emptyText}>No contacts found</Text>
               </View>
             ) : (
-              filteredContacts.map(item => (
+              filteredContacts.map((item, index) => (
                 <ImportContactListItem
-                  key={item.id}
+                  key={item.id || item._id || item.phone || index}
                   item={item}
                   addingId={addingId}
                   handleAdd={handleAdd}

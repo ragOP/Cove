@@ -1,12 +1,22 @@
-# Resolve react_native_pods.rb with node to allow for hoisting
-require Pod::Executable.execute_command('node', ['-p',
-  'require.resolve(
-    "react-native/scripts/react_native_pods.rb",
-    {paths: [process.argv[1]]},
-  )', __dir__]).strip
+# Define a generic node_require function for requiring Ruby scripts via Node
+# This replaces the old require block for react_native_pods.rb
+
+def node_require(script)
+  # Resolve script with node to allow for hoisting
+  require Pod::Executable.execute_command('node', ['-p',
+    "require.resolve(\n      '#{script}',\n      {paths: [process.argv[1]]},\n    )", __dir__]).strip
+end
+
+# Use node_require to require both react-native's and react-native-permissions' setup scripts
+node_require('react-native/scripts/react_native_pods.rb')
+node_require('react-native-permissions/scripts/setup.rb')
 
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
+
+setup_permissions([
+  'Contacts',
+])
 
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
@@ -19,10 +29,12 @@ target 'CoveApp' do
   config = use_native_modules!
 
   pod 'BVLinearGradient', :path => '../node_modules/react-native-linear-gradient'
+  pod 'react-native-contacts', :path => '../node_modules/react-native-contacts' 
   pod 'Firebase', :modular_headers => true
   pod 'FirebaseCoreInternal', :modular_headers => true
   pod 'GoogleUtilities', :modular_headers => true
   pod 'FirebaseCore', :modular_headers => true
+
 
   use_react_native!( 
     :path => config[:reactNativePath],
