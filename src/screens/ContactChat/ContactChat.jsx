@@ -8,22 +8,22 @@ import {
   Pressable,
   Image,
 } from 'react-native';
-import {useRef, useState, useEffect} from 'react';
-import {useRoute} from '@react-navigation/native';
+import { useRef, useState, useEffect } from 'react';
+import { useRoute } from '@react-navigation/native';
 import ChatsContainer from './components/ChatsContainer';
 import ContactHeader from './components/ContactHeader';
 import SendChat from './components/SendChat';
-import {getChatDisplayInfo} from '../../utils/chat/getChatDisplayInfo';
-import {useSelector} from 'react-redux';
+import { getChatDisplayInfo } from '../../utils/chat/getChatDisplayInfo';
+import { useSelector } from 'react-redux';
 import SelectedMessageBar from './components/SelectedMessageBar';
 import Clipboard from '@react-native-clipboard/clipboard';
 import GallerySection from './components/GallerySection';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import useChatSocket from '../../hooks/useChatSocket';
-import {dedupeMessages} from '../../utils/messages/dedupeMessages';
-import {useQuery} from '@tanstack/react-query';
-import {readChat} from '../../apis/readChat';
-import {getUserInfo} from '../../apis/getUserInfo';
+import { dedupeMessages } from '../../utils/messages/dedupeMessages';
+import { useQuery } from '@tanstack/react-query';
+import { readChat } from '../../apis/readChat';
+import { getUserInfo } from '../../apis/getUserInfo';
 import MediaPreview from '../../components/MediaPreview/MediaPreview';
 
 const ContactChat = () => {
@@ -55,7 +55,8 @@ const ContactChat = () => {
     const fetchUserInfo = async () => {
       try {
         setIsFetchingUserStatus(true);
-        const apiResponse = await getUserInfo({userId: contact._id});
+        const apiResponse = await getUserInfo({ userId: contact._id });
+
         if (apiResponse?.response?.success && apiResponse?.response?.data) {
           const data = apiResponse.response.data;
           setUserStatus(prev => ({
@@ -85,24 +86,24 @@ const ContactChat = () => {
       }
       return prev.map(msg =>
         msg._id === data.messageId
-          ? {...msg, read: true, readBy: data.readBy, readAt: data.timestamp}
+          ? { ...msg, read: true, readBy: data.readBy, readAt: data.timestamp }
           : msg,
       );
     });
   };
 
-  const {emitTypingStatus, joinChat, leaveChat} = useChatSocket({
+  const { emitTypingStatus, joinChat, leaveChat } = useChatSocket({
     onMessageReceived: message => {
       setConversations(prev => dedupeMessages([...(prev || []), message]));
     },
     onUpdateMessagesStatus,
     onUpdateUserStatus: status => {
-      console.log('User status updated:', status);
       setUserStatus({
         isOnline: status.isOnline,
         lastSeen: status.lastSeen,
       });
     },
+    receiverId: contactDetails?._id,
   });
 
   const handleSelectMessage = msg => setSelectedMessage(msg);
@@ -118,7 +119,7 @@ const ContactChat = () => {
     queryKey: ['read_chat', userConversationId],
     queryFn: async () => {
       if (userConversationId) {
-        return readChat({conversationId: userConversationId});
+        return readChat({ conversationId: userConversationId });
       }
     },
     enabled: !!userConversationId,

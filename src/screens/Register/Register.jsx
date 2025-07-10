@@ -535,7 +535,6 @@ const UsernameInput = ({goNext, goBack, form, setForm}) => {
           const apiResponse = await usernameAvailability({
             payload: {username: debouncedUsername},
           });
-          console.log('API Response:', apiResponse);
 
           if (apiResponse?.response?.success) {
             setIsAvailable(true);
@@ -650,7 +649,6 @@ const PasswordInput = ({goNext, goBack, form, setForm, tempToken}) => {
         payload: formData,
         token: tempToken,
       });
-      console.log('apiResponse:', apiResponse);
 
       if (apiResponse?.response?.success) {
         dispatch(
@@ -661,8 +659,6 @@ const PasswordInput = ({goNext, goBack, form, setForm, tempToken}) => {
           }),
         );
         const data = apiResponse?.response?.data;
-
-        console.log(data, 'data');
 
         dispatch(
           login({

@@ -11,7 +11,7 @@ export function playSoundEffect(type) {
   }
   try {
     SoundPlayer.playSoundFile(fileName.replace('.mp3', ''), 'mp3');
-  } catch (e) {
-    console.log('Cannot play the sound', e);
+  } catch (error) {
+    console.error('Cannot play the sound', error);
   }
 }

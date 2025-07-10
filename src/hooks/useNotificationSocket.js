@@ -19,12 +19,12 @@ export default function useNotificationSocket() {
       return;
     }
 
-    console.log('[NOTIFICATION SOCKET] Connected:', socket.connected);
-
     const handleNotification = data => {
       if (!data?.notification) {
         return;
       }
+
+      console.info('[NOTIFICATION] Connected:', data?.notification);
 
       dispatch(
         showSnackbar({

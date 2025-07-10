@@ -76,7 +76,8 @@ export const SocketProvider = ({token, children}) => {
 
   // For debugging
   useEffect(() => {
-    console.log('[SocketProvider] socketRef.current:', socketRef.current);
+    console.info('[SocketProvider] socketRef.current:', socketRef.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socketRef?.current]);
 
   return (

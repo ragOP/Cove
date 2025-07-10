@@ -75,8 +75,6 @@ const SendChat = ({
     });
   };
 
-  // console.log(playSound('send'))
-
   const handleCaptionChange = text => {
     if (activeFileIdx !== null) {
       setCaptions(prev => ({ ...prev, [activeFileIdx]: text }));
@@ -118,7 +116,6 @@ const SendChat = ({
 
         for (const payload of payloads) {
           const apiResponse = await sendMessage({ payload });
-          console.log('API response:', apiResponse);
           if (apiResponse?.response?.success) {
             setConversations &&
               setConversations(prev =>
@@ -143,10 +140,7 @@ const SendChat = ({
             receiverId,
             replyTo: replyMessage?._id || replyMessage?.id || undefined,
           })[0];
-          console.log('Sending payload:', payload);
           const apiResponse = await sendMessage({ payload });
-
-          console.log('API response:', apiResponse);
 
           if (apiResponse?.response?.success) {
             setConversations &&

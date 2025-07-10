@@ -12,8 +12,6 @@ const chatTextStyles = {
 function RenderMessageContent({item, isSent}) {
   const textStyle = isSent ? styles.sentText : styles.receivedText;
 
-  // console.log('Rendering message content:', item);
-
   switch (item.type) {
     case 'text':
       return <ChatText text={item.content} style={textStyle} />;

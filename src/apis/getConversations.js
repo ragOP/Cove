@@ -7,7 +7,6 @@ export const getConversations = async ({id, params}) => {
       endpoint: `${endpoints.conversations}/${id}`,
       params,
     });
-    console.log('getConversations response:', id, params, apiResponse);
 
     return apiResponse;
   } catch (error) {

@@ -71,7 +71,6 @@ const Home = () => {
   );
 
   useEffect(() => {
-    console.log('IS FETCHING');
     const fetchContacts = async () => {
       try {
         dispatch(setLoading(true));

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, {useRef, useEffect, useState} from 'react';
 import {
   StyleSheet,
   View,
@@ -7,11 +7,11 @@ import {
   RefreshControl,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useQuery } from '@tanstack/react-query';
-import { getConversations } from '../../../apis/getConversations';
-import { useSelector } from 'react-redux';
+import {useQuery} from '@tanstack/react-query';
+import {getConversations} from '../../../apis/getConversations';
+import {useSelector} from 'react-redux';
 import MessageItem from '../../../components/Messages/MessageItem';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -21,7 +21,7 @@ import Animated, {
 import useChatSocket from '../../../hooks/useChatSocket';
 import PrimaryLoader from '../../../components/Loaders/PrimaryLoader';
 import BlinkingDots from '../../../components/Loaders/BlinkingDots';
-import { dedupeMessages } from '../../../utils/messages/dedupeMessages';
+import {dedupeMessages} from '../../../utils/messages/dedupeMessages';
 
 const SCROLL_TO_BOTTOM_THRESHOLD = 10;
 
@@ -41,7 +41,7 @@ const ChatMessageRow = ({
     return {
       backgroundColor:
         held.value || selected ? 'rgba(210,138,140,0.13)' : 'transparent',
-      transform: [{ translateX: translateX.value }],
+      transform: [{translateX: translateX.value}],
     };
   });
 
@@ -57,14 +57,14 @@ const ChatMessageRow = ({
         e.translationX > 60 &&
         Math.abs(e.translationX) > Math.abs(e.translationY)
       ) {
-        translateX.value = withTiming(0, { duration: 150 });
+        translateX.value = withTiming(0, {duration: 150});
         onReply && runOnJS(onReply)(item);
       } else {
-        translateX.value = withTiming(0, { duration: 150 });
+        translateX.value = withTiming(0, {duration: 150});
       }
     })
     .onFinalize(() => {
-      translateX.value = withTiming(0, { duration: 150 });
+      translateX.value = withTiming(0, {duration: 150});
     });
 
   const longPressGesture = Gesture.LongPress()
@@ -116,10 +116,10 @@ const ChatsContainer = ({
   const userId = useSelector(state => state.auth.user?.id);
   const didInitialScroll = useRef(false);
 
-  const { isLoading, refetch } = useQuery({
+  const {isLoading, refetch} = useQuery({
     queryKey: ['user_conversations', conversationId],
     queryFn: async () => {
-      const apiResponse = await getConversations({ id: conversationId });
+      const apiResponse = await getConversations({id: conversationId});
       if (apiResponse?.response?.success) {
         const responseData = apiResponse.response.data;
         const data = responseData?.[0]?.messages;
@@ -136,16 +136,30 @@ const ChatsContainer = ({
   });
 
   useEffect(() => {
-    if (!isLoading && flatListRef?.current && !didInitialScroll.current) {
+    if (
+      !isLoading &&
+      flatListRef?.current &&
+      !didInitialScroll.current &&
+      conversations &&
+      conversations.length > 0
+    ) {
       setTimeout(() => {
-        flatListRef.current?.scrollToOffset({offset: 0, animated: false});
+        const lastMessage = conversations[conversations.length - 1];
+        if (lastMessage && lastMessage._id) {
+          flatListRef.current?.scrollToItem({
+            item: lastMessage,
+            animated: false,
+          });
+        } else {
+          flatListRef.current?.scrollToEnd({animated: false});
+        }
         didInitialScroll.current = true;
       }, 100);
     }
-  }, [isLoading, conversations?.length]);
+  }, [isLoading, conversations, conversations?.length]);
 
   const handleScroll = event => {
-    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const {layoutMeasurement, contentOffset, contentSize} = event.nativeEvent;
     const paddingToBottom = 40;
     const isAtBottom =
       layoutMeasurement.height + contentOffset.y >=
@@ -157,7 +171,7 @@ const ChatsContainer = ({
 
   const scrollToBottom = () => {
     if (flatListRef?.current) {
-      flatListRef.current?.scrollToEnd({ animated: true });
+      flatListRef.current?.scrollToEnd({animated: false});
     }
   };
 
@@ -181,12 +195,17 @@ const ChatsContainer = ({
     onTypingStatusUpdate: status => {
       setIsTyping(status);
     },
+    receiverId: conversationId,
   });
 
   if (isLoading) {
     return (
       <View style={{flex: 1}}>
-        <View style={[styles.loadingContainer, {flex: 1, justifyContent: 'center', alignItems: 'center'}]}>
+        <View
+          style={[
+            styles.loadingContainer,
+            {flex: 1, justifyContent: 'center', alignItems: 'center'},
+          ]}>
           <PrimaryLoader />
         </View>
       </View>
@@ -200,13 +219,13 @@ const ChatsContainer = ({
         data={
           isTyping
             ? [
-              ...(conversations || []),
-              { _id: 'typing-indicator', isTyping: true },
-            ]
+                ...(conversations || []),
+                {_id: 'typing-indicator', isTyping: true},
+              ]
             : conversations || []
         }
         keyExtractor={item => item._id || item.localId || 'typing-indicator'}
-        renderItem={({ item, index }) => {
+        renderItem={({item, index}) => {
           if (item.isTyping) {
             return (
               <View style={[styles.fullRow, styles.alignStart]}>
@@ -251,23 +270,35 @@ const ChatsContainer = ({
             tintColor="#fff"
           />
         }
-        // inverted
+        onScrollToIndexFailed={({index, highestMeasuredFrameIndex}) => {
+          // Scroll to the highest measured frame, then try again after a short delay
+          flatListRef.current?.scrollToIndex({
+            index: highestMeasuredFrameIndex,
+            animated: false,
+          });
+          setTimeout(() => {
+            flatListRef.current?.scrollToIndex({index, animated: false});
+          }, 100);
+        }}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.1}
         ListFooterComponent={
           loadingMore ? (
-            <View style={{ padding: 12 }}>
+            <View style={{padding: 12}}>
               <PrimaryLoader />
             </View>
           ) : null
         }
       />
       {showScrollToBottom && (
-        <TouchableOpacity
-          style={styles.scrollToBottomBtn}
-          onPress={scrollToBottom}>
-          <Icon name="chevron-down-circle" size={36} color="#fff" />
-        </TouchableOpacity>
+        <View style={styles.centeredScrollBtnWrap} pointerEvents="box-none">
+          <TouchableOpacity
+            style={styles.centeredScrollBtn}
+            onPress={scrollToBottom}
+            activeOpacity={0.85}>
+            <Icon name="arrow-down-outline" size={32} color="#fff" />
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -319,5 +350,26 @@ const styles = StyleSheet.create({
   },
   alignStart: {
     alignItems: 'flex-start',
+  },
+  centeredScrollBtnWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 32,
+    alignItems: 'center',
+    zIndex: 10,
+    pointerEvents: 'box-none',
+  },
+  centeredScrollBtn: {
+    backgroundColor: '#232323',
+    borderRadius: 24,
+    padding: 10,
+    elevation: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
 });

@@ -1,5 +1,4 @@
-
-import { apiService } from './apiService';
+import {apiService} from './apiService';
 import {endpoints} from './endpoints';
 
 export const readChat = async ({conversationId}) => {
@@ -9,7 +8,6 @@ export const readChat = async ({conversationId}) => {
       method: 'PATCH',
     });
 
-    console.log('readChat response:',conversationId, apiResponse);
     return apiResponse;
   } catch (error) {
     console.error(error);

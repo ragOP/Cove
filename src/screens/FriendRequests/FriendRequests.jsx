@@ -103,14 +103,13 @@ const FriendRequests = ({navigation}) => {
   });
 
   const handleAccept = async id => {
-    console.log('Accepting friend request with ID:', id);
     if (isAcceptingId) {
       return;
     }
     try {
       setIsAcceptingId(id);
       const apiResponse = await acceptFriendRequest({requestId: id});
-      console.log('Friend request accepted:', apiResponse, id);
+
       if (apiResponse?.response?.success) {
         dispatch(
           showSnackbar({
@@ -211,7 +210,7 @@ const FriendRequests = ({navigation}) => {
   });
 
   const visibleRequests = expanded ? requests : requests.slice(0, 5);
-  console.log('>>>', visibleRequests);
+
   const renderItem = ({item}) => (
     <FriendRequestRow
       item={item}

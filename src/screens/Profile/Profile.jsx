@@ -1,20 +1,24 @@
 import React from 'react';
-import {View, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
-import {Text, Avatar, Button, Divider, IconButton} from 'react-native-paper';
-import {useSelector, useDispatch} from 'react-redux';
-import {logout} from '../../redux/slice/authSlice';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Text, Avatar, Button, Divider, IconButton } from 'react-native-paper';
+import { useSelector, useDispatch } from 'react-redux';
+import { logout, selectToken } from '../../redux/slice/authSlice';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import UserAvatar from '../../components/CustomAvatar/UserAvatar';
-import {Paths} from '../../navigaton/paths';
+import { Paths } from '../../navigaton/paths';
 import MediaPreview from '../../components/MediaPreview/MediaPreview';
 import { format } from 'date-fns';
 
-const Profile = ({navigation}) => {
+const Profile = ({ navigation }) => {
   const user = useSelector(state => state.auth.user);
+  const token = useSelector(selectToken);
+
+  console.info('[TOKEN] >>>>>>>>>>>>', token)
+  console.info('[USER] >>>>>>>>>>>>', user);
+
   const dispatch = useDispatch();
   const [previewVisible, setPreviewVisible] = React.useState(false);
-
   const handleLogout = () => {
     dispatch(logout());
   };
@@ -36,7 +40,9 @@ const Profile = ({navigation}) => {
       </View>
       <View style={styles.header}>
         <Text style={styles.dateLabel}>{formattedDate}</Text>
-        <TouchableOpacity onPress={() => setPreviewVisible(true)} activeOpacity={0.85}>
+        <TouchableOpacity
+          onPress={() => setPreviewVisible(true)}
+          activeOpacity={0.85}>
           <UserAvatar
             profilePicture={user?.profilePicture}
             name={user?.name}
@@ -49,17 +55,32 @@ const Profile = ({navigation}) => {
         <Text style={styles.phone}>{user?.phoneNumber}</Text>
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <MaterialCommunityIcons name="account-group-outline" size={22} color="#D28A8C" style={styles.statIcon} />
+            <MaterialCommunityIcons
+              name="account-group-outline"
+              size={22}
+              color="#D28A8C"
+              style={styles.statIcon}
+            />
             <Text style={styles.statValue}>0</Text>
             <Text style={styles.statLabel}>Friends</Text>
           </View>
           <View style={styles.statCard}>
-            <MaterialCommunityIcons name="account-multiple-plus-outline" size={22} color="#D28A8C" style={styles.statIcon} />
+            <MaterialCommunityIcons
+              name="account-multiple-plus-outline"
+              size={22}
+              color="#D28A8C"
+              style={styles.statIcon}
+            />
             <Text style={styles.statValue}>0</Text>
             <Text style={styles.statLabel}>Groups</Text>
           </View>
           <View style={styles.statCard}>
-            <MaterialCommunityIcons name="star-outline" size={22} color="#D28A8C" style={styles.statIcon} />
+            <MaterialCommunityIcons
+              name="star-outline"
+              size={22}
+              color="#D28A8C"
+              style={styles.statIcon}
+            />
             <Text style={styles.statValue}>0</Text>
             <Text style={styles.statLabel}>Favorites</Text>
           </View>
@@ -68,31 +89,66 @@ const Profile = ({navigation}) => {
       <Divider style={styles.divider} />
       <View style={styles.optionsSection}>
         <TouchableOpacity style={styles.optionRow}>
-          <MaterialCommunityIcons name="account-edit" size={24} color="#D28A8C" style={styles.optionIcon} />
+          <MaterialCommunityIcons
+            name="account-edit"
+            size={24}
+            color="#D28A8C"
+            style={styles.optionIcon}
+          />
           <Text style={styles.optionText}>Edit Profile</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.optionRow}>
-          <MaterialCommunityIcons name="lock-outline" size={24} color="#D28A8C" style={styles.optionIcon} />
+          <MaterialCommunityIcons
+            name="lock-outline"
+            size={24}
+            color="#D28A8C"
+            style={styles.optionIcon}
+          />
           <Text style={styles.optionText}>Change Password</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.optionRow}>
-          <MaterialCommunityIcons name="bell-outline" size={24} color="#D28A8C" style={styles.optionIcon} />
+          <MaterialCommunityIcons
+            name="bell-outline"
+            size={24}
+            color="#D28A8C"
+            style={styles.optionIcon}
+          />
           <Text style={styles.optionText}>Notifications</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.optionRow}>
-          <MaterialCommunityIcons name="palette-outline" size={24} color="#D28A8C" style={styles.optionIcon} />
+          <MaterialCommunityIcons
+            name="palette-outline"
+            size={24}
+            color="#D28A8C"
+            style={styles.optionIcon}
+          />
           <Text style={styles.optionText}>Theme</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.optionRow}>
-          <MaterialCommunityIcons name="shield-account-outline" size={24} color="#D28A8C" style={styles.optionIcon} />
+          <MaterialCommunityIcons
+            name="shield-account-outline"
+            size={24}
+            color="#D28A8C"
+            style={styles.optionIcon}
+          />
           <Text style={styles.optionText}>Privacy & Security</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.optionRow}>
-          <MaterialCommunityIcons name="help-circle-outline" size={24} color="#D28A8C" style={styles.optionIcon} />
+          <MaterialCommunityIcons
+            name="help-circle-outline"
+            size={24}
+            color="#D28A8C"
+            style={styles.optionIcon}
+          />
           <Text style={styles.optionText}>Help & Support</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.optionRow}>
-          <MaterialCommunityIcons name="information-outline" size={24} color="#D28A8C" style={styles.optionIcon} />
+          <MaterialCommunityIcons
+            name="information-outline"
+            size={24}
+            color="#D28A8C"
+            style={styles.optionIcon}
+          />
           <Text style={styles.optionText}>About</Text>
         </TouchableOpacity>
       </View>
@@ -103,17 +159,25 @@ const Profile = ({navigation}) => {
         labelStyle={styles.logoutLabel}
         icon="logout"
         onPress={handleLogout}
-        contentStyle={styles.logoutContent}
-      >
+        contentStyle={styles.logoutContent}>
         Logout
       </Button>
       <View style={styles.madeWithCard}>
-        <MaterialCommunityIcons name="heart" size={18} color="#D28A8C" style={styles.madeWithIcon} />
+        <MaterialCommunityIcons
+          name="heart"
+          size={18}
+          color="#D28A8C"
+          style={styles.madeWithIcon}
+        />
         <Text style={styles.madeWithText}>Made with love • v1.0</Text>
       </View>
       <MediaPreview
         visible={previewVisible}
-        media={user?.profilePicture ? { type: 'image', uri: user.profilePicture } : null}
+        media={
+          user?.profilePicture
+            ? { type: 'image', uri: user.profilePicture }
+            : null
+        }
         onClose={() => setPreviewVisible(false)}
       />
     </ScrollView>

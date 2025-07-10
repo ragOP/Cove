@@ -14,12 +14,12 @@ export default function useChatListSocket({
 
     const handleChatListUpdate = data => {
       const chatObj = data?.data?.[0] || [];
-      console.log('[CHAT LIST UPDATE]', chatObj, data);
+      console.info('[CHAT LIST UPDATE]', chatObj, data);
       onChatListUpdate?.(chatObj);
     };
 
     const handleFriendRequestReceived = data => {
-      console.log('[FRIEND REQUEST RECEIVED]', data);
+      console.info('[FRIEND REQUEST RECEIVED]', data);
       onFriendRequestReceived?.(data?.data);
     };
 

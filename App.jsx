@@ -1,28 +1,28 @@
-import {SafeAreaView, StyleSheet} from 'react-native';
-import React, {useEffect} from 'react';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import { SafeAreaView, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Splash from './src/screens/Splash/Splash';
 import Register from './src/screens/Register/Register';
 import Home from './src/screens/Home/Home';
-import {NavigationContainer} from '@react-navigation/native';
-import {GestureHandlerRootView} from 'react-native-gesture-handler';
-import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {Paths} from './src/navigaton/paths';
+import { NavigationContainer } from '@react-navigation/native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Paths } from './src/navigaton/paths';
 import Start from './src/screens/Start/Start';
-import {Provider, useSelector} from 'react-redux';
-import {PersistGate} from 'redux-persist/integration/react';
-import {persistor, store} from './src/redux/store';
+import { Provider, useSelector } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+import { persistor, store } from './src/redux/store';
 import ContactChat from './src/screens/ContactChat/ContactChat';
 import AddContact from './src/screens/AddContact/AddContact';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import FriendRequests from './src/screens/FriendRequests/FriendRequests';
-import {PaperProvider} from 'react-native-paper';
+import { PaperProvider } from 'react-native-paper';
 import CustomSnackbar from './src/components/Snackbar/CustomSnackbar';
 import Profile from './src/screens/Profile/Profile';
 import ProfileViewScreen from './src/screens/Profile/ProfileViewScreen';
-import {SocketProvider} from './src/context/SocketContext';
+import { SocketProvider } from './src/context/SocketContext';
 import messaging from '@react-native-firebase/messaging';
-import {PermissionsAndroid, Platform} from 'react-native';
+import { PermissionsAndroid, Platform } from 'react-native';
 import useNotificationSocket from './src/hooks/useNotificationSocket';
 
 export const queryClient = new QueryClient();
@@ -39,7 +39,7 @@ const AppStack = () => {
       authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
     if (enabled) {
-      console.log('Authorization status:', authStatus);
+      console.info('Authorization status:', authStatus);
     }
   }
 
@@ -48,7 +48,7 @@ const AppStack = () => {
   }, []);
 
   return (
-    <Stack.Navigator screenOptions={{headerShown: false}}>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name={Paths.HOME} component={Home} />
       <Stack.Screen name={Paths.CONTACT_CHAT} component={ContactChat} />
       <Stack.Screen name={Paths.ADD_CONTACT} component={AddContact} />
@@ -60,7 +60,7 @@ const AppStack = () => {
 };
 
 const AuthStack = () => (
-  <Stack.Navigator screenOptions={{headerShown: false}}>
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name={Paths.SPLASH} component={Splash} />
     <Stack.Screen name={Paths.START} component={Start} />
     <Stack.Screen name={Paths.REGISTER} component={Register} />
@@ -102,11 +102,6 @@ const requestNotificationPermission = async () => {
 const App = () => {
   useEffect(() => {
     requestNotificationPermission();
-    // setupNotificationChannel();
-    // setupFCMForegroundHandler();
-    // setupNotificationOpenedHandler(data => {
-    //   console.log('Notification tapped:', data);
-    // });
   }, []);
 
   return (

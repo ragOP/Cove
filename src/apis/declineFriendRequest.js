@@ -7,7 +7,6 @@ export const declineFriendRequest = async ({requestId}) => {
       endpoint: `${endpoints.rejectFriendRequest}/${requestId}`,
       method: 'DELETE',
     });
-    console.log('Decline Friend Request Response:', requestId,apiResponse);
     return apiResponse;
   } catch (error) {
     console.error(error);
