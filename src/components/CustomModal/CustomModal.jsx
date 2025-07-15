@@ -134,7 +134,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 16,
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
+    paddingBottom: 10,
     width: '100%',
   },
   cancelButton: {

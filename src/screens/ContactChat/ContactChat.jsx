@@ -25,6 +25,10 @@ import { dedupeMessages } from '../../utils/messages/dedupeMessages';
 import { useQuery } from '@tanstack/react-query';
 import { readChat } from '../../apis/readChat';
 import { getUserInfo } from '../../apis/getUserInfo';
+import { deleteMessages } from '../../apis/deleteMessages';
+import CustomDialog from '../../components/CustomDialog/CustomDialog';
+import { useDispatch } from 'react-redux';
+import { showSnackbar } from '../../redux/slice/snackbarSlice';
 
 const ContactChat = () => {
   const route = useRoute();
@@ -41,6 +45,8 @@ const ContactChat = () => {
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [replyMessage, setReplyMessage] = useState(null);
   const [tab, setTab] = useState('chat');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState(null);
 
   const [userConversationId, setUserConversationId] = useState(null);
   const [userStatus, setUserStatus] = useState({
@@ -48,6 +54,8 @@ const ContactChat = () => {
     lastSeen: null,
   });
   const [isFetchingUserStatus, setIsFetchingUserStatus] = useState(false);
+
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (!contact?._id) {
@@ -104,6 +112,13 @@ const ContactChat = () => {
         lastSeen: status.lastSeen,
       });
     },
+    onMessageDeleted: data => {
+      // Handle message_deleted event
+      if (data?.data && Array.isArray(data.data)) {
+        const deletedMessageIds = data.data.map(item => item._id);
+        setConversations(prev => prev.filter(msg => !deletedMessageIds.includes(msg._id)));
+      }
+    },
     receiverId: contactDetails?._id,
   });
 
@@ -114,7 +129,97 @@ const ContactChat = () => {
     setReplyMessage(msg);
     handleClearSelected();
   };
-  const handleDeleteSelected = msg => handleClearSelected();
+  const handleDeleteSelected = async msg => {
+    setMessageToDelete(msg);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!messageToDelete) return;
+
+    try {
+      const response = await deleteMessages({ ids: [messageToDelete._id] });
+
+      if (response?.response?.success) {
+        // Remove the message from conversations
+        setConversations(prev => prev.filter(m => m._id !== messageToDelete._id));
+        handleClearSelected();
+        dispatch(
+          showSnackbar({
+            type: 'success',
+            title: 'Message Deleted',
+            subtitle: 'Message has been deleted successfully',
+            placement: 'top',
+          }),
+        );
+      } else {
+        console.error('Failed to delete message:', response);
+        const errorMessage = response?.response?.data?.message || 'Failed to delete message';
+        dispatch(
+          showSnackbar({
+            type: 'error',
+            title: 'Error',
+            subtitle: errorMessage,
+            placement: 'top',
+          }),
+        );
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      dispatch(
+        showSnackbar({
+          type: 'error',
+          title: 'Server Error',
+          subtitle: 'Failed to delete message',
+          placement: 'top',
+        }),
+      );
+    } finally {
+      setShowDeleteDialog(false);
+      setMessageToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteDialog(false);
+    setMessageToDelete(null);
+  };
+
+  const handleMarkSensitive = (messageId, isSensitive) => {
+    setConversations(prev =>
+      prev.map(msg =>
+        msg._id === messageId
+          ? { ...msg, isSensitive: isSensitive }
+          : msg
+      )
+    );
+    dispatch(
+      showSnackbar({
+        type: 'success',
+        title: 'Marked as Sensitive',
+        subtitle: 'Message has been marked as sensitive',
+        placement: 'top',
+      }),
+    );
+  };
+
+  const handleMarkUnsensitive = (messageId, isSensitive) => {
+    setConversations(prev =>
+      prev.map(msg =>
+        msg._id === messageId
+          ? { ...msg, isSensitive: isSensitive }
+          : msg
+      )
+    );
+    dispatch(
+      showSnackbar({
+        type: 'success',
+        title: 'Marked as Insensitive',
+        subtitle: 'Message has been marked as insensitive',
+        placement: 'top',
+      }),
+    );
+  };
 
   useQuery({
     queryKey: ['read_chat', userConversationId],
@@ -178,6 +283,8 @@ const ContactChat = () => {
                 selectedMessage={selectedMessage}
                 onReply={msg => setReplyMessage(msg)}
                 setUserConversationId={setUserConversationId}
+                onMarkSensitive={handleMarkSensitive}
+                onMarkUnsensitive={handleMarkUnsensitive}
               />
               <SendChat
                 conversationId={conversationId}
@@ -198,6 +305,22 @@ const ContactChat = () => {
           )}
         </View>
       </KeyboardAvoidingView>
+
+      {/* Delete Message Confirmation Dialog */}
+      <CustomDialog
+        visible={showDeleteDialog}
+        onDismiss={handleDeleteCancel}
+        title="Delete Message"
+        message="Are you sure you want to delete this message?"
+        icon="delete-outline"
+        iconColor="#ff4444"
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        confirmButtonColor="#ff4444"
+        destructive={true}
+      />
     </SafeAreaView>
   );
 };

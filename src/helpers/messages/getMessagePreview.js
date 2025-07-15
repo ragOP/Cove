@@ -22,12 +22,23 @@ export function getMessagePreview(message, currentUserId, isGroup = false) {
   // For non-group: show tick icon if me, else just message
   let prefix = '';
   if (isSentByMe) {
-    // You sent the message: show tick icon (return as JSX)
+    // You sent the message: show tick icon based on status
+    const status = message.status || 'delivered';
+
+    console.log('status', status);
+    let iconColor = '#bbb'; // Default to gray (delivered)
+    
+    if (status === 'read') {
+      iconColor = '#4BB543'; // Green for read
+    } else if (status === 'delivered' || status === 'sent' || status === 'unread') {
+      iconColor = '#bbb'; // Gray for delivered/sent/unread (treated as delivered)
+    }
+    
     prefix = (
       <Icon
         name="checkmark-done"
         size={16}
-        color="#4BB543"
+        color={iconColor}
         style={{marginRight: 4, marginBottom: -2}}
       />
     );

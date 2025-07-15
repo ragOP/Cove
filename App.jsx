@@ -97,7 +97,6 @@ const RootNavigator = () => {
       ) : (
         <AuthStack />
       )}
-      <CustomSnackbar />
     </NavigationContainer>
   );
 };
@@ -132,6 +131,7 @@ const App = () => {
                 <PaperProvider>
                   <Portal.Host>
                     <RootNavigator />
+                    <CustomSnackbar />
                   </Portal.Host>
                 </PaperProvider>
               </SafeAreaView>

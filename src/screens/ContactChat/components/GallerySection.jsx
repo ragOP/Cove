@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -9,10 +9,14 @@ import {
   RefreshControl,
   ScrollView,
   Alert,
+  Vibration,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getUserMedia } from '../../../apis/getUserMedia';
+import { markAsSensitive } from '../../../apis/markAsSensitive';
+import { markAsUnsensitive } from '../../../apis/markAsUnsensitive';
+import { showSnackbar } from '../../../redux/slice/snackbarSlice';
 import PrimaryLoader from '../../../components/Loaders/PrimaryLoader';
 import CustomImage from '../../../components/Image/CustomImage';
 import ImagePlaceholder from '../../../components/Placeholder/ImagePlaceholder';
@@ -22,15 +26,9 @@ import ImageViewer from '../../../components/ImageViewer/ImageViewer';
 import SelectionBottomBar from '../../../components/SelectionBottomBar/SelectionBottomBar';
 import GallerySelectionBar from '../../../components/GallerySelectionBar/GallerySelectionBar';
 import { useSelector, useDispatch } from 'react-redux';
-import {
-  setGallerySelectionMode,
-  setSelectedItems,
-  clearSelectedItems,
-  toggleSelectItem,
-  selectAll,
-  deselectAll,
-} from '../../../redux/slice/gallerySlice';
 import CustomDialog from '../../../components/CustomDialog/CustomDialog';
+import useChatSocket from '../../../hooks/useChatSocket';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const { width, height } = Dimensions.get('window');
 const numColumns = 3;
@@ -48,11 +46,9 @@ const chunkArray = (array, size) => {
   return result;
 };
 
-const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles }) => {
-  console.log('item', item);
+const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, isSelectionMode }) => {
   const [error, setError] = React.useState(false);
   if (!item || !item._id) {
-    // Placeholder for grid alignment
     return <View style={[styles.item, { opacity: 0 }]} />;
   }
   if (item.type === 'image') {
@@ -61,6 +57,7 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles }) => {
         style={[styles.item, isSelected && styles.selectedItem]}
         onPress={() => onPress?.(item)}
         onLongPress={() => onLongPress?.(item)}
+        delayLongPress={500}
         activeOpacity={0.85}>
         {error ? (
           <ImagePlaceholder style={styles.image} />
@@ -69,6 +66,7 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles }) => {
             source={{ uri: item?.mediaUrl }}
             style={styles.image}
             onError={() => setError(true)}
+            isSensitive={item?.isSensitive}
           />
         )}
         {item?.isSensitive && (
@@ -90,6 +88,7 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles }) => {
       style={[styles.item, isSelected && styles.selectedItem]}
       onPress={() => onPress?.(item)}
       onLongPress={() => onLongPress?.(item)}
+      delayLongPress={500}
       activeOpacity={0.85}>
       <View style={styles.videoThumb}>
         {error ? (
@@ -99,6 +98,7 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles }) => {
             source={{ uri: item?.thumb }}
             style={styles.image}
             onError={() => setError(true)}
+            isSensitive={item?.isSensitive}
           />
         )}
         <View style={styles.playIconWrap}>
@@ -121,53 +121,95 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles }) => {
 
 
 const GallerySection = ({ id }) => {
-  const [params, setParams] = useState({
-    page: 1,
-    per_page: 20,
-  });
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [deletedMessageIds, setDeletedMessageIds] = useState([]);
   const dispatch = useDispatch();
-  const isSelectionMode = useSelector(state => state.gallery.isSelectionMode);
-  const selectedItems = useSelector(state => state.gallery.selectedItems);
-  const dummyMedia = [
-    {
-      _id: 'dummy1',
-      type: 'image',
-      mediaUrl: 'https://placekitten.com/400/400',
-      isSensitive: false,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      _id: 'dummy2',
-      type: 'image',
-      mediaUrl: 'https://placekitten.com/401/401',
-      isSensitive: true,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      _id: 'dummy3',
-      type: 'video',
-      thumb: 'https://placekitten.com/402/402',
-      isSensitive: false,
-      createdAt: new Date().toISOString(),
-    },
-  ];
+  const queryClient = useQueryClient();
+
+  // Reset states when contact changes
+  useEffect(() => {
+    setShowDeleteDialog(false);
+    setPendingAction(null);
+    setIsProcessing(false);
+    setIsImageViewerVisible(false);
+    setSelectedImageIndex(0);
+    setIsSelectionMode(false);
+    setSelectedItems([]);
+    setDeletedMessageIds([]);
+  }, [id]);
+
+  // Cleanup states when component unmounts
+  useEffect(() => {
+    return () => {
+      setShowDeleteDialog(false);
+      setPendingAction(null);
+      setIsProcessing(false);
+    };
+  }, []);
+
+  // Use TanStack Query for gallery data
   const {
-    data: mediaList = [],
-    isLoading: isLoadingMedia,
-    refetch: refetchMedia,
-    isRefetching: isRefetchingSuggested,
+    data: galleryData = [],
+    isLoading: galleryLoading,
+    error: galleryError,
+    refetch: refetchGallery,
   } = useQuery({
-    queryKey: ['user-media', id],
-    queryFn: () => getUserMedia({ id, params }),
-    select: data => {
-      const arr = data?.response?.data || [];
-      if (Array.isArray(arr) && arr.length === 0) return dummyMedia;
-      return arr;
-    },
+    queryKey: ['gallery', id],
+    queryFn: () => getUserMedia({ id }),
     enabled: !!id,
+    select: (response) => response?.response?.data || [],
   });
+
+  // Use useChatSocket for message_deleted event
+  useChatSocket({
+    onMessageDeleted: data => {
+      console.info('[GALLERY SECTION - MESSAGE DELETED]', data);
+      if (data?.data && Array.isArray(data.data)) {
+        const newDeletedIds = data.data.map(item => item._id);
+        setDeletedMessageIds(prev => [...prev, ...newDeletedIds]);
+
+        // Invalidate and refetch gallery data
+        queryClient.invalidateQueries({ queryKey: ['gallery', id] });
+      }
+    },
+  });
+
+  // Filter out deleted messages from galleryData
+  const filteredMediaList = galleryData.filter(item => !deletedMessageIds.includes(item._id));
+
+  // Update media items with proper cache invalidation
+  const updateMediaItemsInCache = useCallback((updatedIds, isSensitive) => {
+    // Update the cache directly for immediate UI feedback
+    queryClient.setQueryData(['gallery', id], (oldData) => {
+      if (!oldData) return oldData;
+
+      return oldData.map(item => {
+        if (updatedIds.includes(item._id)) {
+          return { ...item, isSensitive };
+        }
+        return item;
+      });
+    });
+
+    // Invalidate and refetch to ensure server sync
+    queryClient.invalidateQueries({ queryKey: ['gallery', id] });
+  }, [queryClient, id]);
+
+  // Remove items from cache
+  const removeItemsFromCache = useCallback((itemIds) => {
+    queryClient.setQueryData(['gallery', id], (oldData) => {
+      if (!oldData) return oldData;
+
+      return oldData.filter(item => !itemIds.includes(item._id));
+    });
+
+    // Invalidate and refetch to ensure server sync
+    queryClient.invalidateQueries({ queryKey: ['gallery', id] });
+  }, [queryClient, id]);
+
   // Group media by date
   const groupMediaByDate = (mediaList) => {
     const groups = [];
@@ -187,7 +229,8 @@ const GallerySection = ({ id }) => {
     return groups;
   };
 
-  const groupedMedia = groupMediaByDate(mediaList);
+  const groupedMedia = groupMediaByDate(filteredMediaList);
+
   // Prepare images for viewer
   const prepareImagesForViewer = (mediaList) => {
     return mediaList
@@ -198,14 +241,29 @@ const GallerySection = ({ id }) => {
         isSensitive: item.isSensitive || false,
       }));
   };
+
   const handleMediaPress = (item, groupIndex, itemIndex) => {
     if (!item || !item._id) {
       console.log('Invalid item pressed:', item);
       return;
     }
+
+    // If in selection mode, always toggle selection regardless of item type
     if (isSelectionMode) {
-      dispatch(toggleSelectItem(item));
-    } else if (item.type === 'image' && item.mediaUrl) {
+      const exists = selectedItems.some(selected => selected._id === item._id);
+      if (exists) {
+        setSelectedItems(prev => prev.filter(selected => selected._id !== item._id));
+        if (selectedItems.length === 1) {
+          setIsSelectionMode(false);
+        }
+      } else {
+        setSelectedItems(prev => [...prev, item]);
+      }
+      return;
+    }
+
+    // If not in selection mode, handle normal press
+    if (item.type === 'image' && item.mediaUrl) {
       try {
         let globalIndex = 0;
         for (let i = 0; i < groupedMedia.length; i++) {
@@ -225,66 +283,247 @@ const GallerySection = ({ id }) => {
       console.log('Video pressed:', item);
     }
   };
+
   const handleLongPress = (item) => {
     if (!item || !item._id) {
       console.log('Invalid item long pressed:', item);
       return;
     }
+
+    // Add haptic feedback
+    Vibration.vibrate(100);
+
+    console.log('Long press detected for item:', item._id, 'Current selection mode:', isSelectionMode);
+
+    // Always enter selection mode on long press, regardless of current state
     if (!isSelectionMode) {
-      dispatch(setGallerySelectionMode(true));
-      dispatch(setSelectedItems([item]));
+      console.log('Entering selection mode and selecting item:', item._id);
+      setIsSelectionMode(true);
+      setSelectedItems([item]);
+    } else {
+      // If already in selection mode, just toggle the item
+      console.log('Already in selection mode, toggling item:', item._id);
+      const exists = selectedItems.some(selected => selected._id === item._id);
+      if (exists) {
+        setSelectedItems(prev => prev.filter(selected => selected._id !== item._id));
+        if (selectedItems.length === 1) {
+          setIsSelectionMode(false);
+        }
+      } else {
+        setSelectedItems(prev => [...prev, item]);
+      }
     }
   };
-  const handleSelectAll = () => {
-    dispatch(selectAll(mediaList));
-  };
-  const handleDeselectAll = () => {
-    dispatch(deselectAll());
-  };
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showSensitiveDialog, setShowSensitiveDialog] = useState(false);
-  const [pendingAction, setPendingAction] = useState(null); // 'delete' or 'sensitive'
 
-  const handleDelete = (items) => {
-    setPendingAction({ type: 'delete', items: items || selectedItems });
+  const handleSelectAll = () => {
+    setSelectedItems(filteredMediaList);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedItems([]);
+    setIsSelectionMode(false);
+  };
+
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleDelete = async (items) => {
+    if (!items || items.length === 0) {
+      dispatch(showSnackbar({
+        type: 'error',
+        title: 'Error',
+        subtitle: 'No items selected',
+        placement: 'top',
+      }));
+      return;
+    }
+
+    // For now, we'll show a confirmation dialog
+    // TODO: Implement actual delete API call when available
+    setPendingAction({ type: 'delete', items: items });
     setShowDeleteDialog(true);
   };
-  const handleMarkSensitive = (items) => {
-    setPendingAction({ type: 'sensitive', items: items || selectedItems });
-    setShowSensitiveDialog(true);
-  };
-  const confirmDelete = () => {
-    if (pendingAction?.items) {
-      console.log('Deleting items:', pendingAction.items.map(item => item._id));
-      dispatch(deselectAll());
+
+  const handleMarkSensitive = async (items) => {
+    if (!items || items.length === 0) {
+      dispatch(showSnackbar({
+        type: 'error',
+        title: 'Error',
+        subtitle: 'No items selected',
+        placement: 'top',
+      }));
+      return;
     }
-    setShowDeleteDialog(false);
-    setPendingAction(null);
-  };
-  const confirmSensitive = () => {
-    if (pendingAction?.items) {
-      console.log('Marking items as sensitive:', pendingAction.items.map(item => item._id));
-      dispatch(deselectAll());
+
+    try {
+      const ids = items.map(item => item._id);
+      console.log('Marking items as sensitive:', ids);
+
+      const response = await markAsSensitive({ ids });
+
+      if (response?.response?.success) {
+        console.log('Successfully marked as sensitive:', response.response.data);
+        dispatch(showSnackbar({
+          type: 'success',
+          title: 'Marked as Sensitive',
+          subtitle: `${response.response.data.length} item(s) marked as sensitive`,
+          placement: 'top',
+        }));
+
+        // Update cache with sensitive status
+        const updatedIds = response.response.data;
+        updateMediaItemsInCache(updatedIds, true);
+
+        // Clear selection if from selection bar
+        if (items.length > 1) {
+          setSelectedItems([]);
+          setIsSelectionMode(false);
+        }
+      } else {
+        console.error('Error marking as sensitive:', response?.response?.message || 'Unknown error');
+        dispatch(showSnackbar({
+          type: 'error',
+          title: 'Error',
+          subtitle: response?.response?.message || 'Failed to mark as sensitive',
+          placement: 'top',
+        }));
+      }
+    } catch (error) {
+      console.error('Error marking as sensitive:', error);
+      dispatch(showSnackbar({
+        type: 'error',
+        title: 'Server Error',
+        subtitle: 'Failed to mark as sensitive',
+        placement: 'top',
+      }));
     }
-    setShowSensitiveDialog(false);
-    setPendingAction(null);
   };
+
+  const handleMarkUnsensitive = async (items) => {
+    if (!items || items.length === 0) {
+      dispatch(showSnackbar({
+        type: 'error',
+        title: 'Error',
+        subtitle: 'No items selected',
+        placement: 'top',
+      }));
+      return;
+    }
+
+    try {
+      const ids = items.map(item => item._id);
+      console.log('Marking items as insensitive:', ids);
+
+      const response = await markAsUnsensitive({ ids });
+
+      if (response?.response?.success) {
+        console.log('Successfully marked as insensitive:', response.response.data);
+        dispatch(showSnackbar({
+          type: 'success',
+          title: 'Marked as Insensitive',
+          subtitle: `${response.response.data.length} item(s) marked as insensitive`,
+          placement: 'top',
+        }));
+
+        // Update cache with insensitive status
+        const updatedIds = response.response.data;
+        updateMediaItemsInCache(updatedIds, false);
+
+        // Clear selection if from selection bar
+        if (items.length > 1) {
+          setSelectedItems([]);
+          setIsSelectionMode(false);
+        }
+      } else {
+        console.error('Error marking as insensitive:', response?.response?.message || 'Unknown error');
+        dispatch(showSnackbar({
+          type: 'error',
+          title: 'Error',
+          subtitle: response?.response?.message || 'Failed to mark as insensitive',
+          placement: 'top',
+        }));
+      }
+    } catch (error) {
+      console.error('Error marking as insensitive:', error);
+      dispatch(showSnackbar({
+        type: 'error',
+        title: 'Server Error',
+        subtitle: 'Failed to mark as insensitive',
+        placement: 'top',
+      }));
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (pendingAction?.items) {
+      try {
+        setIsProcessing(true);
+        const itemIds = pendingAction.items.map(item => item._id);
+        console.log('Deleting items:', itemIds);
+
+
+        removeItemsFromCache(itemIds);
+
+        // Clear selection
+        setSelectedItems([]);
+        setIsSelectionMode(false);
+
+        // Show success toast
+        dispatch(showSnackbar({
+          type: 'success',
+          title: 'Deleted',
+          subtitle: `${pendingAction.items.length} item(s) deleted`,
+          placement: 'top',
+        }));
+      } catch (error) {
+        console.error('Error deleting items:', error);
+        dispatch(showSnackbar({
+          type: 'error',
+          title: 'Server Error',
+          subtitle: 'Failed to delete items',
+          placement: 'top',
+        }));
+      } finally {
+        setIsProcessing(false);
+        setShowDeleteDialog(false);
+        setPendingAction(null);
+      }
+    }
+  };
+
+
+
   const handleCancelSelection = () => {
-    dispatch(deselectAll());
+    setSelectedItems([]);
+    setIsSelectionMode(false);
   };
+
   const isItemSelected = (item) => {
     if (!item || !item._id) return false;
     return selectedItems.some(selected => selected._id === item._id);
   };
-  const allImages = prepareImagesForViewer(mediaList);
-  if (isLoadingMedia) {
+
+  const allImages = prepareImagesForViewer(filteredMediaList);
+
+  // Debug logging for selection state
+  useEffect(() => {
+    console.log('GallerySection - Selection state changed:', {
+      isSelectionMode,
+      selectedItemsCount: selectedItems.length,
+      contactId: id
+    });
+  }, [isSelectionMode, selectedItems.length, id]);
+
+  if (galleryLoading) {
     return (
       <View style={styles.loadingContainer}>
         <PrimaryLoader />
       </View>
     );
   }
-  if (!mediaList || mediaList.length === 0) {
+
+  if (!filteredMediaList || filteredMediaList.length === 0) {
     return (
       <View style={styles.emptyContainer}>
         <Icon
@@ -303,9 +542,21 @@ const GallerySection = ({ id }) => {
       </View>
     );
   }
+
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 80 }}>
+      {isSelectionMode && (
+        <View style={styles.selectionOverlay}>
+          <Text style={styles.selectionModeText}>
+            Selection Mode - {selectedItems.length} item(s) selected
+          </Text>
+        </View>
+      )}
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{
+          paddingBottom: isSelectionMode ? 120 : 80
+        }}>
         {groupedMedia.map((group, groupIndex) => {
           const rows = chunkArray(group.items, numColumns);
           return (
@@ -326,6 +577,7 @@ const GallerySection = ({ id }) => {
                         onLongPress={handleLongPress}
                         isSelected={isItemSelected(item)}
                         styles={styles}
+                        isSelectionMode={isSelectionMode}
                       />
                     ))}
                   </View>
@@ -336,15 +588,32 @@ const GallerySection = ({ id }) => {
         })}
         {/* Image Viewer */}
         <ImageViewer
+          key={`imageviewer-${id}`}
           visible={isImageViewerVisible}
           images={allImages}
           initialIndex={selectedImageIndex}
-          onClose={() => setIsImageViewerVisible(false)}
+          onClose={() => {
+            setIsImageViewerVisible(false);
+            setSelectedImageIndex(0);
+          }}
           onDelete={handleDelete}
           onMarkSensitive={handleMarkSensitive}
+          onMarkUnsensitive={handleMarkUnsensitive}
+          showSnackbarNotifications={false}
         />
       </ScrollView>
-      {isSelectionMode && <GallerySelectionBar />}
+      {isSelectionMode && (
+        <View style={styles.selectionBarContainer}>
+          <GallerySelectionBar
+            selectedItems={selectedItems}
+            onMarkSensitive={handleMarkSensitive}
+            onMarkUnsensitive={handleMarkUnsensitive}
+            onDelete={handleDelete}
+            onCancel={handleCancelSelection}
+            useRedux={false}
+          />
+        </View>
+      )}
       <CustomDialog
         visible={showDeleteDialog}
         onDismiss={() => setShowDeleteDialog(false)}
@@ -359,20 +628,7 @@ const GallerySection = ({ id }) => {
         confirmButtonColor="#ff4444"
         destructive={true}
       />
-      <CustomDialog
-        visible={showSensitiveDialog}
-        onDismiss={() => setShowSensitiveDialog(false)}
-        title="Mark as Sensitive"
-        message={`Are you sure you want to mark ${pendingAction?.items?.length || 0} item(s) as sensitive?`}
-        icon="shield-outline"
-        iconColor="#D28A8C"
-        confirmText="Mark Sensitive"
-        cancelText="Cancel"
-        onConfirm={confirmSensitive}
-        onCancel={() => setShowSensitiveDialog(false)}
-        confirmButtonColor="#D28A8C"
-        showCancel={true}
-      />
+
     </View>
   );
 };
@@ -563,6 +819,31 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  selectionBarContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    elevation: 10,
+  },
+  selectionOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(210, 138, 140, 0.1)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    zIndex: 999,
+    elevation: 9,
+  },
+  selectionModeText: {
+    color: '#D28A8C',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 
 });

@@ -3,6 +3,7 @@ import authSlice from './slice/authSlice';
 import snackbarSlice from './slice/snackbarSlice';
 import chatReducer from './slice/chatSlice';
 import galleryReducer from './slice/gallerySlice';
+import conversationReducer from './slice/conversationSlice';
 import {persistStore, persistReducer} from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -18,6 +19,7 @@ const rootReducer = combineReducers({
   snackbar: snackbarSlice,
   chat: chatReducer,
   gallery: galleryReducer,
+  conversation: conversationReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

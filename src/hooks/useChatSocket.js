@@ -9,6 +9,7 @@ export default function useChatSocket({
   onTypingStatusUpdate,
   onUpdateMessagesStatus,
   onUpdateUserStatus,
+  onMessageDeleted,
 }) {
   const socket = useSocketContext();
   const user = useSelector(selectUser);
@@ -82,6 +83,14 @@ export default function useChatSocket({
         onUpdateMessagesStatus?.(data);
       }
     };
+    const handleMessageDeleted = data => {
+      console.info('[MESSAGE DELETED]', data);
+      const userId = data?.userId;
+
+      if (userId === id) {
+        onMessageDeleted?.(data);
+      }
+    };
     const handleError = err => {
       console.error('[SOCKET ERROR]', err);
     };
@@ -93,6 +102,7 @@ export default function useChatSocket({
     socket.on('typing_status_update', handleTypingStatusUpdate);
     socket.on('new_message', handleNewMessage);
     socket.on('message_read_update', handleMessageReadUpdate);
+    socket.on('message_deleted', handleMessageDeleted);
     socket.on('connect_error', handleError);
     socket.on('error', handleError);
     socket.on('disconnect', handleDisconnect);
@@ -102,6 +112,7 @@ export default function useChatSocket({
       socket.off('typing_status_update', handleTypingStatusUpdate);
       socket.off('new_message', handleNewMessage);
       socket.off('message_read_update', handleMessageReadUpdate);
+      socket.off('message_deleted', handleMessageDeleted);
       socket.off('connect_error', handleError);
       socket.off('error', handleError);
       socket.off('disconnect', handleDisconnect);
@@ -113,6 +124,7 @@ export default function useChatSocket({
     onTypingStatusUpdate,
     onUpdateMessagesStatus,
     onUpdateUserStatus,
+    onMessageDeleted,
   ]);
 
   return {socket, emitTypingStatus, joinChat, leaveChat};

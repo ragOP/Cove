@@ -17,6 +17,11 @@ import Share from 'react-native-share';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import SelectionBottomBar from '../SelectionBottomBar/SelectionBottomBar';
 import CustomModal from '../CustomModal/CustomModal';
+import { markAsSensitive } from '../../apis/markAsSensitive';
+import { markAsUnsensitive } from '../../apis/markAsUnsensitive';
+import { deleteMessages } from '../../apis/deleteMessages';
+import { useDispatch } from 'react-redux';
+import { showSnackbar } from '../../redux/slice/snackbarSlice';
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,9 +32,11 @@ const ImageViewer = ({
   onClose,
   onDelete,
   onMarkSensitive,
+  onMarkUnsensitive,
   showBottomBar = true,
   showCenterNavigation = true,
   autoHideNavigation = true,
+  showSnackbarNotifications = true,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex || 0);
   const [showInfo, setShowInfo] = useState(false);
@@ -39,11 +46,17 @@ const ImageViewer = ({
   const [selectedImages, setSelectedImages] = useState([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showSensitiveDialog, setShowSensitiveDialog] = useState(false);
+  const [showUnsensitiveDialog, setShowUnsensitiveDialog] = useState(false);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (visible) {
       setCurrentIndex(initialIndex || 0);
       setShowInfo(false); // Reset info modal when opening
+      // Reset dialog states when opening
+      setShowDeleteDialog(false);
+      setShowSensitiveDialog(false);
+      setShowUnsensitiveDialog(false);
       const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
         console.log('Hardware back button pressed');
         if (showInfo) {
@@ -54,6 +67,11 @@ const ImageViewer = ({
         return true;
       });
       return () => backHandler.remove();
+    } else {
+      // Reset dialog states when closing
+      setShowDeleteDialog(false);
+      setShowSensitiveDialog(false);
+      setShowUnsensitiveDialog(false);
     }
   }, [visible, initialIndex, onClose, showInfo]);
 
@@ -80,6 +98,10 @@ const ImageViewer = ({
   const handleClose = () => {
     console.log('Close button pressed');
     setShowInfo(false); // Close info modal if open
+    // Reset all dialog states when closing
+    setShowDeleteDialog(false);
+    setShowSensitiveDialog(false);
+    setShowUnsensitiveDialog(false);
     onClose();
   };
 
@@ -153,6 +175,176 @@ const ImageViewer = ({
     setIsSelectionMode(false);
   };
 
+  const handleMarkSensitiveMultiple = async () => {
+    try {
+      const ids = selectedImages.map(img => img._id).filter(id => id);
+      if (ids.length === 0) {
+        console.error('No valid image IDs found for marking as sensitive');
+        return;
+      }
+
+      const response = await markAsSensitive({ ids });
+
+      if (response?.response?.success) {
+        // Call the callback to update UI if provided
+        if (onMarkSensitive) {
+          onMarkSensitive(selectedImages);
+        }
+        // Clear selection and exit selection mode
+        setSelectedImages([]);
+        setIsSelectionMode(false);
+        console.log('1111 Successfully marked multiple images as sensitive');
+        dispatch(
+          showSnackbar({
+            type: 'success',
+            title: 'Marked as Sensitive',
+            subtitle: `${ids.length} images have been marked as sensitive`,
+            placement: 'top',
+          }),
+        );
+        console.log('2222222');
+
+      } else {
+        console.error('Failed to mark multiple images as sensitive:', response);
+        const errorMessage = response?.response?.data?.message || 'Failed to mark images as sensitive';
+        dispatch(
+          showSnackbar({
+            type: 'error',
+            title: 'Error',
+            subtitle: errorMessage,
+            placement: 'top',
+          }),
+        );
+      }
+    } catch (error) {
+      console.error('Error marking multiple images as sensitive:', error);
+      dispatch(
+        showSnackbar({
+          type: 'error',
+          title: 'Server Error',
+          subtitle: 'Failed to mark images as sensitive',
+          placement: 'top',
+        }),
+      );
+    }
+  };
+
+  const handleMarkUnsensitiveMultiple = async () => {
+    try {
+      const ids = selectedImages.map(img => img._id).filter(id => id);
+      if (ids.length === 0) {
+        console.error('No valid image IDs found for marking as insensitive');
+        return;
+      }
+
+      const response = await markAsUnsensitive({ ids });
+
+      if (response?.response?.success) {
+        // Call the callback to update UI if provided
+        if (onMarkUnsensitive) {
+          onMarkUnsensitive(selectedImages);
+        }
+        console.log('Successfully marked multiple images as insensitive');
+        // Clear selection and exit selection mode
+        setSelectedImages([]);
+        setIsSelectionMode(false);
+        if (showSnackbarNotifications) {
+          dispatch(
+            showSnackbar({
+              type: 'success',
+              title: 'Marked as Insensitive',
+              subtitle: `${ids.length} images have been marked as insensitive`,
+              placement: 'top',
+            }),
+          );
+        }
+      } else {
+        console.error('Failed to mark multiple images as insensitive:', response);
+        const errorMessage = response?.response?.data?.message || 'Failed to mark images as insensitive';
+        if (showSnackbarNotifications) {
+          dispatch(
+            showSnackbar({
+              type: 'error',
+              title: 'Error',
+              subtitle: errorMessage,
+              placement: 'top',
+            }),
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error marking multiple images as insensitive:', error);
+      if (showSnackbarNotifications) {
+        dispatch(
+          showSnackbar({
+            type: 'error',
+            title: 'Server Error',
+            subtitle: 'Failed to mark images as insensitive',
+            placement: 'top',
+          }),
+        );
+      }
+    }
+  };
+
+  const handleDeleteMultiple = async () => {
+    try {
+      const ids = selectedImages.map(img => img._id).filter(id => id);
+      if (ids.length === 0) {
+        console.error('No valid image IDs found for deletion');
+        return;
+      }
+
+      const response = await deleteMessages({ ids });
+
+      if (response?.response?.success) {
+        // Call the callback to update UI if provided
+        if (onDelete) {
+          onDelete(selectedImages);
+        }
+        // Clear selection and exit selection mode
+        setSelectedImages([]);
+        setIsSelectionMode(false);
+        console.log('Successfully deleted multiple messages');
+        if (showSnackbarNotifications) {
+          dispatch(
+            showSnackbar({
+              type: 'success',
+              title: 'Messages Deleted',
+              subtitle: `${ids.length} messages have been deleted successfully`,
+              placement: 'top',
+            }),
+          );
+        }
+      } else {
+        console.error('Failed to delete multiple messages:', response);
+        const errorMessage = response?.response?.data?.message || 'Failed to delete messages';
+        if (showSnackbarNotifications) {
+          dispatch(
+            showSnackbar({
+              type: 'error',
+              title: 'Error',
+              subtitle: errorMessage,
+              placement: 'top',
+            }),
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting multiple messages:', error);
+      if (showSnackbarNotifications) {
+        dispatch(
+          showSnackbar({
+            type: 'error',
+            title: 'Server Error',
+            subtitle: 'Failed to delete messages',
+            placement: 'top',
+          }),
+        );
+      }
+    }
+  };
+
   const isImageSelected = (image) => {
     if (!image || !image._id) return false;
     return selectedImages.some(selected => selected._id === image._id);
@@ -165,13 +357,175 @@ const ImageViewer = ({
   const handleSensitivePress = () => {
     setShowSensitiveDialog(true);
   };
-  const confirmDelete = () => {
-    if (onDelete) onDelete(images[currentIndex]);
-    setShowDeleteDialog(false);
+  const handleUnsensitivePress = () => {
+    setShowUnsensitiveDialog(true);
   };
-  const confirmSensitive = () => {
-    if (onMarkSensitive) onMarkSensitive(images[currentIndex]);
-    setShowSensitiveDialog(false);
+  const confirmDelete = async () => {
+    try {
+      const currentImage = images[currentIndex];
+      if (!currentImage?._id) {
+        console.error('No image ID found for deleting');
+        setShowDeleteDialog(false);
+        return;
+      }
+
+      const response = await deleteMessages({ ids: [currentImage._id] });
+
+      if (response?.response?.success) {
+        if (onDelete) {
+          onDelete(currentImage);
+        }
+        if (showSnackbarNotifications) {
+          dispatch(
+            showSnackbar({
+              type: 'success',
+              title: 'Message Deleted',
+              subtitle: 'Message has been deleted successfully',
+              placement: 'top',
+            }),
+          );
+        }
+      } else {
+        console.error('Failed to delete message:', response);
+        const errorMessage = response?.response?.data?.message || 'Failed to delete message';
+        if (showSnackbarNotifications) {
+          dispatch(
+            showSnackbar({
+              type: 'error',
+              title: 'Error',
+              subtitle: errorMessage,
+              placement: 'top',
+            }),
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      if (showSnackbarNotifications) {
+        dispatch(
+          showSnackbar({
+            type: 'error',
+            title: 'Server Error',
+            subtitle: 'Failed to delete message',
+            placement: 'top',
+          }),
+        );
+      }
+    } finally {
+      setShowDeleteDialog(false);
+    }
+  };
+  const confirmSensitive = async () => {
+    try {
+      const currentImage = images[currentIndex];
+      if (!currentImage?._id) {
+        console.error('No image ID found for marking as sensitive');
+        setShowSensitiveDialog(false);
+        return;
+      }
+
+      const response = await markAsSensitive({ ids: [currentImage._id] });
+
+      if (response?.response?.success) {
+        if (onMarkSensitive) {
+          onMarkSensitive(currentImage);
+        }
+        if (showSnackbarNotifications) {
+          dispatch(
+            showSnackbar({
+              type: 'success',
+              title: 'Marked as Sensitive',
+              subtitle: 'Image has been marked as sensitive',
+              placement: 'top',
+            }),
+          );
+        }
+      } else {
+        console.error('Failed to mark as sensitive:', response);
+        const errorMessage = response?.response?.data?.message || 'Failed to mark image as sensitive';
+        if (showSnackbarNotifications) {
+          dispatch(
+            showSnackbar({
+              type: 'error',
+              title: 'Error',
+              subtitle: errorMessage,
+              placement: 'top',
+            }),
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error marking as sensitive:', error);
+      if (showSnackbarNotifications) {
+        dispatch(
+          showSnackbar({
+            type: 'error',
+            title: 'Server Error',
+            subtitle: 'Failed to mark image as sensitive',
+            placement: 'top',
+          }),
+        );
+      }
+    } finally {
+      setShowSensitiveDialog(false);
+    }
+  };
+  const confirmUnsensitive = async () => {
+    try {
+      const currentImage = images[currentIndex];
+      if (!currentImage?._id) {
+        console.error('No image ID found for marking as insensitive');
+        setShowUnsensitiveDialog(false);
+        return;
+      }
+
+      const response = await markAsUnsensitive({ ids: [currentImage._id] });
+
+      if (response?.response?.success) {
+        // Call the callback to update UI if provided
+        if (onMarkUnsensitive) {
+          onMarkUnsensitive(currentImage);
+        }
+        console.log('Successfully marked as insensitive');
+        if (showSnackbarNotifications) {
+          dispatch(
+            showSnackbar({
+              type: 'success',
+              title: 'Marked as Insensitive',
+              subtitle: 'Image has been marked as insensitive',
+              placement: 'top',
+            }),
+          );
+        }
+      } else {
+        console.error('Failed to mark as insensitive:', response);
+        const errorMessage = response?.response?.data?.message || 'Failed to mark image as insensitive';
+        if (showSnackbarNotifications) {
+          dispatch(
+            showSnackbar({
+              type: 'error',
+              title: 'Error',
+              subtitle: errorMessage,
+              placement: 'top',
+            }),
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error marking as insensitive:', error);
+      if (showSnackbarNotifications) {
+        dispatch(
+          showSnackbar({
+            type: 'error',
+            title: 'Server Error',
+            subtitle: 'Failed to mark image as insensitive',
+            placement: 'top',
+          }),
+        );
+      }
+    } finally {
+      setShowUnsensitiveDialog(false);
+    }
   };
 
   return (
@@ -246,6 +600,15 @@ const ImageViewer = ({
                 </View>
               )}
 
+              {/* Message Content/Caption Display */}
+              {image?.messageContent && image.messageContent.trim() !== '' && (
+                <View style={styles.messageContentContainer}>
+                  <Text style={styles.messageContentText}>
+                    {image.messageContent}
+                  </Text>
+                </View>
+              )}
+
               {/* Center Navigation Buttons */}
               {showNavigation && showCenterNavigation && (
                 <>
@@ -281,12 +644,21 @@ const ImageViewer = ({
         {/* Bottom Bar */}
         {showBottomBar && !isSelectionMode && (
           <View style={[styles.viewerBottomBar, showNavigation ? {} : { opacity: 0 }]}>
-            <TouchableOpacity
-              style={styles.viewerBarButton}
-              onPress={handleSensitivePress}>
-              <MaterialIcon name="shield-outline" size={26} color="#D28A8C" />
-              <Text style={styles.viewerBarLabel}>Sensitive</Text>
-            </TouchableOpacity>
+            {currentImage?.isSensitive ? (
+              <TouchableOpacity
+                style={styles.viewerBarButton}
+                onPress={handleUnsensitivePress}>
+                <MaterialIcon name="shield-off-outline" size={26} color="#D28A8C" />
+                <Text style={styles.viewerBarLabel}>Mark as Insensitive</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.viewerBarButton}
+                onPress={handleSensitivePress}>
+                <MaterialIcon name="shield-outline" size={26} color="#D28A8C" />
+                <Text style={styles.viewerBarLabel}>Mark as Sensitive</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity style={styles.viewerBarButton} onPress={handleShare}>
               <MaterialIcon name="share-variant" size={26} color="#D28A8C" />
               <Text style={styles.viewerBarLabel}>Share</Text>
@@ -310,8 +682,9 @@ const ImageViewer = ({
             selectedItems={selectedImages}
             onSelectAll={handleSelectAll}
             onDeselectAll={handleDeselectAll}
-            onDelete={() => onDelete && selectedImages.length > 0 && onDelete(selectedImages)}
-            onMarkSensitive={() => onMarkSensitive && selectedImages.length > 0 && onMarkSensitive(selectedImages)}
+            onDelete={handleDeleteMultiple}
+            onMarkSensitive={handleMarkSensitiveMultiple}
+            onMarkUnsensitive={handleMarkUnsensitiveMultiple}
             onCancel={handleCancelSelection}
           />
         )}
@@ -364,10 +737,25 @@ const ImageViewer = ({
           message="Are you sure you want to mark this item as sensitive?"
           icon="shield-outline"
           iconColor="#D28A8C"
-          confirmText="Mark Sensitive"
+          confirmText="Mark as Sensitive"
           cancelText="Cancel"
           onConfirm={confirmSensitive}
           onCancel={() => setShowSensitiveDialog(false)}
+          confirmButtonColor="#D28A8C"
+          showCancel={true}
+        />
+        {/* Mark as Insensitive Confirmation Dialog */}
+        <CustomModal
+          visible={showUnsensitiveDialog}
+          onDismiss={() => setShowUnsensitiveDialog(false)}
+          title="Mark as Insensitive"
+          message="Are you sure you want to mark this item as insensitive?"
+          icon="shield-off-outline"
+          iconColor="#D28A8C"
+          confirmText="Mark as Insensitive"
+          cancelText="Cancel"
+          onConfirm={confirmUnsensitive}
+          onCancel={() => setShowUnsensitiveDialog(false)}
           confirmButtonColor="#D28A8C"
           showCancel={true}
         />
@@ -690,6 +1078,21 @@ const styles = StyleSheet.create({
     color: '#D28A8C',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  messageContentContainer: {
+    position: 'absolute',
+    bottom: 100, // Adjust as needed
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 8,
+    padding: 10,
+    zIndex: 10,
+  },
+  messageContentText: {
+    color: '#fff',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
 

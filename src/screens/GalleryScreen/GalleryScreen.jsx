@@ -4,6 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { markAsSensitive } from '../../apis/markAsSensitive';
+import { markAsUnsensitive } from '../../apis/markAsUnsensitive';
+import { deleteMessages } from '../../apis/deleteMessages';
 import PrimaryLoader from '../../components/Loaders/PrimaryLoader';
 import CustomImage from '../../components/Image/CustomImage';
 import ImagePlaceholder from '../../components/Placeholder/ImagePlaceholder';
@@ -29,6 +31,8 @@ import ImageViewer from '../../components/ImageViewer/ImageViewer';
 import CustomDialog from '../../components/CustomDialog/CustomDialog';
 import { dummyImages } from '../../utils/media/dummyImages';
 import { getUserGallery } from '../../apis/getUserGallery';
+import useChatSocket from '../../hooks/useChatSocket';
+import { showSnackbar } from '../../redux/slice/snackbarSlice';
 
 const { width, height } = Dimensions.get('window');
 
@@ -60,6 +64,7 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles }) => {
             source={{ uri: item.mediaUrl }}
             style={styles.image}
             onError={() => setError(true)}
+            isSensitive={item.isSensitive}
           />
         )}
         {item.isSensitive && (
@@ -94,6 +99,7 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles }) => {
             source={{ uri: item.thumb }}
             style={styles.image}
             onError={() => setError(true)}
+            isSensitive={item.isSensitive}
           />
         )}
         <View style={styles.playIconWrap}>
@@ -132,8 +138,6 @@ const GalleryScreen = () => {
   // Dialog states
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [markSensitiveDialog, setMarkSensitiveDialog] = useState(false);
-  const [imageViewerMarkSensitiveDialog, setImageViewerMarkSensitiveDialog] = useState(false);
-  const [currentImageForSensitive, setCurrentImageForSensitive] = useState(null);
 
   // Multi-select state from Redux
   const isSelectionMode = useSelector(state => state.gallery.isSelectionMode);
@@ -175,6 +179,17 @@ const GalleryScreen = () => {
   const total = useSelector(state => state.gallery.total);
   const page = useSelector(state => state.gallery.page);
   const per_page = useSelector(state => state.gallery.per_page);
+
+  // Use useChatSocket for message_deleted event
+  useChatSocket({
+    onMessageDeleted: data => {
+      console.info('[GALLERY - MESSAGE DELETED]', data);
+      if (data?.data && Array.isArray(data.data)) {
+        const deletedMessageIds = data.data.map(item => item._id);
+        dispatch(removeGalleryItems(deletedMessageIds));
+      }
+    },
+  });
 
   const loadGalleryData = useCallback(async (pageNum) => {
     if (!user?.id) return;
@@ -265,7 +280,7 @@ const GalleryScreen = () => {
   const shieldCount = mediaList.filter(item => item.isSensitive).length;
 
   const handleMediaPress = (item, groupIndex, itemIndex) => {
-    console.log('handleMediaPress: item:', item); 
+    console.log('handleMediaPress: item:', item);
     try {
       if (!item || !item._id) {
         return;
@@ -338,11 +353,34 @@ const GalleryScreen = () => {
     setDeleteDialog(true);
   };
 
-  const handleDeleteConfirm = () => {
-    // TODO: Implement delete API call
-    dispatch(deselectAll());
-    dispatch(setGallerySelectionMode(false));
-    setDeleteDialog(false);
+  const handleDeleteConfirm = async () => {
+    try {
+      const ids = selectedItems.map(item => item._id);
+      const response = await deleteMessages({ ids });
+
+      if (response?.response?.success) {
+        dispatch(removeGalleryItems(ids));
+        dispatch(deselectAll());
+        dispatch(setGallerySelectionMode(false));
+        setDeleteDialog(false);
+        dispatch(showSnackbar({ message: `Deleted ${ids.length} item(s)`, type: 'success' }));
+      } else {
+        const errorMessage = response?.response?.data?.message || 'Failed to delete items';
+        dispatch(showSnackbar({ message: errorMessage, type: 'error' }));
+        setDeleteDialog(false);
+      }
+    } catch (error) {
+      console.error('Error deleting items:', error);
+      dispatch(showSnackbar({ message: 'Failed to delete items', type: 'error' }));
+      setDeleteDialog(false);
+    }
+  };
+
+  const handleSingleImageDelete = (deletedImage) => {
+    // Remove the deleted image from gallery state
+    dispatch(removeGalleryItems([deletedImage._id]));
+    // Close the image viewer since the image was deleted
+    setIsImageViewerVisible(false);
   };
 
   const handleMarkSensitive = () => {
@@ -358,27 +396,27 @@ const GalleryScreen = () => {
       const ids = selectedItems.map(item => item._id);
       const response = await markAsSensitive({ ids });
 
-      if (response.success === false || response.error) {
+      if (response?.response?.success) {
+        // Update Redux state to reflect the changes immediately
+        dispatch(updateMultipleGalleryItems({
+          itemIds: ids,
+          updates: { isSensitive: true }
+        }));
+
+        // Success - clear selection and exit selection mode
+        dispatch(deselectAll());
+        dispatch(setGallerySelectionMode(false));
         setMarkSensitiveDialog(false);
-        return;
+        dispatch(showSnackbar({ message: `Marked ${ids.length} item(s) as sensitive`, type: 'success' }));
+      } else {
+        const errorMessage = response?.response?.data?.message || 'Failed to mark items as sensitive';
+        dispatch(showSnackbar({ message: errorMessage, type: 'error' }));
+        setMarkSensitiveDialog(false);
       }
-
-      // Update Redux state to reflect the changes immediately
-      dispatch(updateMultipleGalleryItems({
-        itemIds: ids,
-        updates: { isSensitive: true }
-      }));
-
-      // Success - clear selection and exit selection mode
-      dispatch(deselectAll());
-      dispatch(setGallerySelectionMode(false));
-      setMarkSensitiveDialog(false);
-
-      // Show success dialog - you can add a separate success dialog state
     } catch (error) {
       console.error('Error marking items as sensitive:', error);
+      dispatch(showSnackbar({ message: 'Failed to mark items as sensitive', type: 'error' }));
       setMarkSensitiveDialog(false);
-      // Show error dialog - you can add a separate error dialog state
     }
   };
 
@@ -391,42 +429,24 @@ const GalleryScreen = () => {
   };
 
   const handleImageViewerMarkSensitive = (image) => {
-    setCurrentImageForSensitive(image);
-    setImageViewerMarkSensitiveDialog(true);
+    // Update Redux state immediately for UI feedback
+    dispatch(updateMultipleGalleryItems({
+      itemIds: [image._id],
+      updates: { isSensitive: true }
+    }));
   };
 
-  const handleImageViewerMarkSensitiveConfirm = async () => {
-    try {
-      const ids = [currentImageForSensitive._id];
-      const response = await markAsSensitive({ ids });
 
-      if (response.success === false || response.error) {
-        setImageViewerMarkSensitiveDialog(false);
-        setCurrentImageForSensitive(null);
-        return;
-      }
 
-      // Update Redux state to reflect the changes immediately
-      dispatch(updateMultipleGalleryItems({
-        itemIds: ids,
-        updates: { isSensitive: true }
-      }));
-
-      // Show success dialog - you can add a separate success dialog state
-      setImageViewerMarkSensitiveDialog(false);
-      setCurrentImageForSensitive(null);
-    } catch (error) {
-      console.error('Error marking image as sensitive:', error);
-      setImageViewerMarkSensitiveDialog(false);
-      setCurrentImageForSensitive(null);
-      // Show error dialog - you can add a separate error dialog state
-    }
+  const handleImageViewerMarkUnsensitive = (image) => {
+    // Update Redux state immediately for UI feedback
+    dispatch(updateMultipleGalleryItems({
+      itemIds: [image._id],
+      updates: { isSensitive: false }
+    }));
   };
 
-  const handleImageViewerMarkSensitiveCancel = () => {
-    setImageViewerMarkSensitiveDialog(false);
-    setCurrentImageForSensitive(null);
-  };
+
 
   const handleCancelSelection = () => {
     try {
@@ -668,8 +688,10 @@ const GalleryScreen = () => {
         onClose={() => {
           setIsImageViewerVisible(false);
         }}
-        onDelete={handleDelete}
+        onDelete={handleSingleImageDelete}
         onMarkSensitive={handleImageViewerMarkSensitive}
+        onMarkUnsensitive={handleImageViewerMarkUnsensitive}
+        showSnackbarNotifications={true}
       />
 
 
@@ -709,20 +731,7 @@ const GalleryScreen = () => {
         showCancel={selectedItems.length > 0}
       />
 
-      {/* Image Viewer Mark Sensitive Dialog */}
-      <CustomDialog
-        visible={imageViewerMarkSensitiveDialog}
-        onDismiss={() => setImageViewerMarkSensitiveDialog(false)}
-        title="Mark as Sensitive"
-        message="Are you sure you want to mark this image as sensitive?"
-        icon="shield-outline"
-        iconColor="#D28A8C"
-        confirmText="Mark Sensitive"
-        cancelText="Cancel"
-        onConfirm={handleImageViewerMarkSensitiveConfirm}
-        onCancel={handleImageViewerMarkSensitiveCancel}
-        confirmButtonColor="#D28A8C"
-      />
+
     </View>
   );
 };

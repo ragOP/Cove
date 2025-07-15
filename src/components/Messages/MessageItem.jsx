@@ -1,7 +1,7 @@
-import {useEffect, useRef, memo} from 'react';
-import {Animated, Text, View, StyleSheet} from 'react-native';
-import {formatDateLabel} from '../../utils/date/formatDateLabel';
-import {formatTime} from '../../utils/time/formatTime';
+import { useEffect, useRef, memo } from 'react';
+import { Animated, Text, View, StyleSheet } from 'react-native';
+import { formatDateLabel } from '../../utils/date/formatDateLabel';
+import { formatTime } from '../../utils/time/formatTime';
 import RenderMessageContent from './RenderMessageContent';
 import Icon from 'react-native-vector-icons/Ionicons';
 
@@ -11,6 +11,8 @@ const MessageItem = memo(({
   showDateLabel,
   userId,
   showSenderLabel = false,
+  onMarkSensitive,
+  onMarkUnsensitive,
 }) => {
   const isSent = item?.sender?._id === userId;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -34,7 +36,7 @@ const MessageItem = memo(({
   }
 
   return (
-    <Animated.View style={[styles.messageWrapper, {opacity: fadeAnim}]}>
+    <Animated.View style={[styles.messageWrapper, { opacity: fadeAnim }]}>
       {showDateLabel && (
         <View style={styles.dateLabelContainer}>
           <Text style={styles.dateLabelText}>
@@ -47,7 +49,12 @@ const MessageItem = memo(({
           styles.messageContainer,
           isSent ? styles.sentMessage : styles.receivedMessage,
         ]}>
-        <RenderMessageContent item={item} isSent={isSent} />
+        <RenderMessageContent 
+          item={item} 
+          isSent={isSent} 
+          onMarkSensitive={onMarkSensitive}
+          onMarkUnsensitive={onMarkUnsensitive}
+        />
         <View style={styles.timeStatusRow}>
           <Text style={styles.timeText}>{formatTime(item.timestamp)}</Text>
           {isSent && <TickIcon status={item.status} anim={fadeAnim} />}
@@ -59,27 +66,33 @@ const MessageItem = memo(({
 
 export default MessageItem;
 
-export const TickIcon = ({status, anim}) => {
+export const TickIcon = ({ status, anim }) => {
   if (status === 'read') {
     return (
-      <Animated.View style={{opacity: anim}}>
+      <Animated.View style={{ opacity: anim }}>
         <Icon name="checkmark-done" size={16} color="#4BB543" />
       </Animated.View>
     );
   } else if (status === 'delivered') {
     return (
-      <Animated.View style={{opacity: anim}}>
+      <Animated.View style={{ opacity: anim }}>
         <Icon name="checkmark-done" size={16} color="#bbb" />
       </Animated.View>
     );
   } else if (status === 'sent' || status === 'unread') {
+    // Treat both sent and unread as delivered since all messages are at least delivered
     return (
-      <Animated.View style={{opacity: anim}}>
-        <Icon name="checkmark" size={16} color="#bbb" />
+      <Animated.View style={{ opacity: anim }}>
+        <Icon name="checkmark-done" size={16} color="#bbb" />
+      </Animated.View>
+    );
+  } else {
+    return (
+      <Animated.View style={{ opacity: anim }}>
+        <Icon name="checkmark-done" size={16} color="#bbb" />
       </Animated.View>
     );
   }
-  return null;
 };
 
 export const styles = StyleSheet.create({
@@ -161,5 +174,14 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: 4,
+  },
+  protectedBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#D28A8C',
+    borderRadius: 10,
+    padding: 4,
+    zIndex: 1,
   },
 });

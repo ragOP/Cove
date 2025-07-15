@@ -17,4 +17,6 @@ export const endpoints = {
   suggestedUsers: 'api/user/suggested-users',
   userGallery: 'api/user/get-user-gallery',
   markAsSensitive: 'api/user/mark-as-sensitive',
+  markAsUnsensitive: 'api/user/marks-as-unsensitive',
+  deleteMessages: 'api/user/delete-messages',
 };

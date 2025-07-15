@@ -3,6 +3,7 @@ import {Animated, StyleSheet, View, Platform} from 'react-native';
 import {Portal, Text, TouchableRipple} from 'react-native-paper';
 import {useDispatch, useSelector} from 'react-redux';
 import {hideSnackbar} from '../../redux/slice/snackbarSlice';
+import {getZIndexStyle} from '../../utils/zIndex';
 
 const getSnackbarStyle = (type = 'info') => {
   switch (type) {
@@ -97,7 +98,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 20,
     right: 20,
-    zIndex: 9999,
+    ...getZIndexStyle('SNACKBAR'),
     borderRadius: 8,
   },
   snackbar: {

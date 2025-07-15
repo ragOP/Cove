@@ -90,7 +90,7 @@ const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
           <Text style={HomeStyles.contactName}>{display.name}</Text>
           {Array.isArray(previewMessage) ? (
             <View style={HomeStyles.previewMessage}>
-              <Icon name="checkmark-done" size={16} color="#4BB543" />
+              {previewMessage[0]}
               <Text
                 style={HomeStyles.previewText}
                 numberOfLines={1}

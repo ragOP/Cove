@@ -8,6 +8,7 @@ const SelectionBottomBar = ({
   onDeselectAll,
   onDelete,
   onMarkSensitive,
+  onMarkUnsensitive,
   onCancel,
 }) => {
   const allItemsCount = selectedItems.length;
@@ -29,6 +30,13 @@ const SelectionBottomBar = ({
           activeOpacity={0.8}>
           <MaterialIcon name="shield-outline" size={20} color="#D28A8C" />
           <Text style={styles.actionButtonText}>Sensitive</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={onMarkUnsensitive}
+          activeOpacity={0.8}>
+          <MaterialIcon name="shield-off-outline" size={20} color="#D28A8C" />
+          <Text style={styles.actionButtonText}>Insensitive</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, styles.deleteButton]}
@@ -82,21 +90,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(210,138,140,0.1)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    flex: 1,
+    minWidth: 80,
   },
   actionButtonText: {
     color: '#D28A8C',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    marginLeft: 6,
+    marginLeft: 4,
   },
   deleteButton: {
     backgroundColor: 'rgba(255,68,68,0.1)',

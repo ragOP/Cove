@@ -1,87 +1,199 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSelector, useDispatch } from 'react-redux';
-import {
-    setGallerySelectionMode,
-    setSelectedItems,
-    clearSelectedItems,
-    updateMultipleGalleryItems
-} from '../../redux/slice/gallerySlice';
 import { markAsSensitive } from '../../apis/markAsSensitive';
+import { markAsUnsensitive } from '../../apis/markAsUnsensitive';
+import { showSnackbar } from '../../redux/slice/snackbarSlice';
+import { clearSelectedItems, updateMultipleGalleryItems } from '../../redux/slice/gallerySlice';
 import CustomDialog from '../CustomDialog/CustomDialog';
 
-const GallerySelectionBar = () => {
+const GallerySelectionBar = ({
+    // Props-based mode (for contact gallery)
+    selectedItems = [],
+    onMarkSensitive,
+    onMarkUnsensitive,
+    onDelete,
+    onCancel,
+    // Redux-based mode (for main gallery)
+    useRedux = false
+}) => {
     const dispatch = useDispatch();
-    const selectedItems = useSelector(state => state.gallery.selectedItems || []);
-    const allItemsCount = selectedItems.length;
-    const isAllSelected = selectedItems.length > 0;
 
-    // Dialog states
-    const [markSensitiveDialog, setMarkSensitiveDialog] = useState(false);
-    const [deleteDialog, setDeleteDialog] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    // Redux state for main gallery (using gallery slice)
+    const reduxSelectedItems = useSelector(state => {
+        if (!useRedux) return [];
+        return state.gallery.selectedItems || [];
+    });
 
-    const handleMarkSensitive = async () => {
-        if (selectedItems.length === 0) {
-            // Show error dialog for no items selected
-            setMarkSensitiveDialog(true);
+    // Determine which selected items to use
+    const items = useRedux ? reduxSelectedItems : selectedItems;
+
+    // Dialog states for Redux mode
+    const [markSensitiveDialog, setMarkSensitiveDialog] = React.useState(false);
+    const [markUnsensitiveDialog, setMarkUnsensitiveDialog] = React.useState(false);
+    const [deleteDialog, setDeleteDialog] = React.useState(false);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [isUnsensitiveLoading, setIsUnsensitiveLoading] = React.useState(false);
+
+    // Redux actions
+    const handleReduxMarkSensitive = async () => {
+        if (items.length === 0) {
+            dispatch(showSnackbar({
+                type: 'error',
+                title: 'Error',
+                subtitle: 'No items selected',
+                placement: 'top',
+            }));
             return;
         }
-
         setMarkSensitiveDialog(true);
+    };
+
+    const handleReduxMarkUnsensitive = async () => {
+        if (items.length === 0) {
+            dispatch(showSnackbar({
+                type: 'error',
+                title: 'Error',
+                subtitle: 'No items selected',
+                placement: 'top',
+            }));
+            return;
+        }
+        setMarkUnsensitiveDialog(true);
+    };
+
+    const handleReduxDelete = () => {
+        setDeleteDialog(true);
+    };
+
+    const handleReduxCancel = () => {
+        // Clear gallery selection
+        dispatch(clearSelectedItems());
     };
 
     const handleMarkSensitiveConfirm = async () => {
         try {
             setIsLoading(true);
-            const ids = selectedItems.map(item => item._id);
+            const ids = items.map(item => item._id);
             console.log('Marking items as sensitive:', ids);
 
             const response = await markAsSensitive({ ids });
 
             if (response?.response?.success === true) {
-                // Update Redux state to reflect the changes immediately
-                dispatch(updateMultipleGalleryItems({ 
-                    itemIds: ids, 
+                console.log('Successfully marked as sensitive:', response.response.data);
+                dispatch(showSnackbar({
+                    type: 'success',
+                    title: 'Marked as Sensitive',
+                    subtitle: `${response.response.data.length} item(s) marked as sensitive`,
+                    placement: 'top',
+                }));
+
+                // Update gallery items with sensitive status
+                dispatch(updateMultipleGalleryItems({
+                    itemIds: ids,
                     updates: { isSensitive: true }
                 }));
 
-                // Success - clear selection and exit selection mode
+                // Clear gallery selection
                 dispatch(clearSelectedItems());
-                dispatch(setGallerySelectionMode(false));
-
-                // Close dialog
                 setMarkSensitiveDialog(false);
             } else {
-                // Handle error
                 console.error('Failed to mark items as sensitive:', response);
+                dispatch(showSnackbar({
+                    type: 'error',
+                    title: 'Error',
+                    subtitle: response?.response?.message || 'Failed to mark as sensitive',
+                    placement: 'top',
+                }));
                 setMarkSensitiveDialog(false);
             }
         } catch (error) {
             console.error('Error marking items as sensitive:', error);
+            dispatch(showSnackbar({
+                type: 'error',
+                title: 'Server Error',
+                subtitle: 'Failed to mark as sensitive',
+                placement: 'top',
+            }));
             setMarkSensitiveDialog(false);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleDelete = () => {
-        setDeleteDialog(true);
+    const handleMarkUnsensitiveConfirm = async () => {
+        try {
+            setIsUnsensitiveLoading(true);
+            const ids = items.map(item => item._id);
+            console.log('Marking items as insensitive:', ids);
+
+            const response = await markAsUnsensitive({ ids });
+
+            if (response?.response?.success === true) {
+                console.log('Successfully marked as insensitive:', response.response.data);
+                dispatch(showSnackbar({
+                    type: 'success',
+                    title: 'Marked as Insensitive',
+                    subtitle: `${response.response.data.length} item(s) marked as insensitive`,
+                    placement: 'top',
+                }));
+
+                // Update gallery items with insensitive status
+                dispatch(updateMultipleGalleryItems({
+                    itemIds: ids,
+                    updates: { isSensitive: false }
+                }));
+
+                // Clear gallery selection
+                dispatch(clearSelectedItems());
+                setMarkUnsensitiveDialog(false);
+            } else {
+                console.error('Failed to mark items as insensitive:', response);
+                dispatch(showSnackbar({
+                    type: 'error',
+                    title: 'Error',
+                    subtitle: response?.response?.message || 'Failed to mark as insensitive',
+                    placement: 'top',
+                }));
+                setMarkUnsensitiveDialog(false);
+            }
+        } catch (error) {
+            console.error('Error marking items as insensitive:', error);
+            dispatch(showSnackbar({
+                type: 'error',
+                title: 'Server Error',
+                subtitle: 'Failed to mark as insensitive',
+                placement: 'top',
+            }));
+            setMarkUnsensitiveDialog(false);
+        } finally {
+            setIsUnsensitiveLoading(false);
+        }
     };
 
     const handleDeleteConfirm = () => {
         // TODO: Implement delete API call
-        console.log('Deleting items:', selectedItems.map(item => item._id));
+        console.log('Deleting items:', items.map(item => item._id));
+        dispatch(showSnackbar({
+            type: 'success',
+            title: 'Deleted',
+            subtitle: `${items.length} item(s) deleted`,
+            placement: 'top',
+        }));
+
+        // Clear gallery selection
         dispatch(clearSelectedItems());
-        dispatch(setGallerySelectionMode(false));
         setDeleteDialog(false);
     };
 
-    const handleCancel = () => {
-        dispatch(clearSelectedItems());
-        dispatch(setGallerySelectionMode(false));
-    };
+    // Determine which handlers to use
+    const handleMarkSensitive = useRedux ? handleReduxMarkSensitive : () => onMarkSensitive?.(items);
+    const handleMarkUnsensitive = useRedux ? handleReduxMarkUnsensitive : () => onMarkUnsensitive?.(items);
+    const handleDelete = useRedux ? handleReduxDelete : () => onDelete?.(items);
+    const handleCancel = useRedux ? handleReduxCancel : onCancel;
+
+    console.log('GallerySelectionBar - Rendering with selectedItems:', items.length, 'useRedux:', useRedux);
 
     return (
         <>
@@ -92,6 +204,14 @@ const GallerySelectionBar = () => {
                     activeOpacity={0.8}>
                     <MaterialIcon name="shield-outline" size={24} color="#D28A8C" />
                     <Text style={styles.selectionNavLabel}>Mark as Sensitive</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={styles.selectionNavButton}
+                    onPress={handleMarkUnsensitive}
+                    activeOpacity={0.8}>
+                    <MaterialIcon name="shield-off-outline" size={24} color="#D28A8C" />
+                    <Text style={styles.selectionNavLabel}>Mark as Insensitive</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -111,38 +231,60 @@ const GallerySelectionBar = () => {
                 </TouchableOpacity>
             </View>
 
-            {/* Mark as Sensitive Dialog */}
-            <CustomDialog
-                visible={markSensitiveDialog}
-                onDismiss={() => !isLoading && setMarkSensitiveDialog(false)}
-                title="Mark as Sensitive"
-                message={`Are you sure you want to mark ${selectedItems.length} item(s) as sensitive?`}
-                icon="shield-outline"
-                iconColor="#D28A8C"
-                confirmText="Mark Sensitive"
-                cancelText="Cancel"
-                onConfirm={handleMarkSensitiveConfirm}
-                onCancel={() => setMarkSensitiveDialog(false)}
-                confirmButtonColor="#D28A8C"
-                showCancel={true}
-                isLoading={isLoading}
-            />
+            {/* Dialogs for Redux mode only */}
+            {useRedux && (
+                <>
+                    {/* Mark as Sensitive Dialog */}
+                    <CustomDialog
+                        visible={markSensitiveDialog}
+                        onDismiss={() => !isLoading && setMarkSensitiveDialog(false)}
+                        title="Mark as Sensitive"
+                        message={`Are you sure you want to mark ${items.length} item(s) as sensitive?`}
+                        icon="shield-outline"
+                        iconColor="#D28A8C"
+                        confirmText="Mark Sensitive"
+                        cancelText="Cancel"
+                        onConfirm={handleMarkSensitiveConfirm}
+                        onCancel={() => setMarkSensitiveDialog(false)}
+                        confirmButtonColor="#D28A8C"
+                        showCancel={true}
+                        isLoading={isLoading}
+                    />
 
-            {/* Delete Dialog */}
-            <CustomDialog
-                visible={deleteDialog}
-                onDismiss={() => setDeleteDialog(false)}
-                title="Delete Items"
-                message={`Are you sure you want to delete ${selectedItems.length} item(s)?`}
-                icon="delete-outline"
-                iconColor="#ff4444"
-                confirmText="Delete"
-                cancelText="Cancel"
-                onConfirm={handleDeleteConfirm}
-                onCancel={() => setDeleteDialog(false)}
-                confirmButtonColor="#ff4444"
-                destructive={true}
-            />
+                    {/* Mark as Insensitive Dialog */}
+                    <CustomDialog
+                        visible={markUnsensitiveDialog}
+                        onDismiss={() => !isUnsensitiveLoading && setMarkUnsensitiveDialog(false)}
+                        title="Mark as Insensitive"
+                        message={`Are you sure you want to mark ${items.length} item(s) as insensitive?`}
+                        icon="shield-off-outline"
+                        iconColor="#D28A8C"
+                        confirmText="Mark Insensitive"
+                        cancelText="Cancel"
+                        onConfirm={handleMarkUnsensitiveConfirm}
+                        onCancel={() => setMarkUnsensitiveDialog(false)}
+                        confirmButtonColor="#D28A8C"
+                        showCancel={true}
+                        isLoading={isUnsensitiveLoading}
+                    />
+
+                    {/* Delete Dialog */}
+                    <CustomDialog
+                        visible={deleteDialog}
+                        onDismiss={() => setDeleteDialog(false)}
+                        title="Delete Items"
+                        message={`Are you sure you want to delete ${items.length} item(s)?`}
+                        icon="delete-outline"
+                        iconColor="#ff4444"
+                        confirmText="Delete"
+                        cancelText="Cancel"
+                        onConfirm={handleDeleteConfirm}
+                        onCancel={() => setDeleteDialog(false)}
+                        confirmButtonColor="#ff4444"
+                        destructive={true}
+                    />
+                </>
+            )}
         </>
     );
 };
@@ -162,18 +304,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         zIndex: 1000,
         elevation: 10,
+        paddingHorizontal: 8,
     },
     selectionNavButton: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 8,
+        paddingHorizontal: 4,
     },
     selectionNavLabel: {
         color: '#D28A8C',
-        fontSize: 12,
+        fontSize: 10,
         fontWeight: '600',
         marginTop: 4,
+        textAlign: 'center',
     },
 });
 

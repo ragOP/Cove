@@ -12,11 +12,11 @@ const MainScreen = () => {
     <View style={styles.container}>
       {/* Always render the CustomBottomNavigation which contains the screen content */}
       <CustomBottomNavigation />
-      
+
       {/* Overlay the selection bar when in gallery selection mode */}
       {isGallerySelectionMode && bottomNavIndex === 1 && (
         <View style={styles.selectionBarOverlay}>
-          <GallerySelectionBar />
+          <GallerySelectionBar useRedux={true} />
         </View>
       )}
     </View>
