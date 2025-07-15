@@ -1,15 +1,13 @@
 import {apiService} from './apiService';
 import {endpoints} from './endpoints';
 
-export const sendMessage = async ({payload}) => {
+export const getUserGallery = async ({params, id}) => {
   try {
-    console.log("PAYLOAD", payload)
     const apiResponse = await apiService({
-      endpoint: `${endpoints.sendMessage}`,
-      method: 'POST',
-      data: payload,
+      endpoint: `${endpoints.userGallery}`,
+      params,
     });
-    console.log("apiResponse",apiResponse)
+    console.log('apiResponse', apiResponse);
     return apiResponse;
   } catch (error) {
     console.error(error);

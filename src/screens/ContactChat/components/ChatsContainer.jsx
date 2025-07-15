@@ -1,4 +1,4 @@
-import React, {useRef, useEffect, useState} from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,11 +7,11 @@ import {
   RefreshControl,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {useQuery} from '@tanstack/react-query';
-import {getConversations} from '../../../apis/getConversations';
-import {useSelector} from 'react-redux';
+import { useQuery } from '@tanstack/react-query';
+import { getConversations } from '../../../apis/getConversations';
+import { useSelector } from 'react-redux';
 import MessageItem from '../../../components/Messages/MessageItem';
-import {Gesture, GestureDetector} from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -21,9 +21,11 @@ import Animated, {
 import useChatSocket from '../../../hooks/useChatSocket';
 import PrimaryLoader from '../../../components/Loaders/PrimaryLoader';
 import BlinkingDots from '../../../components/Loaders/BlinkingDots';
-import {dedupeMessages} from '../../../utils/messages/dedupeMessages';
+import { dedupeMessages } from '../../../utils/messages/dedupeMessages';
 
 const SCROLL_TO_BOTTOM_THRESHOLD = 10;
+
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 
 const ChatMessageRow = ({
   item,
@@ -41,7 +43,7 @@ const ChatMessageRow = ({
     return {
       backgroundColor:
         held.value || selected ? 'rgba(210,138,140,0.13)' : 'transparent',
-      transform: [{translateX: translateX.value}],
+      transform: [{ translateX: translateX.value }],
     };
   });
 
@@ -57,14 +59,14 @@ const ChatMessageRow = ({
         e.translationX > 60 &&
         Math.abs(e.translationX) > Math.abs(e.translationY)
       ) {
-        translateX.value = withTiming(0, {duration: 150});
+        translateX.value = withTiming(0, { duration: 150 });
         onReply && runOnJS(onReply)(item);
       } else {
-        translateX.value = withTiming(0, {duration: 150});
+        translateX.value = withTiming(0, { duration: 150 });
       }
     })
     .onFinalize(() => {
-      translateX.value = withTiming(0, {duration: 150});
+      translateX.value = withTiming(0, { duration: 150 });
     });
 
   const longPressGesture = Gesture.LongPress()
@@ -114,12 +116,11 @@ const ChatsContainer = ({
   const [refreshing, setRefreshing] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const userId = useSelector(state => state.auth.user?.id);
-  const didInitialScroll = useRef(false);
 
-  const {isLoading, refetch} = useQuery({
+  const { isLoading, refetch } = useQuery({
     queryKey: ['user_conversations', conversationId],
     queryFn: async () => {
-      const apiResponse = await getConversations({id: conversationId});
+      const apiResponse = await getConversations({ id: conversationId });
       if (apiResponse?.response?.success) {
         const responseData = apiResponse.response.data;
         const data = responseData?.[0]?.messages;
@@ -135,35 +136,30 @@ const ChatsContainer = ({
     enabled: !!conversationId,
   });
 
-  useEffect(() => {
-    if (
-      !isLoading &&
-      flatListRef?.current &&
-      !didInitialScroll.current &&
-      conversations &&
-      conversations.length > 0
-    ) {
-      setTimeout(() => {
-        const lastMessage = conversations[conversations.length - 1];
-        if (lastMessage && lastMessage._id) {
-          flatListRef.current?.scrollToItem({
-            item: lastMessage,
-            animated: false,
-          });
-        } else {
-          flatListRef.current?.scrollToEnd({animated: false});
-        }
-        didInitialScroll.current = true;
-      }, 100);
-    }
-  }, [isLoading, conversations, conversations?.length]);
+  // useEffect(() => {
+  //   if (
+  //     !isLoading &&
+  //     flatListRef?.current &&
+  //     conversations &&
+  //     conversations.length > 0
+  //   ) {
+  //     const lastMessage = conversations[conversations.length - 1];
+  //     if (lastMessage && lastMessage._id) {
+  //       flatListRef.current?.scrollToItem({
+  //         item: lastMessage,
+  //         animated: false,
+  //       });
+  //     } else {
+  //       flatListRef.current?.scrollToEnd({ animated: false });
+  //     }
+  //   }
+  // }, [isLoading, conversations, conversations?.length]);
 
+  // For inverted FlatList, bottom is at offset 0
   const handleScroll = event => {
-    const {layoutMeasurement, contentOffset, contentSize} = event.nativeEvent;
-    const paddingToBottom = 40;
-    const isAtBottom =
-      layoutMeasurement.height + contentOffset.y >=
-      contentSize.height - paddingToBottom;
+    const { contentOffset } = event.nativeEvent;
+    const paddingToTop = 40;
+    const isAtBottom = contentOffset.y <= paddingToTop;
     setShowScrollToBottom(
       !isAtBottom && conversations.length > SCROLL_TO_BOTTOM_THRESHOLD,
     );
@@ -171,9 +167,16 @@ const ChatsContainer = ({
 
   const scrollToBottom = () => {
     if (flatListRef?.current) {
-      flatListRef.current?.scrollToEnd({animated: false});
+      flatListRef.current.scrollToOffset({ offset: 0, animated: true });
     }
   };
+  // Auto-scroll to bottom (top of list when inverted) when conversations change
+  useEffect(() => {
+    const hasConversations = conversations && conversations.length > 0;
+    if (flatListRef.current && hasConversations) {
+      flatListRef.current.scrollToOffset({ offset: 0, animated: true });
+    }
+  }, [conversations]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -200,11 +203,11 @@ const ChatsContainer = ({
 
   if (isLoading) {
     return (
-      <View style={{flex: 1}}>
+      <View style={{ flex: 1 }}>
         <View
           style={[
             styles.loadingContainer,
-            {flex: 1, justifyContent: 'center', alignItems: 'center'},
+            { flex: 1, justifyContent: 'center', alignItems: 'center' },
           ]}>
           <PrimaryLoader />
         </View>
@@ -214,33 +217,38 @@ const ChatsContainer = ({
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <AnimatedFlatList
         ref={flatListRef}
         data={
           isTyping
             ? [
+              ...[
                 ...(conversations || []),
-                {_id: 'typing-indicator', isTyping: true},
-              ]
-            : conversations || []
+                { _id: 'typing-indicator', isTyping: true },
+              ].reverse(),
+            ]
+            : [...(conversations || [])].reverse()
         }
-        keyExtractor={item => item._id || item.localId || 'typing-indicator'}
-        renderItem={({item, index}) => {
-          if (item.isTyping) {
+        keyExtractor={item => item?._id || item?.localId || 'typing-indicator'}
+        renderItem={({ item, index }) => {
+          if (item?.isTyping) {
             return (
               <View style={[styles.fullRow, styles.alignStart]}>
                 <BlinkingDots isSender={false} />
               </View>
             );
           }
-          const currentDate = new Date(item.timestamp).toDateString();
+          const currentDate = new Date(item?.timestamp).toDateString();
+          const reversedConversations = [...(conversations || [])].reverse();
           const previousDate =
-            index > 0
-              ? new Date(conversations[index - 1].timestamp).toDateString()
+            index < reversedConversations?.length - 1
+              ? new Date(
+                reversedConversations[index + 1].timestamp,
+              ).toDateString()
               : null;
-          const showDateLabel = index === 0 || currentDate !== previousDate;
+          const showDateLabel = index === reversedConversations?.length - 1 || currentDate !== previousDate;
           const isSelected =
-            selectedMessage && item._id === selectedMessage._id;
+            selectedMessage && item?._id === selectedMessage._id;
           return (
             <ChatMessageRow
               item={item}
@@ -249,7 +257,7 @@ const ChatsContainer = ({
               userId={userId}
               onReply={onReply}
               onSelectMessage={msg => {
-                if (selectedMessage && selectedMessage._id === msg._id) {
+                if (selectedMessage && selectedMessage?._id === msg?._id) {
                   onSelectMessage(null);
                 } else {
                   onSelectMessage(msg);
@@ -270,21 +278,22 @@ const ChatsContainer = ({
             tintColor="#fff"
           />
         }
-        onScrollToIndexFailed={({index, highestMeasuredFrameIndex}) => {
-          // Scroll to the highest measured frame, then try again after a short delay
-          flatListRef.current?.scrollToIndex({
-            index: highestMeasuredFrameIndex,
-            animated: false,
-          });
-          setTimeout(() => {
-            flatListRef.current?.scrollToIndex({index, animated: false});
-          }, 100);
-        }}
+        // onScrollToIndexFailed={({ index, highestMeasuredFrameIndex }) => {
+        //   // Scroll to the highest measured frame, then try again after a short delay
+        //   flatListRef.current?.scrollToIndex({
+        //     index: highestMeasuredFrameIndex,
+        //     animated: false,
+        //   });
+        //   setTimeout(() => {
+        //     flatListRef.current?.scrollToIndex({ index, animated: false });
+        //   }, 100);
+        // }}
+        inverted
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.1}
         ListFooterComponent={
           loadingMore ? (
-            <View style={{padding: 12}}>
+            <View style={{ padding: 12 }}>
               <PrimaryLoader />
             </View>
           ) : null
@@ -368,7 +377,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },

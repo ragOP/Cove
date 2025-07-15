@@ -126,6 +126,7 @@ const ContactHeader = ({
                 <FeatherIcon name="more-horizontal" size={30} color="#fff" />
               </Pressable>
             }
+            style={styles.menuContent}
             contentStyle={styles.menuContent}>
             <Menu.Item
               onPress={handleViewProfile}
@@ -133,6 +134,7 @@ const ContactHeader = ({
               leadingIcon={AccountOutlineIconWhite}
               titleStyle={styles.menuItemTitle}
               style={styles.menuItem}
+              iconColor="#fff"
             />
             <Menu.Item
               onPress={() => {
@@ -142,6 +144,7 @@ const ContactHeader = ({
               leadingIcon={MuteIconWhite}
               titleStyle={styles.menuItemTitle}
               style={styles.menuItem}
+              iconColor="#fff"
             />
             <Menu.Item
               onPress={() => {
@@ -152,6 +155,7 @@ const ContactHeader = ({
               leadingIcon={BlockHelperIconWhite}
               titleStyle={styles.menuItemTitle}
               style={styles.menuItem}
+              iconColor="#fff"
             />
             <Menu.Item
               onPress={() => {
@@ -161,7 +165,8 @@ const ContactHeader = ({
               title="Report"
               leadingIcon={AlertCircleOutlineIconWhite}
               titleStyle={styles.menuItemTitle}
-              style={styles.menuItem}
+              style={styles.menuItemLast}
+              iconColor="#fff"
             />
           </Menu>
         </View>
@@ -274,6 +279,11 @@ const styles = StyleSheet.create({
     marginVertical: 2,
     marginHorizontal: 4,
     backgroundColor: 'transparent',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  menuItemLast: {
+    borderBottomWidth: 0,
   },
   menuItemTitle: {
     color: '#fff',
@@ -290,7 +300,7 @@ const styles = StyleSheet.create({
   nameText: {color: '#fff', fontSize: 18, fontWeight: 'bold'},
   usernameText: {
     color: '#bbb',
-    fontSize: 14,
+    fontSize: 12,
   },
   onlineText: {
     color: '#4cd137',

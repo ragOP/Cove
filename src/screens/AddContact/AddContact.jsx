@@ -30,6 +30,7 @@ import {getConversations} from '../../apis/conversations';
 import {Paths} from '../../navigaton/paths';
 import Contacts from 'react-native-contacts';
 import {checkContactsOnCove} from '../../apis/checkContactsOnCove';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const contactOptions = [
   {key: 'add', label: 'Add Friend', icon: 'account-plus-outline'},
@@ -523,7 +524,11 @@ const AddContact = () => {
               </View>
             ) : searchedUsers.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No users found</Text>
+                <Icon name="account-search" size={48} color="#D28A8C" style={styles.emptyIcon} />
+                <Text style={styles.emptyTitle}>No Users Found</Text>
+                <Text style={styles.emptySubtitle}>
+                  No users match your search. Try a different name or phone number.
+                </Text>
               </View>
             ) : (
               searchedUsers.map((item, index) => (
@@ -563,7 +568,11 @@ const AddContact = () => {
             </View>
           ) : suggestedContacts.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No suggestions found</Text>
+              <Icon name="account-multiple-plus" size={48} color="#D28A8C" style={styles.emptyIcon} />
+              <Text style={styles.emptyTitle}>No Suggestions Available</Text>
+              <Text style={styles.emptySubtitle}>
+                We'll show you suggested users here when they become available.
+              </Text>
             </View>
           ) : (
             (showAllSuggested
@@ -620,7 +629,11 @@ const AddContact = () => {
               </View>
             ) : filteredContacts.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No contacts found</Text>
+                <Icon name="contacts" size={48} color="#D28A8C" style={styles.emptyIcon} />
+                <Text style={styles.emptyTitle}>No Contacts Available</Text>
+                <Text style={styles.emptySubtitle}>
+                  Your phone contacts will appear here once you grant permission.
+                </Text>
               </View>
             ) : (
               filteredContacts.map((item, index) => (
@@ -767,4 +780,17 @@ const styles = StyleSheet.create({
   optionCancel: {marginTop: 16, alignItems: 'center'},
   optionCancelText: {color: '#bbb', fontSize: 16, fontWeight: 'bold'},
   avatarFallback: {backgroundColor: '#444'},
+  emptyIcon: {marginTop: 10},
+  emptyTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 10,
+  },
+  emptySubtitle: {
+    color: '#bbb',
+    fontSize: 15,
+    marginTop: 5,
+    textAlign: 'center',
+  },
 });

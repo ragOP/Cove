@@ -27,6 +27,12 @@ const HomeStyles = StyleSheet.create({
   },
   optionsIcon: {
     margin: 0,
+    padding: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   chipRow: {
     flexDirection: 'row',
@@ -235,10 +241,23 @@ const HomeStyles = StyleSheet.create({
     textAlign: 'center',
   },
   menuContent: {
-    backgroundColor: '#232323',
+    backgroundColor: '#D28A8C',
+    borderRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#232323',
   },
   menuItemTitle: {
     color: '#fff',
+    fontWeight: '500',
+    fontSize: 16,
+  },
+  menuItem: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  menuItemLast: {
+    borderBottomWidth: 0,
   },
   emptyListContent: {
     flex: 1,
@@ -317,6 +336,27 @@ const HomeStyles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     marginTop: 32,
+  },
+  universalSearchEmptyContainer: {
+    alignItems: 'center',
+    marginTop: 32,
+    paddingHorizontal: 32,
+  },
+  universalSearchEmptyIcon: {
+    marginBottom: 16,
+  },
+  universalSearchEmptyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  universalSearchEmptySubtitle: {
+    fontSize: 14,
+    color: '#bbb',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   universalSearchListContent: {
     paddingBottom: 32,

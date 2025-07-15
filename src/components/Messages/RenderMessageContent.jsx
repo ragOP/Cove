@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import {Text, View} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {styles} from './MessageItem';
@@ -9,7 +9,7 @@ const chatTextStyles = {
   videoIcon: {marginBottom: 4},
 };
 
-function RenderMessageContent({item, isSent}) {
+const RenderMessageContent = memo(({item, isSent}) => {
   const textStyle = isSent ? styles.sentText : styles.receivedText;
 
   switch (item.type) {
@@ -58,6 +58,6 @@ function RenderMessageContent({item, isSent}) {
     default:
       return <Text style={textStyle}>Unsupported message type</Text>;
   }
-}
+});
 
 export default RenderMessageContent;

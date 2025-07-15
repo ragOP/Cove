@@ -19,6 +19,7 @@ import { dedupeMessages } from '../../../utils/messages/dedupeMessages';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import { playSoundEffect } from '../../../utils/sound';
 import MediaPreview from '../../../components/MediaPreview/MediaPreview';
+import { selectUser } from '../../../redux/slice/authSlice';
 
 const SendChat = ({
   conversationId,
@@ -29,7 +30,9 @@ const SendChat = ({
   onCancelReply,
   emitTypingStatus,
 }) => {
-  const userId = useSelector(state => state.auth.user?.id);
+  const reduxUser = useSelector(selectUser)
+  const userId = reduxUser?.id;
+  console.log("userId >>>", userId)
 
   const [message, setMessage] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
@@ -84,7 +87,7 @@ const SendChat = ({
   };
 
   const handleSend = async () => {
-    emitTypingStatus(false, receiverId);
+    emitTypingStatus(false, conversationId, receiverId);
 
     if (isSendingMessage) {
       return;
@@ -284,7 +287,7 @@ const SendChat = ({
       onChangeText={text => {
         handleCaptionChange(text);
         if (emitTypingStatus) {
-          emitTypingStatus(!!text && text.trim().length > 0, receiverId);
+          emitTypingStatus(!!text && text.trim().length > 0, conversationId, receiverId);
         }
       }}
       selectionColor="#fff"

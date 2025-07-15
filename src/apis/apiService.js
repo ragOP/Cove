@@ -34,9 +34,10 @@ export const apiService = async ({
     }
 
     const {data: res} = await axios(requestObj);
+
     return {response: res};
   } catch (error) {
-    console.error(error, 'backend endpoint error');
+    console.error('API Error:', error.response || error);
     return {success: false, error: true, ...(error || {})};
   }
 };

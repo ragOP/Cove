@@ -3,11 +3,12 @@ export const prepareMessagePayload = ({
   receiverId,
   text,
   files = [],
+  replyTo,
 }) => {
   if (files.length) {
     return files.map(file => ({
       receiverId,
-      // senderId: userId,
+      senderId: userId,
       content: file.caption || '',
       mediaUrl: file.url,
       type: file.fileType.startsWith('image') ? 'image' : 'file',
@@ -16,14 +17,16 @@ export const prepareMessagePayload = ({
         fileType: file.fileType,
         fileSize: file.fileSize,
       },
+      ...(replyTo && { replyTo }),
     }));
   }
   return [
     {
       receiverId,
-      // senderId: userId,
+      senderId: userId,
       content: text,
       type: 'text',
+      ...(replyTo && { replyTo }),
     },
   ];
 };

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Image, TouchableOpacity } from 'react-native';
-import MediaPreview from '../MediaPreview/MediaPreview';
+import ImageViewer from '../ImageViewer/ImageViewer';
 
 /**
  * CustomImage - A wrapper for <Image> with fallback and advanced props if needed.
@@ -27,6 +27,13 @@ const CustomImage = ({
     }
   };
 
+  // Prepare image for ImageViewer
+  const imageForViewer = source?.uri ? {
+    _id: 'single-image',
+    uri: source.uri,
+    isSensitive: false,
+  } : null;
+
   return (
     <>
       <TouchableOpacity
@@ -43,16 +50,19 @@ const CustomImage = ({
           {...props}
         />
       </TouchableOpacity>
-      {showPreview && previewVisible && (
-        <MediaPreview
+      {showPreview && previewVisible && imageForViewer && (
+        <ImageViewer
           visible={previewVisible}
-          media={{ type: 'image', uri: source?.uri }}
+          images={[imageForViewer]}
+          initialIndex={0}
           onClose={() => setPreviewVisible(false)}
+          showBottomBar={true}
+          showCenterNavigation={false}
+          autoHideNavigation={false}
         />
       )}
     </>
   );
 };
-
 
 export default CustomImage;

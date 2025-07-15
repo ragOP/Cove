@@ -22,7 +22,7 @@ import {onUpdateDetails} from '../../apis/onUpdateDetails';
 import useDebounce from '../../hooks/useDebounce';
 import {usernameAvailability} from '../../apis/usernameAvailability';
 import {useDispatch} from 'react-redux';
-import {login} from '../../redux/slice/authSlice';
+import {loginUser} from '../../redux/slice/authSlice';
 import CustomPhoneInput from '../../components/CustomPhoneInput/CustomPhoneInput';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {TOKEN} from '../../constants/AUTH';
@@ -207,7 +207,7 @@ const PhoneNumberVerification = ({
 
         if (statusCode === 200) {
           dispatch(
-            login({
+            loginUser({
               token: token,
               user: {
                 id: userData?._id,
@@ -220,7 +220,7 @@ const PhoneNumberVerification = ({
             }),
           );
           await AsyncStorage.setItem(TOKEN, token);
-          navigation.navigate(Paths.HOME);
+          navigation.navigate(Paths.MAIN_SCREEN);
         } else {
           setTimeout(() => {
             goNext();
@@ -661,7 +661,7 @@ const PasswordInput = ({goNext, goBack, form, setForm, tempToken}) => {
         const data = apiResponse?.response?.data;
 
         dispatch(
-          login({
+          loginUser({
             token: tempToken,
             user: {
               id: data?._id,
@@ -674,7 +674,7 @@ const PasswordInput = ({goNext, goBack, form, setForm, tempToken}) => {
         );
         await AsyncStorage.setItem(TOKEN, tempToken);
 
-        // navigation.navigate(Paths.HOME);
+        // navigation.navigate(Paths.MAIN_SCREEN);
       } else {
         const errrorMessage = apiResponse?.response?.message;
         dispatch(

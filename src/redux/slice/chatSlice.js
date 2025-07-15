@@ -4,11 +4,14 @@ const initialState = {
   contacts: [],
   loading: false,
   error: null,
+  contactType: 'all',
   page: 1,
   perPage: 20,
   hasMore: true,
-  contactType: 'all',
   isFetched: false,
+  bottomNavIndex: 0, // Add bottom navigation index
+  isGallerySelectionMode: false, // Add gallery selection mode
+  selectedItems: [], // Add selected items for gallery
 };
 
 const chatSlice = createSlice({
@@ -71,6 +74,28 @@ const chatSlice = createSlice({
     setIsFetched: (state, action) => {
       state.isFetched = action.payload;
     },
+    setBottomNavIndex: (state, action) => {
+      state.bottomNavIndex = action.payload;
+    },
+    setGallerySelectionMode: (state, action) => {
+      console.log('setGallerySelectionMode:', action.payload);
+      state.isGallerySelectionMode = action.payload;
+    },
+    setSelectedItems: (state, action) => {
+      console.log('setSelectedItems:', action.payload);
+      state.selectedItems = action.payload;
+    },
+    addSelectedItem: (state, action) => {
+      console.log('addSelectedItem:', action.payload);
+      state.selectedItems.push(action.payload);
+    },
+    removeSelectedItem: (state, action) => {
+      console.log('removeSelectedItem:', action.payload);
+      state.selectedItems = state.selectedItems.filter(item => item.id !== action.payload.id);
+    },
+    clearSelectedItems: (state) => {
+      state.selectedItems = [];
+    },
   },
 });
 
@@ -85,5 +110,11 @@ export const {
   setPage,
   setContactType,
   setIsFetched,
+  setBottomNavIndex,
+  setGallerySelectionMode,
+  setSelectedItems,
+  addSelectedItem,
+  removeSelectedItem,
+  clearSelectedItems,
 } = chatSlice.actions;
 export default chatSlice.reducer;

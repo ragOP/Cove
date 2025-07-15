@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,18 +8,18 @@ import {
   UIManager,
   Platform,
 } from 'react-native';
-import {Text, Avatar, IconButton} from 'react-native-paper';
-import {useQuery} from '@tanstack/react-query';
+import { Text, Avatar, IconButton } from 'react-native-paper';
+import { useQuery } from '@tanstack/react-query';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {getUserPendingRequests} from '../../apis/getUserPendingRequests';
-import {acceptFriendRequest} from '../../apis/acceptFriendRequest';
-import {declineFriendRequest} from '../../apis/declineFriendRequest';
+import { getUserPendingRequests } from '../../apis/getUserPendingRequests';
+import { acceptFriendRequest } from '../../apis/acceptFriendRequest';
+import { declineFriendRequest } from '../../apis/declineFriendRequest';
 import UserAvatar from '../../components/CustomAvatar/UserAvatar';
-import {useDispatch, useSelector} from 'react-redux';
-import {showSnackbar} from '../../redux/slice/snackbarSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { showSnackbar } from '../../redux/slice/snackbarSlice';
 import PrimaryLoader from '../../components/Loaders/PrimaryLoader';
-import {getSentFriendRequests} from '../../apis/getSentFriendRequests';
-import {addContact, updateContact} from '../../redux/slice/chatSlice';
+import { getSentFriendRequests } from '../../apis/getSentFriendRequests';
+import { addContact, updateContact } from '../../redux/slice/chatSlice';
 import useChatListSocket from '../../hooks/useChatListSocket';
 
 if (
@@ -29,7 +29,7 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const FriendRequestRow = ({item, onAccept, onDecline, isAcceptingId}) => (
+const FriendRequestRow = ({ item, onAccept, onDecline, isAcceptingId }) => (
   <View style={styles.card}>
     <View style={styles.avatarContainer}>
       <UserAvatar
@@ -72,7 +72,7 @@ const FriendRequestRow = ({item, onAccept, onDecline, isAcceptingId}) => (
   </View>
 );
 
-const FriendRequests = ({navigation}) => {
+const FriendRequests = ({ navigation }) => {
   const dispatch = useDispatch();
 
   const contacts = useSelector(state => state.chat.contacts);
@@ -108,7 +108,7 @@ const FriendRequests = ({navigation}) => {
     }
     try {
       setIsAcceptingId(id);
-      const apiResponse = await acceptFriendRequest({requestId: id});
+      const apiResponse = await acceptFriendRequest({ requestId: id });
 
       if (apiResponse?.response?.success) {
         dispatch(
@@ -147,7 +147,7 @@ const FriendRequests = ({navigation}) => {
     }
     try {
       setIsDeclining(true);
-      const apiResponse = await declineFriendRequest({requestId: id});
+      const apiResponse = await declineFriendRequest({ requestId: id });
       if (apiResponse?.response?.success) {
         dispatch(
           showSnackbar({
@@ -188,8 +188,13 @@ const FriendRequests = ({navigation}) => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([refetch(), refetchSent()]);
-    setRefreshing(false);
+    try {
+      await Promise.all([refetch(), refetchSent()]);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleChatListUpdate = updatedContact => {
@@ -197,7 +202,11 @@ const FriendRequests = ({navigation}) => {
       return;
     }
 
+    console.log(">>>", updatedContact)
     const exists = contacts.some(c => c._id === updatedContact._id);
+
+    console.log(">>>", exists)
+
     if (exists) {
       dispatch(updateContact(updatedContact));
     } else {
@@ -211,7 +220,7 @@ const FriendRequests = ({navigation}) => {
 
   const visibleRequests = expanded ? requests : requests.slice(0, 5);
 
-  const renderItem = ({item}) => (
+  const renderItem = ({ item }) => (
     <FriendRequestRow
       item={item}
       onAccept={handleAccept}
@@ -219,6 +228,98 @@ const FriendRequests = ({navigation}) => {
       isAcceptingId={isAcceptingId}
     />
   );
+
+  // Combine both sections into a single data array
+  const combinedData = [
+    { type: 'pending', data: visibleRequests },
+    { type: 'sent', data: sentRequests }
+  ];
+
+  const renderSection = ({ item }) => {
+    if (item.type === 'pending') {
+      return (
+        <>
+          <FlatList
+            data={item.data}
+            keyExtractor={requestItem => requestItem._id}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContent}
+            scrollEnabled={false}
+            ListEmptyComponent={
+              <View style={styles.emptyStateContainer}>
+                <Avatar.Icon
+                  icon="account-multiple-plus"
+                  size={80}
+                  style={styles.emptyAvatar}
+                  color="#D28A8C"
+                />
+                <Text style={styles.emptyTitle}>No Pending Requests</Text>
+                <Text style={styles.emptySubtitle}>
+                  You're all caught up! When someone sends you a friend request, it
+                  will appear here.
+                </Text>
+              </View>
+            }
+          />
+          {/* Sent Requests Section */}
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionHeaderText}>Requests Sent</Text>
+              <Text style={styles.sectionHeaderCount}>
+                ({sentRequests.length || 0})
+              </Text>
+            </View>
+          </View>
+        </>
+      );
+    } else if (item.type === 'sent') {
+      return (
+        <FlatList
+          data={item.data}
+          keyExtractor={requestItem => requestItem._id}
+          renderItem={({ item: sentItem }) => (
+            <View style={styles.card}>
+              <View style={styles.avatarContainer}>
+                <UserAvatar
+                  profilePicture={sentItem.receiver?.profilePicture}
+                  name={sentItem.receiver?.name}
+                  id={sentItem.receiver?._id}
+                />
+              </View>
+              <View style={styles.userInfo}>
+                <Text style={styles.name}>{sentItem.receiver?.name}</Text>
+                <Text style={styles.username}>@{sentItem.receiver?.username}</Text>
+              </View>
+              <View style={styles.actions}>
+                <MaterialCommunityIcons
+                  name="clock-outline"
+                  size={22}
+                  color="#ffb300"
+                />
+              </View>
+            </View>
+          )}
+          contentContainerStyle={styles.listContent}
+          scrollEnabled={false}
+          ListEmptyComponent={
+            <View style={styles.emptyStateContainer}>
+              <Avatar.Icon
+                icon="clock-outline"
+                size={80}
+                style={styles.emptyAvatar}
+                color="#ffb300"
+              />
+              <Text style={styles.emptyTitle}>No Sent Requests</Text>
+              <Text style={styles.emptySubtitle}>
+                You haven't sent any friend requests yet.
+              </Text>
+            </View>
+          }
+        />
+      );
+    }
+    return null;
+  };
 
   return (
     <View style={styles.container}>
@@ -235,80 +336,12 @@ const FriendRequests = ({navigation}) => {
         </Text>
       </View>
       <FlatList
-        data={visibleRequests}
-        keyExtractor={item => item._id}
-        renderItem={renderItem}
+        data={combinedData}
+        keyExtractor={(item, index) => `${item.type}-${index}`}
+        renderItem={renderSection}
         contentContainerStyle={styles.listContent}
-        refreshing={refreshing || isRefetching}
+        refreshing={refreshing}
         onRefresh={handleRefresh}
-        ListEmptyComponent={
-          <View style={styles.emptyStateContainer}>
-            <Avatar.Icon
-              icon="account-multiple-plus"
-              size={80}
-              style={styles.emptyAvatar}
-              color="#D28A8C"
-            />
-            <Text style={styles.emptyTitle}>No Pending Requests</Text>
-            <Text style={styles.emptySubtitle}>
-              You're all caught up! When someone sends you a friend request, it
-              will appear here.
-            </Text>
-          </View>
-        }
-        showsVerticalScrollIndicator={false}
-      />
-      {/* Sent Requests Section */}
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionHeaderText}>Requests Sent</Text>
-          <Text style={styles.sectionHeaderCount}>
-            ({sentRequests.length || 0})
-          </Text>
-        </View>
-      </View>
-      <FlatList
-        data={sentRequests}
-        keyExtractor={item => item._id}
-        renderItem={({item}) => (
-          <View style={styles.card}>
-            <View style={styles.avatarContainer}>
-              <UserAvatar
-                profilePicture={item.receiver?.profilePicture}
-                name={item.receiver?.name}
-                id={item.receiver?._id}
-              />
-            </View>
-            <View style={styles.userInfo}>
-              <Text style={styles.name}>{item.receiver?.name}</Text>
-              <Text style={styles.username}>@{item.receiver?.username}</Text>
-            </View>
-            <View style={styles.actions}>
-              <MaterialCommunityIcons
-                name="clock-outline"
-                size={22}
-                color="#ffb300"
-              />
-            </View>
-          </View>
-        )}
-        contentContainerStyle={styles.listContent}
-        refreshing={isRefetchingSent}
-        onRefresh={refetchSent}
-        ListEmptyComponent={
-          <View style={styles.emptyStateContainer}>
-            <Avatar.Icon
-              icon="clock-outline"
-              size={80}
-              style={styles.emptyAvatar}
-              color="#ffb300"
-            />
-            <Text style={styles.emptyTitle}>No Sent Requests</Text>
-            <Text style={styles.emptySubtitle}>
-              You haven't sent any friend requests yet.
-            </Text>
-          </View>
-        }
         showsVerticalScrollIndicator={false}
       />
     </View>
@@ -356,7 +389,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
   avatarContainer: {

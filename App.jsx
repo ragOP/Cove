@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Splash from './src/screens/Splash/Splash';
 import Register from './src/screens/Register/Register';
 import Home from './src/screens/Home/Home';
+import MainScreen from './src/screens/MainScreen/MainScreen';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -22,15 +23,30 @@ import Profile from './src/screens/Profile/Profile';
 import ProfileViewScreen from './src/screens/Profile/ProfileViewScreen';
 import { SocketProvider } from './src/context/SocketContext';
 import messaging from '@react-native-firebase/messaging';
-import { PermissionsAndroid, Platform } from 'react-native';
+import { PermissionsAndroid, Platform, View, Text, ActivityIndicator } from 'react-native';
 import useNotificationSocket from './src/hooks/useNotificationSocket';
+import {CaptureProtection} from 'react-native-capture-protection';
+import { Portal } from 'react-native-paper';
 
 export const queryClient = new QueryClient();
 
 const Stack = createNativeStackNavigator();
 
+// Loading component for PersistGate
+const PersistLoadingScreen = () => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#181818' }}>
+    <ActivityIndicator size="large" color="#D28A8C" />
+    <Text style={{ color: '#fff', marginTop: 16, fontSize: 16 }}>Loading...</Text>
+  </View>
+);
+
 const AppStack = () => {
   useNotificationSocket();
+
+  useEffect(() => {
+    CaptureProtection.prevent();
+  }, [])
+
 
   async function requestUserPermission() {
     const authStatus = await messaging().requestPermission();
@@ -49,7 +65,9 @@ const AppStack = () => {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name={Paths.HOME} component={Home} />
+      {/* MainScreen contains the bottom navigation and is the main entry after auth */}
+      <Stack.Screen name={Paths.MAIN_SCREEN} component={MainScreen} />
+      {/* Other screens are stacked above the bottom nav as needed */}
       <Stack.Screen name={Paths.CONTACT_CHAT} component={ContactChat} />
       <Stack.Screen name={Paths.ADD_CONTACT} component={AddContact} />
       <Stack.Screen name={Paths.FRIEND_REQUESTS} component={FriendRequests} />
@@ -107,12 +125,14 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
+        <PersistGate loading={<PersistLoadingScreen />} persistor={persistor}>
           <GestureHandlerRootView style={styles.container}>
             <SafeAreaProvider>
               <SafeAreaView style={styles.safeAreaContainer}>
                 <PaperProvider>
-                  <RootNavigator />
+                  <Portal.Host>
+                    <RootNavigator />
+                  </Portal.Host>
                 </PaperProvider>
               </SafeAreaView>
             </SafeAreaProvider>

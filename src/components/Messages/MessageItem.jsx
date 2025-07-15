@@ -1,18 +1,18 @@
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, memo} from 'react';
 import {Animated, Text, View, StyleSheet} from 'react-native';
 import {formatDateLabel} from '../../utils/date/formatDateLabel';
 import {formatTime} from '../../utils/time/formatTime';
 import RenderMessageContent from './RenderMessageContent';
 import Icon from 'react-native-vector-icons/Ionicons';
 
-const MessageItem = ({
+const MessageItem = memo(({
   item,
   index,
   showDateLabel,
   userId,
   showSenderLabel = false,
 }) => {
-  const isSent = item.sender._id === userId;
+  const isSent = item?.sender?._id === userId;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -55,7 +55,7 @@ const MessageItem = ({
       </View>
     </Animated.View>
   );
-};
+});
 
 export default MessageItem;
 

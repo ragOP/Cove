@@ -48,7 +48,7 @@ const ContactsUniversalSearch = ({ contacts, onClose, navigation, userId }) => {
             style={[HomeStyles.searchBar, {marginLeft: 0, marginRight: 0}]}
             iconColor="#D28A8C"
             placeholderTextColor="#D28A8C"
-            inputStyle={{fontSize: 16}}
+            inputStyle={{fontSize: 16, color: '#fff'}}
           />
         </View>
       </View>
@@ -75,7 +75,13 @@ const ContactsUniversalSearch = ({ contacts, onClose, navigation, userId }) => {
               <Text style={HomeStyles.universalSearchLoadingText}>Searching...</Text>
             </View>
           ) : query.trim() ? (
-            <Text style={HomeStyles.universalSearchEmptyText}>No results found.</Text>
+            <View style={HomeStyles.universalSearchEmptyContainer}>
+              <Icon name="people-outline" size={64} color="#D28A8C" style={HomeStyles.universalSearchEmptyIcon} />
+              <Text style={HomeStyles.universalSearchEmptyTitle}>No Contacts Found</Text>
+              <Text style={HomeStyles.universalSearchEmptySubtitle}>
+                No contacts match your search. Try a different name or username.
+              </Text>
+            </View>
           ) : null
         }
         contentContainerStyle={{paddingBottom: 32, paddingTop: 8}}

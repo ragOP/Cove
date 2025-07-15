@@ -7,6 +7,7 @@ import {
   Modal,
   Pressable,
   Image,
+  SafeAreaView,
 } from 'react-native';
 import { useRef, useState, useEffect } from 'react';
 import { useRoute } from '@react-navigation/native';
@@ -24,7 +25,6 @@ import { dedupeMessages } from '../../utils/messages/dedupeMessages';
 import { useQuery } from '@tanstack/react-query';
 import { readChat } from '../../apis/readChat';
 import { getUserInfo } from '../../apis/getUserInfo';
-import MediaPreview from '../../components/MediaPreview/MediaPreview';
 
 const ContactChat = () => {
   const route = useRoute();
@@ -32,6 +32,7 @@ const ContactChat = () => {
   const userId = reduxAuth.user?.id;
 
   const contact = route.params?.contact;
+  console.log("CONTACT >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", contact)
   const conversationId = contact?._id;
 
   const contactDetails = getChatDisplayInfo(contact, userId);
@@ -40,7 +41,7 @@ const ContactChat = () => {
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [replyMessage, setReplyMessage] = useState(null);
   const [tab, setTab] = useState('chat');
-  const [previewedMedia, setPreviewedMedia] = useState(null);
+
   const [userConversationId, setUserConversationId] = useState(null);
   const [userStatus, setUserStatus] = useState({
     isOnline: false,
@@ -55,7 +56,7 @@ const ContactChat = () => {
     const fetchUserInfo = async () => {
       try {
         setIsFetchingUserStatus(true);
-        const apiResponse = await getUserInfo({ userId: contact._id });
+        const apiResponse = await getUserInfo({ userId: contactDetails._id });
 
         if (apiResponse?.response?.success && apiResponse?.response?.data) {
           const data = apiResponse.response.data;
@@ -73,7 +74,7 @@ const ContactChat = () => {
     };
 
     fetchUserInfo();
-  }, [contact?._id]);
+  }, [contact?._id, contactDetails._id]);
 
   const onUpdateMessagesStatus = data => {
     if (!data?.messageId) {
@@ -126,10 +127,10 @@ const ContactChat = () => {
   });
 
   useEffect(() => {
-    joinChat(conversationId, userId, contactDetails?._id);
+    joinChat(conversationId);
 
     return () => {
-      leaveChat(conversationId, userId);
+      leaveChat(conversationId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
@@ -139,69 +140,65 @@ const ContactChat = () => {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardContainer}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
-      <View style={styles.container}>
-        {selectedMessage ? (
-          <SelectedMessageBar
-            selectedMessage={selectedMessage}
-            onClose={handleClearSelected}
-            onCopy={handleCopySelected}
-            onReply={handleReplySelected}
-            onDelete={handleDeleteSelected}
-          />
-        ) : (
-          <ContactHeader
-            user={contactDetails}
-            name={contactDetails.name}
-            username={contactDetails.username}
-            profilePicture={contactDetails.profilePicture}
-            isOnline={userStatus.isOnline}
-            lastSeen={userStatus.lastSeen}
-            activeTab={tab}
-            onTabChange={setTab}
-            isFetchingUserStatus={isFetchingUserStatus}
-          />
-        )}
-
-        {tab === 'chat' ? (
-          <>
-            <ChatsContainer
-              conversationId={contactDetails._id}
-              conversations={conversations}
-              setConversations={setConversations}
-              onSelectMessage={handleSelectMessage}
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#181818' }}>
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
+        <View style={styles.container}>
+          {selectedMessage ? (
+            <SelectedMessageBar
               selectedMessage={selectedMessage}
-              onReply={msg => setReplyMessage(msg)}
-              setUserConversationId={setUserConversationId}
+              onClose={handleClearSelected}
+              onCopy={handleCopySelected}
+              onReply={handleReplySelected}
+              onDelete={handleDeleteSelected}
             />
-            <SendChat
-              conversationId={conversationId}
-              conversations={conversations}
-              setConversations={setConversations}
-              receiverId={contactDetails._id}
-              replyMessage={replyMessage}
-              onCancelReply={() => setReplyMessage(null)}
-              emitTypingStatus={emitTypingStatus}
+          ) : (
+            <ContactHeader
+              user={contactDetails}
+              name={contactDetails.name}
+              username={contactDetails.username}
+              profilePicture={contactDetails.profilePicture}
+              isOnline={userStatus.isOnline}
+              lastSeen={userStatus.lastSeen}
+              activeTab={tab}
+              onTabChange={setTab}
+              isFetchingUserStatus={isFetchingUserStatus}
             />
-          </>
-        ) : (
-          <View style={styles.galleryContainer}>
-            <GallerySection
-              onMediaPress={item => setPreviewedMedia(item ? { type: item.type, uri: item.type === 'image' ? item.mediaUrl : item.mediaUrl || item.url } : null)}
-              id={contactDetails._id}
-            />
-            <MediaPreview
-              visible={!!previewedMedia}
-              media={previewedMedia}
-              onClose={() => setPreviewedMedia(null)}
-            />
-          </View>
-        )}
-      </View>
-    </KeyboardAvoidingView>
+          )}
+
+          {tab === 'chat' ? (
+            <>
+              <ChatsContainer
+                conversationId={contactDetails._id}
+                conversations={conversations}
+                setConversations={setConversations}
+                onSelectMessage={handleSelectMessage}
+                selectedMessage={selectedMessage}
+                onReply={msg => setReplyMessage(msg)}
+                setUserConversationId={setUserConversationId}
+              />
+              <SendChat
+                conversationId={conversationId}
+                conversations={conversations}
+                setConversations={setConversations}
+                receiverId={contactDetails._id}
+                replyMessage={replyMessage}
+                onCancelReply={() => setReplyMessage(null)}
+                emitTypingStatus={emitTypingStatus}
+              />
+            </>
+          ) : (
+            <View style={styles.galleryContainer}>
+              <GallerySection
+                id={contactDetails?._id}
+              />
+            </View>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
@@ -218,29 +215,5 @@ const styles = StyleSheet.create({
   galleryContainer: {
     flex: 1,
   },
-  galleryLoading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  previewOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.95)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fullPreviewImage: {
-    width: '96%',
-    height: '80%',
-    borderRadius: 16,
-    backgroundColor: '#222',
-  },
-  previewCloseBtn: {
-    position: 'absolute',
-    top: 36,
-    right: 24,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 20,
-    padding: 4,
-  },
+
 });

@@ -7,6 +7,7 @@ export const getUserInfo = async ({ userId }) => {
       endpoint: `${endpoints.userInfo}/${userId}`,
       method: 'GET',
     });
+    console.log('apiResponse >>>>', userId,apiResponse)
     return apiResponse;
   } catch (error) {
     console.error(error);

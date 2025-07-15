@@ -15,4 +15,6 @@ export const endpoints = {
   readChat: 'api/user/read-chat',
   checkContacts: 'api/user/check-contacts',
   suggestedUsers: 'api/user/suggested-users',
+  userGallery: 'api/user/get-user-gallery',
+  markAsSensitive: 'api/user/mark-as-sensitive',
 };

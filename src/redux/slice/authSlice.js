@@ -1,4 +1,5 @@
 import {createSlice} from '@reduxjs/toolkit';
+import {clearContacts} from './chatSlice';
 
 const initialState = {
   token: null,
@@ -22,6 +23,17 @@ const authSlice = createSlice({
     },
   },
 });
+
+export const loginUser = (userData) => dispatch => {
+  // Clear contacts from previous user before setting new user data
+  dispatch(clearContacts());
+  dispatch(login(userData));
+};
+
+export const logoutUser = () => dispatch => {
+  dispatch(clearContacts());
+  dispatch(logout());
+};
 
 export const {login, logout, setUser} = authSlice.actions;
 export default authSlice.reducer;

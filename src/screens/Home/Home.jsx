@@ -1,5 +1,5 @@
-import React, {useState, useEffect, useMemo} from 'react';
-import {View, FlatList, TouchableOpacity} from 'react-native';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { View, FlatList, TouchableOpacity } from 'react-native';
 import {
   Text,
   Searchbar,
@@ -10,12 +10,12 @@ import {
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useNavigation} from '@react-navigation/native';
-import {useDispatch, useSelector} from 'react-redux';
-import {logout} from '../../redux/slice/authSlice';
-import {getUserContacts} from '../../apis/getUserContacts';
-import {useIsFetching, useQuery} from '@tanstack/react-query';
-import {getUserPendingRequests} from '../../apis/getUserPendingRequests';
+import { useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import { logoutUser } from '../../redux/slice/authSlice';
+import { getUserContacts } from '../../apis/getUserContacts';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getUserPendingRequests } from '../../apis/getUserPendingRequests';
 import useChatListSocket from '../../hooks/useChatListSocket';
 import {
   setContacts,
@@ -26,21 +26,52 @@ import {
   updateContact,
   addContact,
   setIsFetched,
+  clearContacts,
+  setBottomNavIndex,
 } from '../../redux/slice/chatSlice';
-import {Paths} from '../../navigaton/paths';
+import { Paths } from '../../navigaton/paths';
 import ContactRow from './components/ContactRow';
 import SelectedContactBar from './components/SelectedContactBar';
 import EmptyContactsState from './components/EmptyContactsState';
 import ContactsUniversalSearch from './components/ContactsUniversalSearch';
+import CustomDialog from '../../components/CustomDialog/CustomDialog';
 import HomeStyles from './styles/HomeStyles';
 
 const OutlinedIcon = props => (
   <Icon name="add-circle-outline" size={28} color="#fff" {...props} />
 );
 
-const Home = () => {
+// Custom white icons for menu
+const ProfileIcon = () => (
+  <MaterialCommunityIcons name="account" size={24} color="#fff" />
+);
+
+const LogoutIcon = () => (
+  <MaterialCommunityIcons name="logout" size={24} color="#fff" />
+);
+
+const Home = ({ 
+  onNavigateToChat, 
+  onNavigateToAddContact, 
+  onNavigateToFriendRequests 
+}) => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
+
+  // Use passed navigation handlers or fall back to direct navigation
+  const handleNavigateToChat = onNavigateToChat || ((contact) => {
+    navigation.navigate(Paths.CONTACT_CHAT, { contact });
+  });
+
+  const handleNavigateToAddContact = onNavigateToAddContact || (() => {
+    navigation.navigate(Paths.ADD_CONTACT);
+  });
+
+  const handleNavigateToFriendRequests = onNavigateToFriendRequests || (() => {
+    console.log('Navigating to friend requests');
+    navigation.navigate(Paths.FRIEND_REQUESTS);
+  });
 
   const contactsRaw = useSelector(state => state.chat.contacts);
   const contacts = useMemo(() => contactsRaw || [], [contactsRaw]);
@@ -53,6 +84,7 @@ const Home = () => {
   const isFetched = useSelector(state => state.chat.isFetched);
 
   const userId = useSelector(state => state.auth.user?.id);
+  const isUserLoaded = useSelector(state => state.auth.user !== null);
 
   const [selectedIds, setSelectedIds] = useState([]);
   const [selectedContacts, setSelectedContacts] = useState([]);
@@ -60,20 +92,33 @@ const Home = () => {
   const [searchInput, setSearchInput] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchPage, setShowSearchPage] = useState(false);
+  const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);
 
-  const {data: requests = [], refetch: refetchRequests} = useQuery({
-    queryKey: ['pendingRequests'],
+  const {
+    data: requests = [],
+    refetch: refetchRequests,
+    isLoading: isLoadingRequests
+  } = useQuery({
+    queryKey: ['pendingRequests', userId],
     queryFn: getUserPendingRequests,
     select: data => data?.response?.data || [],
+    enabled: !!userId,
   });
   const [pendingRequestsCount, setPendingRequestsCount] = useState(
     requests.length || 0,
   );
 
+  // Simple contact fetching logic
   useEffect(() => {
+    if (!userId || !isUserLoaded) {
+      return;
+    }
+
     const fetchContacts = async () => {
       try {
         dispatch(setLoading(true));
+        console.log('Fetching contacts for user:', userId);
+        
         const apiResponse = await getUserContacts({
           params: {
             page,
@@ -83,23 +128,21 @@ const Home = () => {
         });
 
         if (apiResponse?.response?.success) {
+          console.log("FETCHED CONTACTS", apiResponse.response.data);
           dispatch(
             setContacts({
               contacts: apiResponse.response.data || [],
               page,
-              hasMore:
-                (apiResponse.response.data || []).length === (perPage || 20),
+              hasMore: (apiResponse.response.data || []).length === (perPage || 20),
               contactType,
             }),
           );
         } else {
-          dispatch(
-            setError(
-              apiResponse?.response?.message || 'Failed to fetch contacts.',
-            ),
-          );
+          console.error('API Error:', apiResponse?.response?.message);
+          dispatch(setError(apiResponse?.response?.message || 'Failed to fetch contacts.'));
         }
       } catch (err) {
+        console.error('Fetch contacts error:', err);
         dispatch(setError('Failed to fetch contacts.'));
       } finally {
         dispatch(setLoading(false));
@@ -108,7 +151,17 @@ const Home = () => {
     };
 
     fetchContacts();
-  }, [page, perPage, contactType, dispatch]);
+  }, [userId, isUserLoaded, page, perPage, contactType, dispatch]);
+
+  // Clear contacts when user changes
+  useEffect(() => {
+    if (userId && isUserLoaded) {
+      console.log('User loaded, clearing contacts for fresh start');
+      dispatch(clearContacts());
+      queryClient.clear();
+    }
+  }, [userId, isUserLoaded, dispatch, queryClient]);
+
 
   useEffect(() => {
     if (!searchInput.trim()) {
@@ -116,12 +169,12 @@ const Home = () => {
       return;
     }
     const lower = searchInput.toLowerCase();
-    setSearchResults(
-      contacts.filter(c => {
-        const name = c.displayName || c.name || '';
-        return name.toLowerCase().includes(lower);
-      }),
-    );
+    const filtered = contacts.filter(c => {
+      const name = c.displayName || c.name || '';
+      return name.toLowerCase().includes(lower);
+    });
+    console.log('Filtered contacts by search:', filtered.length);
+    setSearchResults(filtered);
   }, [searchInput, contacts]);
 
   const totalUnread = contacts.reduce(
@@ -163,7 +216,7 @@ const Home = () => {
     } else {
       setSelectedIds([]);
       setSelectedContacts([]);
-      navigation.navigate(Paths.CONTACT_CHAT, {contact: item});
+      handleNavigateToChat(item);
     }
   };
 
@@ -192,9 +245,12 @@ const Home = () => {
   const handlePageRefresh = async () => {
     setRefreshing(true);
     setSelectedIds([]);
-    dispatch(setPage(1));
     try {
+      queryClient.clear();
       await refetchRequests();
+      dispatch(setPage(1));
+    } catch (e) {
+      console.error(e)
     } finally {
       setRefreshing(false);
     }
@@ -207,15 +263,22 @@ const Home = () => {
 
   const handleLogout = () => {
     closeMenu();
-    dispatch(logout());
+    setLogoutDialogVisible(true);
+  };
+
+  const handleConfirmLogout = () => {
+    queryClient.clear();
+    dispatch(logoutUser());
   };
 
   const handleChatListUpdate = updatedContact => {
     if (!updatedContact || !updatedContact._id) {
       return;
     }
+
     dispatch(updateContact(updatedContact));
     const exists = contacts.some(c => c._id === updatedContact._id);
+
     if (exists) {
       dispatch(updateContact(updatedContact));
     } else {
@@ -227,6 +290,11 @@ const Home = () => {
     if (data?.count) {
       setPendingRequestsCount(data?.count);
     }
+  };
+
+  const handleDebugLoadContacts = () => {
+    dispatch(setPage(1));
+    dispatch(setContactType('all'));
   };
 
   useChatListSocket({
@@ -253,7 +321,10 @@ const Home = () => {
           <View style={HomeStyles.headerInnerRow}>
             <TouchableOpacity
               style={HomeStyles.friendRequestBtn}
-              onPress={() => navigation.navigate(Paths.FRIEND_REQUESTS)}
+              onPress={() => {
+                console.log('Friend request button pressed');
+                handleNavigateToFriendRequests();
+              }}
               activeOpacity={0.8}>
               <View style={HomeStyles.friendRequestIconWrapper}>
                 <MaterialCommunityIcons
@@ -274,7 +345,7 @@ const Home = () => {
               icon={OutlinedIcon}
               size={28}
               iconColor="#fff"
-              onPress={() => navigation.navigate(Paths.ADD_CONTACT)}
+              onPress={handleNavigateToAddContact}
               style={HomeStyles.plusIcon}
             />
 
@@ -288,20 +359,30 @@ const Home = () => {
                   size={28}
                   onPress={openMenu}
                   style={HomeStyles.optionsIcon}
+                  rippleColor="rgba(255, 255, 255, 0.1)"
+                  underlayColor="transparent"
                 />
               }
-              style={HomeStyles.menuContent}>
+              style={HomeStyles.menuContent}
+              contentStyle={HomeStyles.menuContent}>
               <Menu.Item
-                onPress={() => navigation.navigate(Paths.PROFILE)}
+                onPress={() => {
+                  dispatch(setBottomNavIndex(3));
+                  closeMenu();
+                }}
                 title="Profile"
-                leadingIcon="account"
-                style={HomeStyles.menuItemTitle}
+                leadingIcon={ProfileIcon}
+                style={[HomeStyles.menuItemTitle, HomeStyles.menuItem]}
+                titleStyle={HomeStyles.menuItemTitle}
+                iconColor="#fff"
               />
               <Menu.Item
                 onPress={handleLogout}
                 title="Logout"
-                leadingIcon="logout"
-                style={HomeStyles.menuItemTitle}
+                leadingIcon={LogoutIcon}
+                style={[HomeStyles.menuItemTitle, HomeStyles.menuItemLast]}
+                titleStyle={HomeStyles.menuItemTitle}
+                iconColor="#fff"
               />
             </Menu>
           </View>
@@ -316,6 +397,7 @@ const Home = () => {
           style={HomeStyles.searchBar}
           iconColor="#D28A8C"
           placeholderTextColor="#D28A8C"
+          inputStyle={{color: '#fff'}}
           editable={true}
           pointerEvents="auto"
         />
@@ -360,7 +442,7 @@ const Home = () => {
       <FlatList
         data={searchResults}
         keyExtractor={item => item._id}
-        renderItem={({item}) => (
+        renderItem={({ item }) => (
           <ContactRow
             item={item}
             onPress={() => handleContactPress(item)}
@@ -386,7 +468,7 @@ const Home = () => {
             </View>
           ) : !loading && isFetched && contacts.length === 0 ? (
             <EmptyContactsState
-              onAddPress={() => navigation.navigate(Paths.ADD_CONTACT)}
+              onAddPress={handleNavigateToAddContact}
             />
           ) : null
         }
@@ -398,6 +480,21 @@ const Home = () => {
           }
         }}
         onEndReachedThreshold={0.5}
+      />
+      
+      {/* Logout Confirmation Dialog */}
+      <CustomDialog
+        visible={logoutDialogVisible}
+        onDismiss={() => setLogoutDialogVisible(false)}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        icon="logout"
+        iconColor="#ff4444"
+        confirmText="Logout"
+        cancelText="Cancel"
+        onConfirm={handleConfirmLogout}
+        onCancel={() => setLogoutDialogVisible(false)}
+        destructive={true}
       />
     </View>
   );

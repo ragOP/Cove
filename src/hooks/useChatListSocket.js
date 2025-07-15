@@ -1,11 +1,16 @@
 import {useEffect} from 'react';
 import {useSocketContext} from '../context/SocketContext';
+import {useSelector} from 'react-redux';
+import {selectUser} from '../redux/slice/authSlice';
 
 export default function useChatListSocket({
   onChatListUpdate,
   onFriendRequestReceived,
 }) {
   const socket = useSocketContext();
+
+  const user = useSelector(selectUser);
+  // const id = user.id;
 
   useEffect(() => {
     if (!socket) {

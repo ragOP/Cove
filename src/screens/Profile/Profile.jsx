@@ -1,176 +1,248 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Text, Avatar, Button, Divider, IconButton } from 'react-native-paper';
-import { useSelector, useDispatch } from 'react-redux';
-import { logout, selectToken } from '../../redux/slice/authSlice';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Switch,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSelector, useDispatch } from 'react-redux';
+import { logoutUser } from '../../redux/slice/authSlice';
 import UserAvatar from '../../components/CustomAvatar/UserAvatar';
-import { Paths } from '../../navigaton/paths';
+import CustomDialog from '../../components/CustomDialog/CustomDialog';
 import MediaPreview from '../../components/MediaPreview/MediaPreview';
-import { format } from 'date-fns';
 
-const Profile = ({ navigation }) => {
-  const user = useSelector(state => state.auth.user);
-  const token = useSelector(selectToken);
-
-  console.info('[TOKEN] >>>>>>>>>>>>', token)
-  console.info('[USER] >>>>>>>>>>>>', user);
-
+const Profile = ({ 
+  navigation, 
+  onNavigateToProfileView, 
+  onNavigateToSettings 
+}) => {
   const dispatch = useDispatch();
-  const [previewVisible, setPreviewVisible] = React.useState(false);
+  const user = useSelector(state => state.auth.user);
+  
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [darkModeEnabled, setDarkModeEnabled] = useState(true);
+  const [privacyMode, setPrivacyMode] = useState(false);
+  const [logoutDialog, setLogoutDialog] = useState(false);
+  
   const handleLogout = () => {
-    dispatch(logout());
+    setLogoutDialog(true);
   };
 
-  const createdAt = user?.createdAt ? new Date(user.createdAt) : new Date();
-  const formattedDate = format(createdAt, 'EEEE, d MMMM yyyy');
+  const handleLogoutConfirm = () => {
+    dispatch(logoutUser());
+    setLogoutDialog(false);
+  };
+
+  const handleLogoutCancel = () => {
+    setLogoutDialog(false);
+  };
+
+  // Use passed navigation handlers or fall back to direct navigation
+  const handleNavigateToProfileView = onNavigateToProfileView || ((userId) => {
+    if (navigation) {
+      navigation.navigate('ProfileView', { userId });
+    }
+  });
+
+  const handleNavigateToSettings = onNavigateToSettings || (() => {
+    // Navigate to settings when implemented
+    console.log('Navigate to settings');
+  });
+
+  const handleEditProfile = () => {
+    // Navigate to edit profile screen
+    console.log('Navigate to edit profile');
+  };
+
+  const handleChangePassword = () => {
+    // Navigate to change password screen
+    console.log('Navigate to change password');
+  };
+
+  const handlePrivacySettings = () => {
+    // Navigate to privacy settings
+    console.log('Navigate to privacy settings');
+  };
+
+  const handleHelpSupport = () => {
+    // Navigate to help and support
+    console.log('Navigate to help and support');
+  };
+
+  const handleAbout = () => {
+    // Navigate to about screen
+    console.log('Navigate to about');
+  };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.topBar}>
-        <IconButton
-          icon="arrow-left"
-          size={28}
-          onPress={() => navigation.goBack()}
-          style={styles.backBtn}
-          iconColor="#fff"
-        />
-        <Text style={styles.topBarTitle}>Profile</Text>
-      </View>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header Section */}
       <View style={styles.header}>
-        <Text style={styles.dateLabel}>{formattedDate}</Text>
         <TouchableOpacity
           onPress={() => setPreviewVisible(true)}
-          activeOpacity={0.85}>
+          activeOpacity={0.85}
+          style={styles.avatarContainer}>
           <UserAvatar
             profilePicture={user?.profilePicture}
             name={user?.name}
             id={user?.id}
-            size={96}
+            size={100}
           />
+          <View style={styles.editAvatarButton}>
+            <Icon name="camera" size={16} color="#fff" />
+          </View>
         </TouchableOpacity>
-        <Text style={styles.name}>{user?.name}</Text>
-        <Text style={styles.username}>@{user?.username}</Text>
-        <Text style={styles.phone}>{user?.phoneNumber}</Text>
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <MaterialCommunityIcons
-              name="account-group-outline"
-              size={22}
-              color="#D28A8C"
-              style={styles.statIcon}
-            />
-            <Text style={styles.statValue}>0</Text>
-            <Text style={styles.statLabel}>Friends</Text>
-          </View>
-          <View style={styles.statCard}>
-            <MaterialCommunityIcons
-              name="account-multiple-plus-outline"
-              size={22}
-              color="#D28A8C"
-              style={styles.statIcon}
-            />
-            <Text style={styles.statValue}>0</Text>
-            <Text style={styles.statLabel}>Groups</Text>
-          </View>
-          <View style={styles.statCard}>
-            <MaterialCommunityIcons
-              name="star-outline"
-              size={22}
-              color="#D28A8C"
-              style={styles.statIcon}
-            />
-            <Text style={styles.statValue}>0</Text>
-            <Text style={styles.statLabel}>Favorites</Text>
-          </View>
+        
+        <View style={styles.userInfo}>
+          <Text style={styles.userName}>{user?.name || 'User Name'}</Text>
+          <Text style={styles.userUsername}>@{user?.username || 'username'}</Text>
+          <Text style={styles.userPhone}>{user?.phoneNumber || '+1234567890'}</Text>
+        </View>
+
+     
+      </View>
+
+      {/* Stats Section */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>0</Text>
+          <Text style={styles.statLabel}>Friends</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>0</Text>
+          <Text style={styles.statLabel}>Groups</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>0</Text>
+          <Text style={styles.statLabel}>Favorites</Text>
         </View>
       </View>
-      <Divider style={styles.divider} />
-      <View style={styles.optionsSection}>
-        <TouchableOpacity style={styles.optionRow}>
-          <MaterialCommunityIcons
-            name="account-edit"
-            size={24}
-            color="#D28A8C"
-            style={styles.optionIcon}
-          />
-          <Text style={styles.optionText}>Edit Profile</Text>
+
+      {/* Settings Section */}
+      <View style={styles.settingsSection}>
+        <Text style={styles.sectionTitle}>Account</Text>
+        
+        <TouchableOpacity style={styles.settingItem} onPress={handleEditProfile}>
+          <View style={styles.settingLeft}>
+            <MaterialCommunityIcons name="account-edit" size={24} color="#D28A8C" />
+            <Text style={styles.settingText}>Edit Profile</Text>
+          </View>
+          <Icon name="chevron-forward" size={20} color="#888" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.optionRow}>
-          <MaterialCommunityIcons
-            name="lock-outline"
-            size={24}
-            color="#D28A8C"
-            style={styles.optionIcon}
-          />
-          <Text style={styles.optionText}>Change Password</Text>
+
+        <TouchableOpacity style={styles.settingItem} onPress={handleChangePassword}>
+          <View style={styles.settingLeft}>
+            <MaterialCommunityIcons name="lock-outline" size={24} color="#D28A8C" />
+            <Text style={styles.settingText}>Change Password</Text>
+          </View>
+          <Icon name="chevron-forward" size={20} color="#888" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.optionRow}>
-          <MaterialCommunityIcons
-            name="bell-outline"
-            size={24}
-            color="#D28A8C"
-            style={styles.optionIcon}
-          />
-          <Text style={styles.optionText}>Notifications</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.optionRow}>
-          <MaterialCommunityIcons
-            name="palette-outline"
-            size={24}
-            color="#D28A8C"
-            style={styles.optionIcon}
-          />
-          <Text style={styles.optionText}>Theme</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.optionRow}>
-          <MaterialCommunityIcons
-            name="shield-account-outline"
-            size={24}
-            color="#D28A8C"
-            style={styles.optionIcon}
-          />
-          <Text style={styles.optionText}>Privacy & Security</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.optionRow}>
-          <MaterialCommunityIcons
-            name="help-circle-outline"
-            size={24}
-            color="#D28A8C"
-            style={styles.optionIcon}
-          />
-          <Text style={styles.optionText}>Help & Support</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.optionRow}>
-          <MaterialCommunityIcons
-            name="information-outline"
-            size={24}
-            color="#D28A8C"
-            style={styles.optionIcon}
-          />
-          <Text style={styles.optionText}>About</Text>
+
+        <TouchableOpacity style={styles.settingItem} onPress={handlePrivacySettings}>
+          <View style={styles.settingLeft}>
+            <MaterialCommunityIcons name="shield-account-outline" size={24} color="#D28A8C" />
+            <Text style={styles.settingText}>Privacy & Security</Text>
+          </View>
+          <Icon name="chevron-forward" size={20} color="#888" />
         </TouchableOpacity>
       </View>
-      <Divider style={styles.divider} />
-      <Button
-        mode="contained"
-        style={styles.logoutBtn}
-        labelStyle={styles.logoutLabel}
+
+      <View style={styles.settingsSection}>
+        <Text style={styles.sectionTitle}>Preferences</Text>
+        
+        <View style={styles.settingItem}>
+          <View style={styles.settingLeft}>
+            <MaterialCommunityIcons name="bell-outline" size={24} color="#D28A8C" />
+            <Text style={styles.settingText}>Notifications</Text>
+          </View>
+          <Switch
+            value={notificationsEnabled}
+            onValueChange={setNotificationsEnabled}
+            color="#D28A8C"
+          />
+        </View>
+
+        <View style={styles.settingItem}>
+          <View style={styles.settingLeft}>
+            <MaterialCommunityIcons name="theme-light-dark" size={24} color="#D28A8C" />
+            <Text style={styles.settingText}>Dark Mode</Text>
+          </View>
+          <Switch
+            value={darkModeEnabled}
+            onValueChange={setDarkModeEnabled}
+            color="#D28A8C"
+          />
+        </View>
+
+        <View style={styles.settingItem}>
+          <View style={styles.settingLeft}>
+            <MaterialCommunityIcons name="eye-off-outline" size={24} color="#D28A8C" />
+            <Text style={styles.settingText}>Privacy Mode</Text>
+          </View>
+          <Switch
+            value={privacyMode}
+            onValueChange={setPrivacyMode}
+            color="#D28A8C"
+          />
+        </View>
+      </View>
+
+      <View style={styles.settingsSection}>
+        <Text style={styles.sectionTitle}>Support</Text>
+        
+        <TouchableOpacity style={styles.settingItem} onPress={handleHelpSupport}>
+          <View style={styles.settingLeft}>
+            <MaterialCommunityIcons name="help-circle-outline" size={24} color="#D28A8C" />
+            <Text style={styles.settingText}>Help & Support</Text>
+          </View>
+          <Icon name="chevron-forward" size={20} color="#888" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.settingItem} onPress={handleAbout}>
+          <View style={styles.settingLeft}>
+            <MaterialCommunityIcons name="information-outline" size={24} color="#D28A8C" />
+            <Text style={styles.settingText}>About Cove</Text>
+          </View>
+          <Icon name="chevron-forward" size={20} color="#888" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Logout Section */}
+      <View style={styles.logoutSection}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Icon name="log-out-outline" size={20} color="#ff4444" />
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* App Info */}
+      <View style={styles.appInfo}>
+        <MaterialCommunityIcons name="heart" size={16} color="#D28A8C" />
+        <Text style={styles.appInfoText}>Made with love • v1.0</Text>
+      </View>
+
+      <CustomDialog
+        visible={logoutDialog}
+        onDismiss={() => setLogoutDialog(false)}
+        title="Logout"
+        message="Are you sure you want to logout?"
         icon="logout"
-        onPress={handleLogout}
-        contentStyle={styles.logoutContent}>
-        Logout
-      </Button>
-      <View style={styles.madeWithCard}>
-        <MaterialCommunityIcons
-          name="heart"
-          size={18}
-          color="#D28A8C"
-          style={styles.madeWithIcon}
-        />
-        <Text style={styles.madeWithText}>Made with love • v1.0</Text>
-      </View>
+        iconColor="#ff4444"
+        confirmText="Logout"
+        cancelText="Cancel"
+        onConfirm={handleLogoutConfirm}
+        onCancel={handleLogoutCancel}
+        confirmButtonColor="#ff4444"
+        destructive={true}
+      />
+
       <MediaPreview
         visible={previewVisible}
         media={
@@ -189,173 +261,153 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#181818',
   },
-  content: {
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    minHeight: '100%',
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 8,
-    marginTop: 0,
-    paddingHorizontal: 0,
-  },
-  backBtn: {
-    marginLeft: -8,
-    marginRight: 8,
-    backgroundColor: 'transparent',
-  },
-  topBarTitle: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 22,
-    flex: 1,
-    textAlign: 'center',
-    marginRight: 40,
-    letterSpacing: 0.5,
-  },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
-    width: '100%',
-    backgroundColor: '#232323',
-    borderRadius: 18,
     paddingVertical: 24,
-    paddingHorizontal: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
+    paddingHorizontal: 20,
+    position: 'relative',
   },
-  dateLabel: {
-    color: '#bbb',
-    fontSize: 13,
-    alignSelf: 'center',
-    marginBottom: 6,
-    marginTop: -6,
-    letterSpacing: 0.2,
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 16,
   },
-  statsRow: {
+  editAvatarButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#D28A8C',
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#181818',
+  },
+  userInfo: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  userUsername: {
+    fontSize: 16,
+    color: '#D28A8C',
+    marginBottom: 4,
+  },
+  userPhone: {
+    fontSize: 14,
+    color: '#888',
+  },
+  editProfileButton: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '90%',
-    marginTop: 18,
-    marginBottom: 2,
+    alignItems: 'center',
+    backgroundColor: 'rgba(210, 138, 140, 0.1)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#D28A8C',
   },
-  statCard: {
+  editProfileText: {
+    color: '#D28A8C',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    marginHorizontal: 20,
+    borderRadius: 16,
+    marginBottom: 24,
+  },
+  statItem: {
     alignItems: 'center',
     flex: 1,
   },
-  statIcon: {
-    marginBottom: 2,
-  },
-  statValue: {
-    color: '#fff',
+  statNumber: {
+    fontSize: 24,
     fontWeight: 'bold',
-    fontSize: 18,
-    marginTop: 2,
+    color: '#fff',
+    marginBottom: 4,
   },
   statLabel: {
-    color: '#bbb',
-    fontSize: 13,
-    marginTop: 0,
-    letterSpacing: 0.1,
+    fontSize: 12,
+    color: '#888',
   },
-  name: {
+  statDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginHorizontal: 8,
+  },
+  settingsSection: {
+    marginBottom: 24,
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 22,
-    marginTop: 12,
-    letterSpacing: 0.2,
+    marginBottom: 16,
   },
-  username: {
-    color: '#bbb',
-    fontSize: 15,
-    marginTop: 2,
-    letterSpacing: 0.2,
-  },
-  phone: {
-    color: '#bbb',
-    fontSize: 14,
-    marginTop: 2,
-    letterSpacing: 0.2,
-  },
-  divider: {
-    width: '100%',
-    backgroundColor: '#232323',
-    marginVertical: 18,
-    height: 1,
-  },
-  optionsSection: {
-    width: '100%',
-    marginBottom: 18,
-    backgroundColor: '#232323',
-    borderRadius: 18,
-    paddingVertical: 8,
-    paddingHorizontal: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  optionRow: {
+  settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: '#232323',
-  },
-  optionIcon: {
-    marginRight: 18,
-  },
-  optionText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '500',
-    letterSpacing: 0.2,
-  },
-  logoutBtn: {
-    backgroundColor: '#D28A8C',
-    borderRadius: 24,
-    marginTop: 18,
-    width: '100%',
-    alignSelf: 'center',
-    paddingVertical: 8,
-    elevation: 2,
-  },
-  logoutLabel: {
-    fontWeight: 'bold',
-    color: '#fff',
-    fontSize: 16,
-    letterSpacing: 0.2,
-  },
-  madeWithCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginTop: 28,
-    backgroundColor: '#232323',
-    borderRadius: 12,
+    justifyContent: 'space-between',
+    paddingVertical: 16,
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  settingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  settingText: {
+    fontSize: 16,
+    color: '#fff',
+    marginLeft: 12,
+  },
+  logoutSection: {
+    paddingHorizontal: 20,
     marginBottom: 24,
   },
-  madeWithIcon: {
-    marginRight: 6,
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 68, 68, 0.1)',
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ff4444',
   },
-  madeWithText: {
-    color: '#bbb',
+  logoutText: {
+    color: '#ff4444',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  appInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  appInfoText: {
+    color: '#888',
     fontSize: 14,
-    letterSpacing: 0.2,
-  },
-  logoutContent: {
-    paddingHorizontal: 0,
+    marginLeft: 6,
   },
 });
 
