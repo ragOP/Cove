@@ -31,9 +31,10 @@ import ImageViewer from '../../components/ImageViewer/ImageViewer';
 import CustomDialog from '../../components/CustomDialog/CustomDialog';
 import { dummyImages } from '../../utils/media/dummyImages';
 import { getUserGallery } from '../../apis/getUserGallery';
-import useChatSocket from '../../hooks/useChatSocket';
+import useGallerySocket from '../../hooks/useGallerySocket';
 import { showSnackbar } from '../../redux/slice/snackbarSlice';
 import { useQueryClient } from '@tanstack/react-query';
+import UserAvatar from '../../components/CustomAvatar/UserAvatar';
 
 const { width, height } = Dimensions.get('window');
 
@@ -47,6 +48,8 @@ const itemSize = (width - totalSpacing) / numColumns;
 const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, currentUserId }) => {
   const [error, setError] = React.useState(false);
 
+  // Check if the item has sender information and is not from current user
+  const showAvatar = item.sender && item.sender._id && item.sender._id !== currentUserId;
 
   if (item.type === 'image') {
     return (
@@ -78,6 +81,17 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, currentUs
         {isSelected && (
           <View style={styles.selectionBadge}>
             <MaterialIcon name="check-circle" size={20} color="#fff" />
+          </View>
+        )}
+        {showAvatar && (
+          <View style={styles.avatarContainer}>
+            <UserAvatar
+              profilePicture={item.sender?.profilePicture}
+              name={item.sender?.name || 'Unknown'}
+              id={item.sender?._id || 'unknown'}
+              size={20}
+              showPreview={false}
+            />
           </View>
         )}
       </TouchableOpacity>
@@ -118,6 +132,17 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, currentUs
         {isSelected && (
           <View style={styles.selectionBadge}>
             <MaterialIcon name="check-circle" size={20} color="#fff" />
+          </View>
+        )}
+        {showAvatar && (
+          <View style={styles.avatarContainer}>
+            <UserAvatar
+              profilePicture={item.sender?.profilePicture}
+              name={item.sender?.name || 'Unknown'}
+              id={item.sender?._id || 'unknown'}
+              size={20}
+              showPreview={false}
+            />
           </View>
         )}
       </View>
@@ -190,14 +215,26 @@ const GalleryScreen = () => {
   const page = useSelector(state => state.gallery.page);
   const per_page = useSelector(state => state.gallery.per_page);
 
-
-  // Use useChatSocket for message_deleted event
-  useChatSocket({
-    onMessageDeleted: data => {
+  useGallerySocket({
+    onGalleryMessageDeleted: data => {
       if (data?.data && Array.isArray(data.data)) {
-        const deletedMessageIds = data.data; // Direct array of IDs
+        const deletedMessageIds = data.data;
         dispatch(removeGalleryItems(deletedMessageIds));
         queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      }
+    },
+    onNewGalleryMessage: data => {
+      if (data?.data && data?.data?._id) {
+        const newMessage = data.data;
+
+        if (newMessage.type === 'image' || newMessage.type === 'video') {
+          dispatch(appendGalleryData({
+            data: [newMessage],
+            total: total + 1,
+            page: page,
+            per_page: per_page
+          }));
+        }
       }
     },
   });
@@ -1116,6 +1153,21 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     borderWidth: 1,
     borderColor: '#333',
+  },
+  avatarContainer: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 10,
+    padding: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 2,
   },
 
 });
