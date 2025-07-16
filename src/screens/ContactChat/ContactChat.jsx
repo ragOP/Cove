@@ -22,7 +22,7 @@ import GallerySection from './components/GallerySection';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import useChatSocket from '../../hooks/useChatSocket';
 import { dedupeMessages } from '../../utils/messages/dedupeMessages';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { readChat } from '../../apis/readChat';
 import { getUserInfo } from '../../apis/getUserInfo';
 import { deleteMessages } from '../../apis/deleteMessages';
@@ -34,6 +34,9 @@ const ContactChat = () => {
   const route = useRoute();
   const reduxAuth = useSelector(state => state.auth);
   const userId = reduxAuth.user?.id;
+
+  const queryClient = useQueryClient();
+
 
   const contact = route.params?.contact;
   console.log("CONTACT >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", contact)
@@ -113,10 +116,14 @@ const ContactChat = () => {
       });
     },
     onMessageDeleted: data => {
-      // Handle message_deleted event
+      // Handle message_deleted event - data.data is array of message IDs
       if (data?.data && Array.isArray(data.data)) {
-        const deletedMessageIds = data.data.map(item => item._id);
+        const deletedMessageIds = data.data; // Direct array of IDs
         setConversations(prev => prev.filter(msg => !deletedMessageIds.includes(msg._id)));
+
+        // Invalidate gallery cache when messages are deleted via socket
+        queryClient.invalidateQueries({ queryKey: ['gallery', contactDetails?._id] });
+        queryClient.invalidateQueries({ queryKey: ['gallery'] });
       }
     },
     receiverId: contactDetails?._id,
@@ -129,6 +136,7 @@ const ContactChat = () => {
     setReplyMessage(msg);
     handleClearSelected();
   };
+
   const handleDeleteSelected = async msg => {
     setMessageToDelete(msg);
     setShowDeleteDialog(true);
@@ -144,6 +152,11 @@ const ContactChat = () => {
         // Remove the message from conversations
         setConversations(prev => prev.filter(m => m._id !== messageToDelete._id));
         handleClearSelected();
+
+        queryClient.invalidateQueries({ queryKey: ['gallery', contactDetails?._id] });
+
+        queryClient.invalidateQueries({ queryKey: ['gallery'] });
+
         dispatch(
           showSnackbar({
             type: 'success',
@@ -221,6 +234,19 @@ const ContactChat = () => {
     );
   };
 
+  const handleDeleteMessage = (messageId,) => {
+    setConversations(prev => prev.filter(msg => msg._id !== messageId));
+    dispatch(
+      showSnackbar({
+        type: 'success',
+        title: 'Message deleted',
+        subtitle: 'Message has been delted successfully',
+        placement: 'top',
+      }),
+    );
+  };
+
+
   useQuery({
     queryKey: ['read_chat', userConversationId],
     queryFn: async () => {
@@ -285,6 +311,7 @@ const ContactChat = () => {
                 setUserConversationId={setUserConversationId}
                 onMarkSensitive={handleMarkSensitive}
                 onMarkUnsensitive={handleMarkUnsensitive}
+                onDelete={handleDeleteMessage}
               />
               <SendChat
                 conversationId={conversationId}

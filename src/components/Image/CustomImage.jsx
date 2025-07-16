@@ -12,6 +12,8 @@ import ImageViewer from '../ImageViewer/ImageViewer';
  * @param {function} onMarkUnsensitive - Function to mark image as insensitive (optional)
  * @param {function} onDelete - Function to delete image/message (optional)
  * @param {string} messageId - The actual message ID for API calls (optional)
+ * @param {object} sender - Sender information for the image (optional)
+ * @param {string} currentUserId - Current user ID to determine ownership (optional)
  */
 const CustomImage = ({
   source,
@@ -24,6 +26,8 @@ const CustomImage = ({
   onMarkUnsensitive,
   onDelete,
   messageId,
+  sender,
+  currentUserId,
   ...props
 }) => {
   const [error, setError] = useState(false);
@@ -54,6 +58,8 @@ const CustomImage = ({
   const handleDelete = async (image) => {
     if (onDelete) {
       await onDelete(image);
+      // Close the preview after successful deletion
+      setPreviewVisible(false);
     }
   };
 
@@ -63,6 +69,7 @@ const CustomImage = ({
     uri: source.uri,
     isSensitive: isSensitive,
     messageContent: messageContent,
+    sender: sender, // Include sender information
   } : null;
 
   return (
@@ -94,6 +101,7 @@ const CustomImage = ({
           showCenterNavigation={false}
           autoHideNavigation={false}
           showSnackbarNotifications={false}
+          currentUserId={currentUserId}
         />
       )}
     </>

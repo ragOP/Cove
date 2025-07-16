@@ -33,6 +33,7 @@ import { dummyImages } from '../../utils/media/dummyImages';
 import { getUserGallery } from '../../apis/getUserGallery';
 import useChatSocket from '../../hooks/useChatSocket';
 import { showSnackbar } from '../../redux/slice/snackbarSlice';
+import { useQueryClient } from '@tanstack/react-query';
 
 const { width, height } = Dimensions.get('window');
 
@@ -43,7 +44,7 @@ const itemSpacing = 4;
 const totalSpacing = containerPadding * 2 + itemSpacing * (numColumns - 1);
 const itemSize = (width - totalSpacing) / numColumns;
 
-const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles }) => {
+const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, currentUserId }) => {
   const [error, setError] = React.useState(false);
 
 
@@ -65,6 +66,8 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles }) => {
             style={styles.image}
             onError={() => setError(true)}
             isSensitive={item.isSensitive}
+            sender={item.sender}
+            currentUserId={currentUserId}
           />
         )}
         {item.isSensitive && (
@@ -100,6 +103,8 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles }) => {
             style={styles.image}
             onError={() => setError(true)}
             isSensitive={item.isSensitive}
+            sender={item.sender}
+            currentUserId={currentUserId}
           />
         )}
         <View style={styles.playIconWrap}>
@@ -120,12 +125,13 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles }) => {
   );
 };
 
-
-
 const GalleryScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
+
   const user = useSelector(state => state.auth.user);
+  const currentUserId = user?.id;
   const [activeTab, setActiveTab] = useState('all');
   const [params, setParams] = useState({
     page: 1,
@@ -165,11 +171,15 @@ const GalleryScreen = () => {
   const prepareImagesForViewer = (mediaList) => {
     return mediaList
       .filter(item => item.type === 'image' && item.mediaUrl)
-      .map(item => ({
-        _id: item._id,
-        uri: item.mediaUrl,
-        isSensitive: item.isSensitive,
-      }));
+      .map(item => {
+        return {
+          _id: item._id,
+          uri: item.mediaUrl,
+          isSensitive: item.isSensitive,
+          sender: item.sender, // Include sender information
+          messageContent: item.content, // Include message content
+        };
+      });
   };
   // Get gallery data from Redux
   const galleryData = useSelector(state => state.gallery.galleryData);
@@ -180,13 +190,14 @@ const GalleryScreen = () => {
   const page = useSelector(state => state.gallery.page);
   const per_page = useSelector(state => state.gallery.per_page);
 
+
   // Use useChatSocket for message_deleted event
   useChatSocket({
     onMessageDeleted: data => {
-      console.info('[GALLERY - MESSAGE DELETED]', data);
       if (data?.data && Array.isArray(data.data)) {
-        const deletedMessageIds = data.data.map(item => item._id);
+        const deletedMessageIds = data.data; // Direct array of IDs
         dispatch(removeGalleryItems(deletedMessageIds));
+        queryClient.invalidateQueries({ queryKey: ['gallery'] });
       }
     },
   });
@@ -280,7 +291,6 @@ const GalleryScreen = () => {
   const shieldCount = mediaList.filter(item => item.isSensitive).length;
 
   const handleMediaPress = (item, groupIndex, itemIndex) => {
-    console.log('handleMediaPress: item:', item);
     try {
       if (!item || !item._id) {
         return;
@@ -376,11 +386,49 @@ const GalleryScreen = () => {
     }
   };
 
-  const handleSingleImageDelete = (deletedImage) => {
-    // Remove the deleted image from gallery state
-    dispatch(removeGalleryItems([deletedImage._id]));
-    // Close the image viewer since the image was deleted
-    setIsImageViewerVisible(false);
+  const handleSingleImageDelete = async (deletedImage) => {
+    try {
+      if (!deletedImage?._id) {
+        console.error('No image ID found for deleting');
+        return;
+      }
+
+      const response = await deleteMessages({ ids: [deletedImage._id] });
+
+      if (response?.response?.success) {
+        console.log('Successfully deleted image:', deletedImage._id);
+
+        // Remove the deleted image from gallery state
+        dispatch(removeGalleryItems([deletedImage._id]));
+
+        // Close the image viewer since the image was deleted
+        setIsImageViewerVisible(false);
+
+        dispatch(showSnackbar({
+          type: 'success',
+          title: 'Deleted',
+          subtitle: 'Image deleted successfully',
+          placement: 'top',
+        }));
+      } else {
+        console.error('Failed to delete image:', response);
+        const errorMessage = response?.response?.data?.message || 'Failed to delete image';
+        dispatch(showSnackbar({
+          type: 'error',
+          title: 'Error',
+          subtitle: errorMessage,
+          placement: 'top',
+        }));
+      }
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      dispatch(showSnackbar({
+        type: 'error',
+        title: 'Server Error',
+        subtitle: 'Failed to delete image',
+        placement: 'top',
+      }));
+    }
   };
 
   const handleMarkSensitive = () => {
@@ -501,6 +549,7 @@ const GalleryScreen = () => {
                     onLongPress={handleLongPress}
                     isSelected={isItemSelected(mediaItem)}
                     styles={styles}
+                    currentUserId={currentUserId}
                   />
                 ) : (
                   <View key={`placeholder-${itemIndex}`} style={[styles.item, { opacity: 0 }]} />
@@ -691,7 +740,8 @@ const GalleryScreen = () => {
         onDelete={handleSingleImageDelete}
         onMarkSensitive={handleImageViewerMarkSensitive}
         onMarkUnsensitive={handleImageViewerMarkUnsensitive}
-        showSnackbarNotifications={true}
+        showSnackbarNotifications={false}
+        currentUserId={currentUserId}
       />
 
 

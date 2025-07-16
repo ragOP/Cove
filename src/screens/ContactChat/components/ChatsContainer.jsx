@@ -37,6 +37,7 @@ const ChatMessageRow = ({
   selected,
   onMarkSensitive,
   onMarkUnsensitive,
+  onDelete,
 }) => {
   const held = useSharedValue(false);
   const translateX = useSharedValue(0);
@@ -96,6 +97,7 @@ const ChatMessageRow = ({
           userId={userId}
           onMarkSensitive={onMarkSensitive}
           onMarkUnsensitive={onMarkUnsensitive}
+          onDelete={onDelete}
         />
       </Animated.View>
     </GestureDetector>
@@ -116,6 +118,7 @@ const ChatsContainer = ({
   initialLoad,
   onMarkSensitive,
   onMarkUnsensitive,
+  onDelete,
 }) => {
   const flatListRef = useRef(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
@@ -272,6 +275,7 @@ const ChatsContainer = ({
               selected={isSelected}
               onMarkSensitive={onMarkSensitive}
               onMarkUnsensitive={onMarkUnsensitive}
+              onDelete={onDelete}
             />
           );
         }}

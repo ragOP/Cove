@@ -8,7 +8,7 @@ import CustomImage from '../Image/CustomImage';
 import { markAsSensitive } from '../../apis/markAsSensitive';
 import { markAsUnsensitive } from '../../apis/markAsUnsensitive';
 import { deleteMessages } from '../../apis/deleteMessages';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { showSnackbar } from '../../redux/slice/snackbarSlice';
 
 const chatTextStyles = {
@@ -18,6 +18,9 @@ const chatTextStyles = {
 const RenderMessageContent = memo(({item, isSent, onMarkSensitive, onMarkUnsensitive, onDelete}) => {
   const textStyle = isSent ? styles.sentText : styles.receivedText;
   const dispatch = useDispatch();
+
+  // Get current user ID from Redux
+  const currentUserId = useSelector(state => state.auth.user?.id);
 
   const handleMarkSensitive = async (image) => {
     try {
@@ -154,6 +157,8 @@ const RenderMessageContent = memo(({item, isSent, onMarkSensitive, onMarkUnsensi
               isSensitive={item.isSensitive}
               messageContent={item.content}
               messageId={item._id}
+              sender={item.sender}
+              currentUserId={currentUserId}
               onMarkSensitive={handleMarkSensitive}
               onMarkUnsensitive={handleMarkUnsensitive}
               onDelete={handleDelete}
@@ -181,6 +186,8 @@ const RenderMessageContent = memo(({item, isSent, onMarkSensitive, onMarkUnsensi
               isSensitive={item.isSensitive}
               messageContent={item.content}
               messageId={item._id}
+              sender={item.sender}
+              currentUserId={currentUserId}
               onMarkSensitive={handleMarkSensitive}
               onMarkUnsensitive={handleMarkUnsensitive}
               onDelete={handleDelete}

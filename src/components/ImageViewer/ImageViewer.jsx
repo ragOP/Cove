@@ -37,6 +37,7 @@ const ImageViewer = ({
   showCenterNavigation = true,
   autoHideNavigation = true,
   showSnackbarNotifications = true,
+  currentUserId, // Add currentUserId prop to determine if image was sent by current user
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex || 0);
   const [showInfo, setShowInfo] = useState(false);
@@ -58,7 +59,6 @@ const ImageViewer = ({
       setShowSensitiveDialog(false);
       setShowUnsensitiveDialog(false);
       const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-        console.log('Hardware back button pressed');
         if (showInfo) {
           setShowInfo(false);
           return true;
@@ -91,12 +91,27 @@ const ImageViewer = ({
 
   // Safety check for currentImage
   if (!currentImage || !currentImage._id) {
-    console.log('Invalid currentImage:', currentImage);
     return null;
   }
 
+  // Get sender information for current image
+  const getSenderInfo = (image) => {
+    console.log('image', image)
+    if (!image || !currentUserId || !image.sender) return null;
+console.log(currentUserId)
+    const senderId = image.sender._id;
+    const senderName = senderId === currentUserId ? 'You' : image.sender.name;
+    const isSentByMe = senderId === currentUserId;
+
+    return {
+      name: senderName,
+      isSentByMe
+    };
+  };
+
+  const senderInfo = getSenderInfo(currentImage);
+
   const handleClose = () => {
-    console.log('Close button pressed');
     setShowInfo(false); // Close info modal if open
     // Reset all dialog states when closing
     setShowDeleteDialog(false);
@@ -106,20 +121,18 @@ const ImageViewer = ({
   };
 
   const handleModalClose = () => {
-    console.log('Modal onRequestClose triggered');
     handleClose();
   };
 
   const handleShare = async () => {
     if (!currentImage?.uri) {
-      console.log('Cannot share: no image URI');
       return;
     }
 
     try {
       await Share.open({ url: currentImage.uri });
     } catch (e) {
-      console.log('Share error:', e);
+      // Share error handled silently
     }
   };
 
@@ -135,15 +148,18 @@ const ImageViewer = ({
 
   const handleImagePress = () => {
     if (isSelectionMode) {
-      // Toggle selection of current image
-      const currentImage = images[currentIndex];
-      if (currentImage) {
+      // Only allow selection of images sent by current user
+      const selectedImage = images[currentIndex];
+      if (selectedImage) {
+        const imageSenderInfo = getSenderInfo(selectedImage);
+        if (!imageSenderInfo || !imageSenderInfo.isSentByMe) return;
+        
         setSelectedImages(prev => {
-          const isSelected = prev.some(img => img._id === currentImage._id);
+          const isSelected = prev.some(img => img._id === selectedImage._id);
           if (isSelected) {
-            return prev.filter(img => img._id !== currentImage._id);
+            return prev.filter(img => img._id !== selectedImage._id);
           } else {
-            return [...prev, currentImage];
+            return [...prev, selectedImage];
           }
         });
       }
@@ -153,17 +169,25 @@ const ImageViewer = ({
   };
 
   const handleLongPress = () => {
+    // Only allow selection mode for images sent by current user
+    if (!senderInfo || !senderInfo.isSentByMe) return;
+    
     if (!isSelectionMode) {
       setIsSelectionMode(true);
-      const currentImage = images[currentIndex];
-      if (currentImage) {
-        setSelectedImages([currentImage]);
+      const selectedImage = images[currentIndex];
+      if (selectedImage) {
+        setSelectedImages([selectedImage]);
       }
     }
   };
 
   const handleSelectAll = () => {
-    setSelectedImages(images);
+    // Only select images sent by current user
+    const userImages = images.filter(image => {
+      const imageSenderInfo = getSenderInfo(image);
+      return imageSenderInfo && imageSenderInfo.isSentByMe;
+    });
+    setSelectedImages(userImages);
   };
 
   const handleDeselectAll = () => {
@@ -193,7 +217,6 @@ const ImageViewer = ({
         // Clear selection and exit selection mode
         setSelectedImages([]);
         setIsSelectionMode(false);
-        console.log('1111 Successfully marked multiple images as sensitive');
         dispatch(
           showSnackbar({
             type: 'success',
@@ -202,7 +225,6 @@ const ImageViewer = ({
             placement: 'top',
           }),
         );
-        console.log('2222222');
 
       } else {
         console.error('Failed to mark multiple images as sensitive:', response);
@@ -244,7 +266,6 @@ const ImageViewer = ({
         if (onMarkUnsensitive) {
           onMarkUnsensitive(selectedImages);
         }
-        console.log('Successfully marked multiple images as insensitive');
         // Clear selection and exit selection mode
         setSelectedImages([]);
         setIsSelectionMode(false);
@@ -305,17 +326,15 @@ const ImageViewer = ({
         // Clear selection and exit selection mode
         setSelectedImages([]);
         setIsSelectionMode(false);
-        console.log('Successfully deleted multiple messages');
-        if (showSnackbarNotifications) {
-          dispatch(
-            showSnackbar({
-              type: 'success',
-              title: 'Messages Deleted',
-              subtitle: `${ids.length} messages have been deleted successfully`,
-              placement: 'top',
-            }),
-          );
-        }
+        dispatch(
+          showSnackbar({
+            type: 'success',
+            title: 'Messages Deleted',
+            subtitle: `${ids.length} messages have been deleted successfully`,
+            placement: 'top',
+          }),
+        );
+
       } else {
         console.error('Failed to delete multiple messages:', response);
         const errorMessage = response?.response?.data?.message || 'Failed to delete messages';
@@ -362,19 +381,24 @@ const ImageViewer = ({
   };
   const confirmDelete = async () => {
     try {
-      const currentImage = images[currentIndex];
-      if (!currentImage?._id) {
+      const targetImage = images[currentIndex];
+      if (!targetImage?._id) {
         console.error('No image ID found for deleting');
         setShowDeleteDialog(false);
         return;
       }
 
-      const response = await deleteMessages({ ids: [currentImage._id] });
+      // If callback is provided, let it handle the API call and notifications
+      if (onDelete) {
+        onDelete(targetImage);
+        setShowDeleteDialog(false);
+        return;
+      }
+
+      // Otherwise, make the API call here and show notifications
+      const response = await deleteMessages({ ids: [targetImage._id] });
 
       if (response?.response?.success) {
-        if (onDelete) {
-          onDelete(currentImage);
-        }
         if (showSnackbarNotifications) {
           dispatch(
             showSnackbar({
@@ -417,19 +441,24 @@ const ImageViewer = ({
   };
   const confirmSensitive = async () => {
     try {
-      const currentImage = images[currentIndex];
-      if (!currentImage?._id) {
+      const targetImage = images[currentIndex];
+      if (!targetImage?._id) {
         console.error('No image ID found for marking as sensitive');
         setShowSensitiveDialog(false);
         return;
       }
 
-      const response = await markAsSensitive({ ids: [currentImage._id] });
+      // If callback is provided, let it handle the API call
+      if (onMarkSensitive) {
+        onMarkSensitive(targetImage);
+        setShowSensitiveDialog(false);
+        return;
+      }
+
+      // Otherwise, make the API call here
+      const response = await markAsSensitive({ ids: [targetImage._id] });
 
       if (response?.response?.success) {
-        if (onMarkSensitive) {
-          onMarkSensitive(currentImage);
-        }
         if (showSnackbarNotifications) {
           dispatch(
             showSnackbar({
@@ -472,31 +501,32 @@ const ImageViewer = ({
   };
   const confirmUnsensitive = async () => {
     try {
-      const currentImage = images[currentIndex];
-      if (!currentImage?._id) {
+      const targetImage = images[currentIndex];
+      if (!targetImage?._id) {
         console.error('No image ID found for marking as insensitive');
         setShowUnsensitiveDialog(false);
         return;
       }
 
-      const response = await markAsUnsensitive({ ids: [currentImage._id] });
+      // If callback is provided, let it handle the API call
+      if (onMarkUnsensitive) {
+        onMarkUnsensitive(targetImage);
+        setShowUnsensitiveDialog(false);
+        return;
+      }
+
+      // Otherwise, make the API call here
+      const response = await markAsUnsensitive({ ids: [targetImage._id] });
 
       if (response?.response?.success) {
-        // Call the callback to update UI if provided
-        if (onMarkUnsensitive) {
-          onMarkUnsensitive(currentImage);
-        }
-        console.log('Successfully marked as insensitive');
-        if (showSnackbarNotifications) {
-          dispatch(
-            showSnackbar({
-              type: 'success',
-              title: 'Marked as Insensitive',
-              subtitle: 'Image has been marked as insensitive',
-              placement: 'top',
-            }),
-          );
-        }
+        dispatch(
+          showSnackbar({
+            type: 'success',
+            title: 'Marked as Insensitive',
+            subtitle: 'Image has been marked as insensitive',
+            placement: 'top',
+          }),
+        );
       } else {
         console.error('Failed to mark as insensitive:', response);
         const errorMessage = response?.response?.data?.message || 'Failed to mark image as insensitive';
@@ -556,6 +586,15 @@ const ImageViewer = ({
           </TouchableOpacity>
         )}
 
+        {/* Sender name on the right side of back button */}
+        {showNavigation && senderInfo && (
+          <View style={styles.senderNameContainer}>
+            <Text style={styles.senderNameText}>
+              {senderInfo.name || "Unknown"}
+            </Text>
+          </View>
+        )}
+
         {/* Centered image counter */}
         {showNavigation && (
           <View style={styles.imageCounterAbsolute}>
@@ -599,6 +638,15 @@ const ImageViewer = ({
                   <MaterialIcon name="check-circle" size={24} color="#fff" />
                 </View>
               )}
+
+              {/* Sender Information Badge - Remove this since we're showing it in header */}
+              {/* {getSenderInfo(image) && (
+                <View style={styles.senderBadge}>
+                  <Text style={styles.senderBadgeText}>
+                    {getSenderInfo(image).name}
+                  </Text>
+                </View>
+              )} */}
 
               {/* Message Content/Caption Display */}
               {image?.messageContent && image.messageContent.trim() !== '' && (
@@ -644,20 +692,31 @@ const ImageViewer = ({
         {/* Bottom Bar */}
         {showBottomBar && !isSelectionMode && (
           <View style={[styles.viewerBottomBar, showNavigation ? {} : { opacity: 0 }]}>
-            {currentImage?.isSensitive ? (
-              <TouchableOpacity
-                style={styles.viewerBarButton}
-                onPress={handleUnsensitivePress}>
-                <MaterialIcon name="shield-off-outline" size={26} color="#D28A8C" />
-                <Text style={styles.viewerBarLabel}>Mark as Insensitive</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.viewerBarButton}
-                onPress={handleSensitivePress}>
-                <MaterialIcon name="shield-outline" size={26} color="#D28A8C" />
-                <Text style={styles.viewerBarLabel}>Mark as Sensitive</Text>
-              </TouchableOpacity>
+            {/* Only show sensitive/insensitive and delete actions for images sent by current user */}
+            {senderInfo && senderInfo.isSentByMe && (
+              <>
+                {currentImage?.isSensitive ? (
+                  <TouchableOpacity
+                    style={styles.viewerBarButton}
+                    onPress={handleUnsensitivePress}>
+                    <MaterialIcon name="shield-off-outline" size={26} color="#D28A8C" />
+                    <Text style={styles.viewerBarLabel}>Mark as Insensitive</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.viewerBarButton}
+                    onPress={handleSensitivePress}>
+                    <MaterialIcon name="shield-outline" size={26} color="#D28A8C" />
+                    <Text style={styles.viewerBarLabel}>Mark as Sensitive</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={[styles.viewerBarButton, styles.viewerBarButton]}
+                  onPress={handleDeletePress}>
+                  <MaterialIcon name="delete-outline" size={26} color="#D28A8C" />
+                  <Text style={styles.viewerBarLabel}>Delete</Text>
+                </TouchableOpacity>
+              </>
             )}
             <TouchableOpacity style={styles.viewerBarButton} onPress={handleShare}>
               <MaterialIcon name="share-variant" size={26} color="#D28A8C" />
@@ -666,12 +725,6 @@ const ImageViewer = ({
             <TouchableOpacity style={styles.viewerBarButton} onPress={() => setShowInfo(true)}>
               <MaterialIcon name="information-outline" size={26} color="#D28A8C" />
               <Text style={styles.viewerBarLabel}>Info</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.viewerBarButton, styles.viewerBarButton]}
-              onPress={handleDeletePress}>
-              <MaterialIcon name="delete-outline" size={26} color="#D28A8C" />
-              <Text style={styles.viewerBarLabel}>Delete</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -710,6 +763,9 @@ const ImageViewer = ({
               <Text style={styles.infoText}>Index: {currentIndex + 1} of {images.length}</Text>
               {currentImage?.isSensitive && (
                 <Text style={styles.infoText}>Status: Protected</Text>
+              )}
+              {senderInfo && (
+                <Text style={styles.infoText}>Sent by: {senderInfo.name}</Text>
               )}
             </View>
           </View>
@@ -944,6 +1000,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  senderNameContainer: {
+    position: 'absolute',
+    top: 50,
+    left: 57, // Position it to the right of the back button (40px width + 16px left + 24px gap)
+    zIndex: 1001,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  senderNameText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   imageCounterAbsolute: {
     position: 'absolute',
     top: 50,
@@ -963,6 +1034,21 @@ const styles = StyleSheet.create({
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  senderBadge: {
+    position: 'absolute',
+    top: 100,
+    left: 20,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    zIndex: 10,
+  },
+  senderBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   selectionBottomBar: {
     position: 'absolute',

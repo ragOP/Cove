@@ -13,6 +13,7 @@ const MessageItem = memo(({
   showSenderLabel = false,
   onMarkSensitive,
   onMarkUnsensitive,
+  onDelete,
 }) => {
   const isSent = item?.sender?._id === userId;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -49,11 +50,12 @@ const MessageItem = memo(({
           styles.messageContainer,
           isSent ? styles.sentMessage : styles.receivedMessage,
         ]}>
-        <RenderMessageContent 
-          item={item} 
-          isSent={isSent} 
+        <RenderMessageContent
+          item={item}
+          isSent={isSent}
           onMarkSensitive={onMarkSensitive}
           onMarkUnsensitive={onMarkUnsensitive}
+          onDelete={onDelete}
         />
         <View style={styles.timeStatusRow}>
           <Text style={styles.timeText}>{formatTime(item.timestamp)}</Text>

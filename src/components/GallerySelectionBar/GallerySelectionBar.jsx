@@ -4,8 +4,9 @@ import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSelector, useDispatch } from 'react-redux';
 import { markAsSensitive } from '../../apis/markAsSensitive';
 import { markAsUnsensitive } from '../../apis/markAsUnsensitive';
+import { deleteMessages } from '../../apis/deleteMessages';
 import { showSnackbar } from '../../redux/slice/snackbarSlice';
-import { clearSelectedItems, updateMultipleGalleryItems } from '../../redux/slice/gallerySlice';
+import { clearSelectedItems, updateMultipleGalleryItems, removeGalleryItems } from '../../redux/slice/gallerySlice';
 import CustomDialog from '../CustomDialog/CustomDialog';
 
 const GallerySelectionBar = ({
@@ -172,19 +173,49 @@ const GallerySelectionBar = ({
         }
     };
 
-    const handleDeleteConfirm = () => {
-        // TODO: Implement delete API call
-        console.log('Deleting items:', items.map(item => item._id));
-        dispatch(showSnackbar({
-            type: 'success',
-            title: 'Deleted',
-            subtitle: `${items.length} item(s) deleted`,
-            placement: 'top',
-        }));
+    const handleDeleteConfirm = async () => {
+        try {
+            const ids = items.map(item => item._id);
+            console.log('Deleting items:', ids);
 
-        // Clear gallery selection
-        dispatch(clearSelectedItems());
-        setDeleteDialog(false);
+            const response = await deleteMessages({ ids });
+
+            if (response?.response?.success) {
+                console.log('Successfully deleted items:', response.response.data);
+                dispatch(showSnackbar({
+                    type: 'success',
+                    title: 'Deleted',
+                    subtitle: `${ids.length} item(s) deleted successfully`,
+                    placement: 'top',
+                }));
+
+                // Remove items from gallery state
+                dispatch(removeGalleryItems(ids));
+
+                // Clear gallery selection
+                dispatch(clearSelectedItems());
+                setDeleteDialog(false);
+            } else {
+                console.error('Failed to delete items:', response);
+                const errorMessage = response?.response?.data?.message || 'Failed to delete items';
+                dispatch(showSnackbar({
+                    type: 'error',
+                    title: 'Error',
+                    subtitle: errorMessage,
+                    placement: 'top',
+                }));
+                setDeleteDialog(false);
+            }
+        } catch (error) {
+            console.error('Error deleting items:', error);
+            dispatch(showSnackbar({
+                type: 'error',
+                title: 'Server Error',
+                subtitle: 'Failed to delete items',
+                placement: 'top',
+            }));
+            setDeleteDialog(false);
+        }
     };
 
     // Determine which handlers to use

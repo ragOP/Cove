@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { sendMessage } from '../../../apis/sendMessage';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { prepareMessagePayload } from '../../../helpers/messages/prepareMessagePayload';
 import { selectFiles } from '../../../helpers/files/selectFiles';
 import { uploadFiles } from '../../../helpers/files/uploadFiles';
@@ -20,6 +20,8 @@ import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import { playSoundEffect } from '../../../utils/sound';
 import MediaPreview from '../../../components/MediaPreview/MediaPreview';
 import { selectUser } from '../../../redux/slice/authSlice';
+import { useQueryClient } from '@tanstack/react-query';
+import { appendGalleryData } from '../../../redux/slice/gallerySlice';
 
 const SendChat = ({
   conversationId,
@@ -30,8 +32,14 @@ const SendChat = ({
   onCancelReply,
   emitTypingStatus,
 }) => {
-  const reduxUser = useSelector(selectUser)
+  const reduxUser = useSelector(selectUser);
   const userId = reduxUser?.id;
+  const queryClient = useQueryClient(); // Add this for cache invalidation
+  const dispatch = useDispatch(); // Add this for Redux state updates
+
+  // Get current gallery state for total calculation
+  const currentGalleryTotal = useSelector(state => state.gallery.total);
+
   console.log("userId >>>", userId)
 
   const [message, setMessage] = useState('');
@@ -98,7 +106,9 @@ const SendChat = ({
     setIsSendingMessage(true);
     setUploading(true);
     let uploadedFiles = [];
+
     try {
+      // Upload files if any
       if (selectedFiles.length > 0) {
         uploadedFiles = await uploadFiles(selectedFiles);
         uploadedFiles = uploadedFiles.map((file, idx) => ({
@@ -108,6 +118,7 @@ const SendChat = ({
       }
       setUploading(false);
 
+      // Send text message if there's text and no files
       if (selectedFiles.length === 0 && message.trim()) {
         const payloads = prepareMessagePayload({
           text: message,
@@ -133,7 +144,9 @@ const SendChat = ({
             );
           }
         }
-      } else if (uploadedFiles.length > 0) {
+      }
+
+      if (uploadedFiles.length > 0) {
         for (let i = 0; i < uploadedFiles.length; i++) {
           const file = uploadedFiles[i];
           const payload = prepareMessagePayload({
@@ -143,6 +156,7 @@ const SendChat = ({
             receiverId,
             replyTo: replyMessage?._id || replyMessage?.id || undefined,
           })[0];
+
           const apiResponse = await sendMessage({ payload });
 
           if (apiResponse?.response?.success) {
@@ -150,6 +164,20 @@ const SendChat = ({
               setConversations(prev =>
                 dedupeMessages([...(prev || []), apiResponse.response.data]),
               );
+            playSoundEffect('send');
+            ReactNativeHapticFeedback.trigger('impactLight');
+
+            const newMediaItem = apiResponse.response.data;
+            console.log("newMediaItem >>>", newMediaItem)
+            if (newMediaItem && newMediaItem.type === 'image') {
+              console.log("2222 >>>", currentGalleryTotal)
+              dispatch(appendGalleryData({
+                data: [newMediaItem],
+                total: currentGalleryTotal + 1,
+                page: 1,
+                per_page: 50
+              }));
+            }
           } else {
             console.error(
               'Failed to send file message:',
@@ -158,6 +186,12 @@ const SendChat = ({
           }
         }
       }
+
+      if (uploadedFiles.length > 0) {
+        queryClient.invalidateQueries({ queryKey: ['gallery', receiverId] });
+      }
+
+      // Reset form
       setMessage('');
       setSelectedFiles([]);
       setCaptions({});

@@ -16,6 +16,7 @@ import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getUserMedia } from '../../../apis/getUserMedia';
 import { markAsSensitive } from '../../../apis/markAsSensitive';
 import { markAsUnsensitive } from '../../../apis/markAsUnsensitive';
+import { deleteMessages } from '../../../apis/deleteMessages';
 import { showSnackbar } from '../../../redux/slice/snackbarSlice';
 import PrimaryLoader from '../../../components/Loaders/PrimaryLoader';
 import CustomImage from '../../../components/Image/CustomImage';
@@ -46,7 +47,7 @@ const chunkArray = (array, size) => {
   return result;
 };
 
-const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, isSelectionMode }) => {
+const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, isSelectionMode, currentUserId }) => {
   const [error, setError] = React.useState(false);
   if (!item || !item._id) {
     return <View style={[styles.item, { opacity: 0 }]} />;
@@ -67,6 +68,8 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, isSelecti
             style={styles.image}
             onError={() => setError(true)}
             isSensitive={item?.isSensitive}
+            sender={item?.sender}
+            currentUserId={currentUserId}
           />
         )}
         {item?.isSensitive && (
@@ -99,6 +102,8 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, isSelecti
             style={styles.image}
             onError={() => setError(true)}
             isSensitive={item?.isSensitive}
+            sender={item?.sender}
+            currentUserId={currentUserId}
           />
         )}
         <View style={styles.playIconWrap}>
@@ -128,6 +133,9 @@ const GallerySection = ({ id }) => {
   const [deletedMessageIds, setDeletedMessageIds] = useState([]);
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
+
+  // Get current user ID from Redux
+  const currentUserId = useSelector(state => state.auth.user?.id);
 
   // Reset states when contact changes
   useEffect(() => {
@@ -160,15 +168,20 @@ const GallerySection = ({ id }) => {
     queryKey: ['gallery', id],
     queryFn: () => getUserMedia({ id }),
     enabled: !!id,
-    select: (response) => response?.response?.data || [],
+    select: (response) => {
+      // Handle the new response structure
+      if (response?.response?.data && Array.isArray(response.response.data)) {
+        return response.response.data;
+      }
+      return [];
+    },
   });
 
   // Use useChatSocket for message_deleted event
   useChatSocket({
     onMessageDeleted: data => {
-      console.info('[GALLERY SECTION - MESSAGE DELETED]', data);
       if (data?.data && Array.isArray(data.data)) {
-        const newDeletedIds = data.data.map(item => item._id);
+        const newDeletedIds = data.data; // Direct array of IDs
         setDeletedMessageIds(prev => [...prev, ...newDeletedIds]);
 
         // Invalidate and refetch gallery data
@@ -182,16 +195,42 @@ const GallerySection = ({ id }) => {
 
   // Update media items with proper cache invalidation
   const updateMediaItemsInCache = useCallback((updatedIds, isSensitive) => {
-    // Update the cache directly for immediate UI feedback
     queryClient.setQueryData(['gallery', id], (oldData) => {
-      if (!oldData) return oldData;
 
-      return oldData.map(item => {
-        if (updatedIds.includes(item._id)) {
-          return { ...item, isSensitive };
-        }
-        return item;
-      });
+      // Handle different data structures
+      if (!oldData) {
+        return oldData;
+      }
+
+      // Handle array data (this is what we expect now)
+      if (Array.isArray(oldData)) {
+        const updatedData = oldData.map(item => {
+          if (updatedIds.includes(item._id)) {
+            return { ...item, isSensitive };
+          }
+          return item;
+        });
+        return updatedData;
+      }
+
+      // Handle response object structure (fallback)
+      if (oldData.response && oldData.response.data && Array.isArray(oldData.response.data)) {
+        const updatedData = {
+          ...oldData,
+          response: {
+            ...oldData.response,
+            data: oldData.response.data.map(item => {
+              if (updatedIds.includes(item._id)) {
+                return { ...item, isSensitive };
+              }
+              return item;
+            })
+          }
+        };
+        return updatedData;
+      }
+
+      return oldData;
     });
 
     // Invalidate and refetch to ensure server sync
@@ -201,9 +240,31 @@ const GallerySection = ({ id }) => {
   // Remove items from cache
   const removeItemsFromCache = useCallback((itemIds) => {
     queryClient.setQueryData(['gallery', id], (oldData) => {
-      if (!oldData) return oldData;
 
-      return oldData.filter(item => !itemIds.includes(item._id));
+      // Handle different data structures
+      if (!oldData) {
+        return oldData;
+      }
+
+      // Handle array data (this is what we expect now)
+      if (Array.isArray(oldData)) {
+        const filteredData = oldData.filter(item => !itemIds.includes(item._id));
+        return filteredData;
+      }
+
+      // Handle response object structure (fallback)
+      if (oldData.response && oldData.response.data && Array.isArray(oldData.response.data)) {
+        const filteredData = {
+          ...oldData,
+          response: {
+            ...oldData.response,
+            data: oldData.response.data.filter(item => !itemIds.includes(item._id))
+          }
+        };
+        return filteredData;
+      }
+
+      return oldData;
     });
 
     // Invalidate and refetch to ensure server sync
@@ -235,16 +296,19 @@ const GallerySection = ({ id }) => {
   const prepareImagesForViewer = (mediaList) => {
     return mediaList
       .filter(item => item && item.type === 'image' && item.mediaUrl && item._id)
-      .map(item => ({
-        _id: item._id,
-        uri: item.mediaUrl,
-        isSensitive: item.isSensitive || false,
-      }));
+      .map(item => {
+        return {
+          _id: item._id,
+          uri: item.mediaUrl,
+          isSensitive: item.isSensitive || false,
+          sender: item.sender, // Include sender information
+          messageContent: item.content, // Include message content
+        };
+      });
   };
 
   const handleMediaPress = (item, groupIndex, itemIndex) => {
     if (!item || !item._id) {
-      console.log('Invalid item pressed:', item);
       return;
     }
 
@@ -286,23 +350,18 @@ const GallerySection = ({ id }) => {
 
   const handleLongPress = (item) => {
     if (!item || !item._id) {
-      console.log('Invalid item long pressed:', item);
       return;
     }
 
     // Add haptic feedback
     Vibration.vibrate(100);
 
-    console.log('Long press detected for item:', item._id, 'Current selection mode:', isSelectionMode);
-
     // Always enter selection mode on long press, regardless of current state
     if (!isSelectionMode) {
-      console.log('Entering selection mode and selecting item:', item._id);
       setIsSelectionMode(true);
       setSelectedItems([item]);
     } else {
       // If already in selection mode, just toggle the item
-      console.log('Already in selection mode, toggling item:', item._id);
       const exists = selectedItems.some(selected => selected._id === item._id);
       if (exists) {
         setSelectedItems(prev => prev.filter(selected => selected._id !== item._id));
@@ -329,7 +388,10 @@ const GallerySection = ({ id }) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleDelete = async (items) => {
-    if (!items || items.length === 0) {
+    // Handle both single item (from ImageViewer) and multiple items (from selection)
+    const itemsArray = Array.isArray(items) ? items : [items];
+
+    if (!itemsArray || itemsArray.length === 0) {
       dispatch(showSnackbar({
         type: 'error',
         title: 'Error',
@@ -339,14 +401,69 @@ const GallerySection = ({ id }) => {
       return;
     }
 
-    // For now, we'll show a confirmation dialog
-    // TODO: Implement actual delete API call when available
-    setPendingAction({ type: 'delete', items: items });
+    // If it's a single item from ImageViewer, delete immediately
+    if (itemsArray.length === 1 && !isSelectionMode) {
+      const itemIds = itemsArray.map(item => item._id);
+
+      try {
+        // Make the actual API call
+        const response = await deleteMessages({ ids: itemIds });
+
+        if (response?.response?.success) {
+          // Immediately close the image viewer since the image was deleted
+          setIsImageViewerVisible(false);
+          setSelectedImageIndex(0);
+
+          // Update cache to remove the item
+          try {
+            removeItemsFromCache(itemIds);
+          } catch (cacheError) {
+            console.warn('Cache update failed, falling back to refetch:', cacheError);
+            // Fallback: refetch the data
+            queryClient.invalidateQueries({ queryKey: ['gallery', id] });
+          }
+
+          // Also add to deletedMessageIds for immediate UI feedback
+          setDeletedMessageIds(prev => [...prev, ...itemIds]);
+
+          dispatch(showSnackbar({
+            type: 'success',
+            title: 'Deleted',
+            subtitle: 'Image deleted successfully',
+            placement: 'top',
+          }));
+        } else {
+          console.error('Failed to delete image:', response);
+          const errorMessage = response?.response?.data?.message || 'Failed to delete image';
+          dispatch(showSnackbar({
+            type: 'error',
+            title: 'Error',
+            subtitle: errorMessage,
+            placement: 'top',
+          }));
+        }
+      } catch (error) {
+        console.error('Error deleting image:', error);
+        dispatch(showSnackbar({
+          type: 'error',
+          title: 'Server Error',
+          subtitle: 'Failed to delete image',
+          placement: 'top',
+        }));
+      }
+      return;
+    }
+
+    // For multiple items, show confirmation dialog
+    setPendingAction({ type: 'delete', items: itemsArray });
     setShowDeleteDialog(true);
   };
 
   const handleMarkSensitive = async (items) => {
-    if (!items || items.length === 0) {
+    // Handle both single item (from ImageViewer) and multiple items (from selection)
+    const itemsArray = Array.isArray(items) ? items : [items];
+
+    if (!itemsArray || itemsArray.length === 0) {
       dispatch(showSnackbar({
         type: 'error',
         title: 'Error',
@@ -357,13 +474,11 @@ const GallerySection = ({ id }) => {
     }
 
     try {
-      const ids = items.map(item => item._id);
-      console.log('Marking items as sensitive:', ids);
+      const ids = itemsArray.map(item => item._id);
 
       const response = await markAsSensitive({ ids });
 
       if (response?.response?.success) {
-        console.log('Successfully marked as sensitive:', response.response.data);
         dispatch(showSnackbar({
           type: 'success',
           title: 'Marked as Sensitive',
@@ -373,13 +488,20 @@ const GallerySection = ({ id }) => {
 
         // Update cache with sensitive status
         const updatedIds = response.response.data;
-        updateMediaItemsInCache(updatedIds, true);
+        try {
+          updateMediaItemsInCache(updatedIds, true);
+        } catch (cacheError) {
+          console.warn('Cache update failed, falling back to refetch:', cacheError);
+          // Fallback: refetch the data
+          queryClient.invalidateQueries({ queryKey: ['gallery', id] });
+        }
 
-        // Clear selection if from selection bar
-        if (items.length > 1) {
+        // Clear selection if from selection bar (multiple items)
+        if (itemsArray.length > 1) {
           setSelectedItems([]);
           setIsSelectionMode(false);
         }
+        // Don't close ImageViewer for single item - let it stay open to show the updated state
       } else {
         console.error('Error marking as sensitive:', response?.response?.message || 'Unknown error');
         dispatch(showSnackbar({
@@ -401,7 +523,10 @@ const GallerySection = ({ id }) => {
   };
 
   const handleMarkUnsensitive = async (items) => {
-    if (!items || items.length === 0) {
+    // Handle both single item (from ImageViewer) and multiple items (from selection)
+    const itemsArray = Array.isArray(items) ? items : [items];
+
+    if (!itemsArray || itemsArray.length === 0) {
       dispatch(showSnackbar({
         type: 'error',
         title: 'Error',
@@ -412,13 +537,11 @@ const GallerySection = ({ id }) => {
     }
 
     try {
-      const ids = items.map(item => item._id);
-      console.log('Marking items as insensitive:', ids);
+      const ids = itemsArray.map(item => item._id);
 
       const response = await markAsUnsensitive({ ids });
 
       if (response?.response?.success) {
-        console.log('Successfully marked as insensitive:', response.response.data);
         dispatch(showSnackbar({
           type: 'success',
           title: 'Marked as Insensitive',
@@ -428,13 +551,20 @@ const GallerySection = ({ id }) => {
 
         // Update cache with insensitive status
         const updatedIds = response.response.data;
-        updateMediaItemsInCache(updatedIds, false);
+        try {
+          updateMediaItemsInCache(updatedIds, false);
+        } catch (cacheError) {
+          console.warn('Cache update failed, falling back to refetch:', cacheError);
+          // Fallback: refetch the data
+          queryClient.invalidateQueries({ queryKey: ['gallery', id] });
+        }
 
-        // Clear selection if from selection bar
-        if (items.length > 1) {
+        // Clear selection if from selection bar (multiple items)
+        if (itemsArray.length > 1) {
           setSelectedItems([]);
           setIsSelectionMode(false);
         }
+        // Don't close ImageViewer for single item - let it stay open to show the updated state
       } else {
         console.error('Error marking as insensitive:', response?.response?.message || 'Unknown error');
         dispatch(showSnackbar({
@@ -460,22 +590,44 @@ const GallerySection = ({ id }) => {
       try {
         setIsProcessing(true);
         const itemIds = pendingAction.items.map(item => item._id);
-        console.log('Deleting items:', itemIds);
 
+        // Make the actual API call
+        const response = await deleteMessages({ ids: itemIds });
 
-        removeItemsFromCache(itemIds);
+        if (response?.response?.success) {
+          // Update cache to remove the items
+          try {
+            removeItemsFromCache(itemIds);
+          } catch (cacheError) {
+            console.warn('Cache update failed, falling back to refetch:', cacheError);
+            // Fallback: refetch the data
+            queryClient.invalidateQueries({ queryKey: ['gallery', id] });
+          }
 
-        // Clear selection
-        setSelectedItems([]);
-        setIsSelectionMode(false);
+          // Also add to deletedMessageIds for immediate UI feedback
+          setDeletedMessageIds(prev => [...prev, ...itemIds]);
 
-        // Show success toast
-        dispatch(showSnackbar({
-          type: 'success',
-          title: 'Deleted',
-          subtitle: `${pendingAction.items.length} item(s) deleted`,
-          placement: 'top',
-        }));
+          // Clear selection
+          setSelectedItems([]);
+          setIsSelectionMode(false);
+
+          // Show success toast
+          dispatch(showSnackbar({
+            type: 'success',
+            title: 'Deleted',
+            subtitle: `${pendingAction.items.length} item(s) deleted successfully`,
+            placement: 'top',
+          }));
+        } else {
+          console.error('Failed to delete items:', response);
+          const errorMessage = response?.response?.data?.message || 'Failed to delete items';
+          dispatch(showSnackbar({
+            type: 'error',
+            title: 'Error',
+            subtitle: errorMessage,
+            placement: 'top',
+          }));
+        }
       } catch (error) {
         console.error('Error deleting items:', error);
         dispatch(showSnackbar({
@@ -578,6 +730,7 @@ const GallerySection = ({ id }) => {
                         isSelected={isItemSelected(item)}
                         styles={styles}
                         isSelectionMode={isSelectionMode}
+                        currentUserId={currentUserId}
                       />
                     ))}
                   </View>
@@ -600,6 +753,7 @@ const GallerySection = ({ id }) => {
           onMarkSensitive={handleMarkSensitive}
           onMarkUnsensitive={handleMarkUnsensitive}
           showSnackbarNotifications={false}
+          currentUserId={currentUserId}
         />
       </ScrollView>
       {isSelectionMode && (
