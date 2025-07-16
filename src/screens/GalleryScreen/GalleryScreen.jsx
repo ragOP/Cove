@@ -215,32 +215,41 @@ const GalleryScreen = () => {
   const page = useSelector(state => state.gallery.page);
   const per_page = useSelector(state => state.gallery.per_page);
 
+  const onHandleNewGalleryMessage = (data) => {
+    if (data?.data && data?.data?._id) {
+      const newMessage = data.data;
+
+      if (newMessage.type === 'image' || newMessage.type === 'video') {
+        dispatch(appendGalleryData({
+          data: [newMessage],
+          total: total + 1,
+          page: page,
+          per_page: per_page
+        }));
+      }
+    }
+  }
+
+  const onHandleGalleryMessageDeleted = (data) => {
+    if (data?.data && Array.isArray(data.data)) {
+      const deletedMessageIds = data.data;
+      dispatch(removeGalleryItems(deletedMessageIds));
+    }
+  }
+
   useGallerySocket({
     onGalleryMessageDeleted: data => {
-      if (data?.data && Array.isArray(data.data)) {
-        const deletedMessageIds = data.data;
-        dispatch(removeGalleryItems(deletedMessageIds));
-        queryClient.invalidateQueries({ queryKey: ['gallery'] });
-      }
+      onHandleGalleryMessageDeleted(data)
     },
     onNewGalleryMessage: data => {
-      if (data?.data && data?.data?._id) {
-        const newMessage = data.data;
-
-        if (newMessage.type === 'image' || newMessage.type === 'video') {
-          dispatch(appendGalleryData({
-            data: [newMessage],
-            total: total + 1,
-            page: page,
-            per_page: per_page
-          }));
-        }
-      }
+      onHandleNewGalleryMessage(data);
     },
   });
 
   const loadGalleryData = useCallback(async (pageNum) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      return;
+    }
 
     dispatch(setGalleryLoading(true));
 
