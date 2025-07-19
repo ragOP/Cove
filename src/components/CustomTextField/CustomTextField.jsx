@@ -7,6 +7,8 @@ const CustomTextInput = ({
   onChangeText,
   value,
   autoFocus = false,
+  multiline = false,
+  numberOfLines = 1,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
 
@@ -26,6 +28,8 @@ const CustomTextInput = ({
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         autoFocus={autoFocus}
+        multiline={multiline}
+        numberOfLines={numberOfLines}
       />
     </View>
   );
@@ -49,5 +53,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 30,
     fontSize: 16,
+    textAlignVertical: 'top',
   },
 });

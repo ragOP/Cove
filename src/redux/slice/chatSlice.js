@@ -56,7 +56,7 @@ const chatSlice = createSlice({
       state.contacts = [];
       state.page = 1;
       state.hasMore = true;
-      state.loading = false;
+      state.loading = true;
       state.error = null;
       state.isFetched = false;
     },
@@ -91,9 +91,11 @@ const chatSlice = createSlice({
     },
     removeSelectedItem: (state, action) => {
       console.log('removeSelectedItem:', action.payload);
-      state.selectedItems = state.selectedItems.filter(item => item.id !== action.payload.id);
+      state.selectedItems = state.selectedItems.filter(
+        item => item.id !== action.payload.id,
+      );
     },
-    clearSelectedItems: (state) => {
+    clearSelectedItems: state => {
       state.selectedItems = [];
     },
   },

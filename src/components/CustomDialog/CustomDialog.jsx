@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { Dialog, Portal, Text, Button, IconButton } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -41,7 +41,7 @@ const CustomDialog = ({
         onDismiss={isLoading ? undefined : onDismiss}
         style={styles.dialog}
         contentStyle={styles.dialogContent}>
-        
+
         {/* Icon */}
         {icon && (
           <View style={styles.iconContainer}>
@@ -72,7 +72,9 @@ const CustomDialog = ({
               onPress={handleCancel}
               textColor={cancelButtonColor}
               style={styles.cancelButton}
-              disabled={isLoading}>
+              labelStyle={styles.buttonLabel}
+              disabled={isLoading}
+              mode="outlined">
               {cancelText}
             </Button>
           )}
@@ -86,7 +88,9 @@ const CustomDialog = ({
                 borderColor: destructive ? '#ff4444' : confirmButtonColor,
               },
             ]}
-            disabled={isLoading}>
+            labelStyle={styles.buttonLabel}
+            disabled={isLoading}
+            mode={destructive ? "outlined" : "contained"}>
             {isLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color="#fff" />
@@ -106,12 +110,25 @@ const styles = StyleSheet.create({
   dialog: {
     borderRadius: 16,
     backgroundColor: '#232323',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
   },
   dialogContent: {
     paddingHorizontal: 24,
     paddingVertical: 8,
     backgroundColor: '#232323',
     borderRadius: 16,
+    minHeight: Platform.OS === 'ios' ? 200 : 'auto',
   },
   iconContainer: {
     alignItems: 'center',
@@ -137,6 +154,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 16,
     paddingHorizontal: 16,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 8,
   },
   cancelButton: {
     flex: 1,
@@ -144,12 +162,19 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     borderColor: '#666',
+    minHeight: Platform.OS === 'ios' ? 44 : 40,
   },
   confirmButton: {
     flex: 1,
     marginLeft: 8,
     borderRadius: 24,
     borderWidth: 1,
+    minHeight: Platform.OS === 'ios' ? 44 : 40,
+  },
+  buttonLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
   loadingContainer: {
     flexDirection: 'row',

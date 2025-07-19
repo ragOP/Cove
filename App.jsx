@@ -21,6 +21,7 @@ import { PaperProvider } from 'react-native-paper';
 import CustomSnackbar from './src/components/Snackbar/CustomSnackbar';
 import Profile from './src/screens/Profile/Profile';
 import ProfileViewScreen from './src/screens/Profile/ProfileViewScreen';
+import EditProfile from './src/screens/Profile/EditProfile';
 import { SocketProvider } from './src/context/SocketContext';
 import messaging from '@react-native-firebase/messaging';
 import { PermissionsAndroid, Platform, View, Text, ActivityIndicator } from 'react-native';
@@ -73,6 +74,7 @@ const AppStack = () => {
       <Stack.Screen name={Paths.FRIEND_REQUESTS} component={FriendRequests} />
       <Stack.Screen name={Paths.PROFILE} component={Profile} />
       <Stack.Screen name="ProfileView" component={ProfileViewScreen} />
+      <Stack.Screen name="EditProfile" component={EditProfile} />
     </Stack.Navigator>
   );
 };

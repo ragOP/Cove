@@ -14,6 +14,7 @@ import ImageViewer from '../ImageViewer/ImageViewer';
  * @param {string} messageId - The actual message ID for API calls (optional)
  * @param {object} sender - Sender information for the image (optional)
  * @param {string} currentUserId - Current user ID to determine ownership (optional)
+ * @param {string} timestamp - Timestamp for the image/message (optional)
  */
 const CustomImage = ({
   source,
@@ -28,6 +29,7 @@ const CustomImage = ({
   messageId,
   sender,
   currentUserId,
+  timestamp,
   ...props
 }) => {
   const [error, setError] = useState(false);
@@ -70,6 +72,7 @@ const CustomImage = ({
     isSensitive: isSensitive,
     messageContent: messageContent,
     sender: sender, // Include sender information
+    timestamp: timestamp, // Include timestamp
   } : null;
 
   return (

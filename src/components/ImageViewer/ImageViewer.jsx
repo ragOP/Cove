@@ -22,6 +22,7 @@ import { markAsUnsensitive } from '../../apis/markAsUnsensitive';
 import { deleteMessages } from '../../apis/deleteMessages';
 import { useDispatch } from 'react-redux';
 import { showSnackbar } from '../../redux/slice/snackbarSlice';
+import { formatTime } from '../../utils/time/formatTime';
 
 const { width, height } = Dimensions.get('window');
 
@@ -98,7 +99,7 @@ const ImageViewer = ({
   const getSenderInfo = (image) => {
     console.log('image', image)
     if (!image || !currentUserId || !image.sender) return null;
-console.log(currentUserId)
+
     const senderId = image.sender._id;
     const senderName = senderId === currentUserId ? 'You' : image.sender.name;
     const isSentByMe = senderId === currentUserId;
@@ -153,7 +154,7 @@ console.log(currentUserId)
       if (selectedImage) {
         const imageSenderInfo = getSenderInfo(selectedImage);
         if (!imageSenderInfo || !imageSenderInfo.isSentByMe) return;
-        
+
         setSelectedImages(prev => {
           const isSelected = prev.some(img => img._id === selectedImage._id);
           if (isSelected) {
@@ -171,7 +172,7 @@ console.log(currentUserId)
   const handleLongPress = () => {
     // Only allow selection mode for images sent by current user
     if (!senderInfo || !senderInfo.isSentByMe) return;
-    
+
     if (!isSelectionMode) {
       setIsSelectionMode(true);
       const selectedImage = images[currentIndex];
@@ -371,6 +372,15 @@ console.log(currentUserId)
 
   // Dialog handlers
   const handleDeletePress = () => {
+    const targetImage = images[currentIndex];
+
+    // If image is sensitive, delete directly without showing dialog
+    if (targetImage?.isSensitive) {
+      confirmDelete();
+      return;
+    }
+
+    // Otherwise, show the confirmation dialog
     setShowDeleteDialog(true);
   };
   const handleSensitivePress = () => {
@@ -574,33 +584,36 @@ console.log(currentUserId)
           activeOpacity={1}
         />
 
-        {/* Arrow-left icon on the far left */}
+        {/* Header with back button, sender info, and time */}
         {showNavigation && (
-          <TouchableOpacity
-            style={styles.arrowButtonAbsolute}
-            onPress={handleClose}
-            activeOpacity={0.8}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <MaterialCommunityIcons name="arrow-left" size={28} color="#fff" />
-          </TouchableOpacity>
-        )}
+          <View style={styles.headerContainer}>
+            <TouchableOpacity
+              style={styles.arrowButton}
+              onPress={handleClose}
+              activeOpacity={0.8}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <MaterialCommunityIcons name="arrow-left" size={28} color="#fff" />
+            </TouchableOpacity>
 
-        {/* Sender name on the right side of back button */}
-        {showNavigation && senderInfo && (
-          <View style={styles.senderNameContainer}>
-            <Text style={styles.senderNameText}>
-              {senderInfo.name || "Unknown"}
-            </Text>
-          </View>
-        )}
+            <View style={styles.headerInfoContainer}>
+              {senderInfo && (
+                <Text style={styles.senderNameText}>
+                  {senderInfo.name || "Unknown"}
+                </Text>
+              )}
+              {currentImage?.timestamp && (
+                <Text style={styles.timeText}>
+                  {formatTime(currentImage.timestamp)}
+                </Text>
+              )}
+            </View>
 
-        {/* Centered image counter */}
-        {showNavigation && (
-          <View style={styles.imageCounterAbsolute}>
-            <Text style={styles.imageCounterText}>
-              {currentIndex + 1} of {images.length}
-            </Text>
+            <View style={styles.imageCounterContainer}>
+              <Text style={styles.imageCounterText}>
+                {currentIndex + 1} of {images.length}
+              </Text>
+            </View>
           </View>
         )}
 
@@ -638,15 +651,6 @@ console.log(currentUserId)
                   <MaterialIcon name="check-circle" size={24} color="#fff" />
                 </View>
               )}
-
-              {/* Sender Information Badge - Remove this since we're showing it in header */}
-              {/* {getSenderInfo(image) && (
-                <View style={styles.senderBadge}>
-                  <Text style={styles.senderBadgeText}>
-                    {getSenderInfo(image).name}
-                  </Text>
-                </View>
-              )} */}
 
               {/* Message Content/Caption Display */}
               {image?.messageContent && image.messageContent.trim() !== '' && (
@@ -835,18 +839,21 @@ const styles = StyleSheet.create({
     bottom: 80, // Exclude bottom bar area
     zIndex: 1,
   },
-  topBar: {
+  headerContainer: {
     position: 'absolute',
-    top: 50,
+    top: 0,
     left: 0,
     right: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 1000,
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
+    paddingTop: 50,
+    paddingBottom: 16,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    zIndex: 1001,
   },
   arrowButton: {
-    marginRight: 12,
     backgroundColor: 'rgba(0,0,0,0.5)',
     borderRadius: 20,
     width: 40,
@@ -854,25 +861,41 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  imageScrollView: {
+  headerInfoContainer: {
     flex: 1,
-    zIndex: 2,
+    marginLeft: 12,
+    alignItems: 'flex-start',
   },
-  imageCounter: {
-    // No absolute positioning, just center in row
-  },
-  imageCounterText: {
+  senderNameText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+  },
+  timeText: {
+    color: '#bbb',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  imageCounterContainer: {
     backgroundColor: 'rgba(0,0,0,0.5)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 15,
   },
+  imageCounterText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  imageScrollView: {
+    flex: 1,
+    zIndex: 2,
+    marginTop: 80,
+    marginBottom: 80,
+  },
   imageContainer: {
     width: width,
-    height: height,
+    height: height - 160,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -883,7 +906,7 @@ const styles = StyleSheet.create({
   },
   viewerProtectedBadge: {
     position: 'absolute',
-    top: 100,
+    top: 20,
     right: 20,
     backgroundColor: '#D28A8C',
     borderRadius: 12,
@@ -988,45 +1011,10 @@ const styles = StyleSheet.create({
     left: 'auto',
     right: 20,
   },
-  arrowButtonAbsolute: {
-    position: 'absolute',
-    top: 50,
-    left: 16,
-    zIndex: 1001,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  senderNameContainer: {
-    position: 'absolute',
-    top: 50,
-    left: 57, // Position it to the right of the back button (40px width + 16px left + 24px gap)
-    zIndex: 1001,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  senderNameText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  imageCounterAbsolute: {
-    position: 'absolute',
-    top: 50,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    zIndex: 1000,
-  },
   // Selection styles
   viewerSelectionBadge: {
     position: 'absolute',
-    top: 100,
+    top: 20,
     left: 20,
     backgroundColor: '#D28A8C',
     borderRadius: 12,

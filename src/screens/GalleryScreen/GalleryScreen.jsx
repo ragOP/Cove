@@ -45,19 +45,27 @@ const itemSpacing = 4;
 const totalSpacing = containerPadding * 2 + itemSpacing * (numColumns - 1);
 const itemSize = (width - totalSpacing) / numColumns;
 
-const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, currentUserId }) => {
+const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, currentUserId, isSelectionMode }) => {
   const [error, setError] = React.useState(false);
 
-  // Check if the item has sender information and is not from current user
   const showAvatar = item.sender && item.sender._id && item.sender._id !== currentUserId;
+
+  const isOwnedByUser = item?.sender?._id === currentUserId;
+
+  const isDisabled = isSelectionMode && !isOwnedByUser;
 
   if (item.type === 'image') {
     return (
       <TouchableOpacity
-        style={[styles.item, isSelected && styles.selectedItem]}
+        style={[
+          styles.item,
+          isSelected && styles.selectedItem,
+          isDisabled && styles.disabledItem
+        ]}
         onPress={() => onPress?.(item)}
         onLongPress={() => onLongPress?.(item)}
-        activeOpacity={0.85}>
+        activeOpacity={isDisabled ? 1 : 0.85}
+        disabled={isDisabled}>
         {error || !item.mediaUrl ? (
           <View style={styles.fallbackContainer}>
             <MaterialIcon name="image-broken" size={24} color="#666" />
@@ -66,11 +74,12 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, currentUs
         ) : (
           <CustomImage
             source={{ uri: item.mediaUrl }}
-            style={styles.image}
+            style={[styles.image, isDisabled && styles.disabledImage]}
             onError={() => setError(true)}
             isSensitive={item.isSensitive}
             sender={item.sender}
             currentUserId={currentUserId}
+            timestamp={item.createdAt}
           />
         )}
         {item.isSensitive && (
@@ -81,6 +90,11 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, currentUs
         {isSelected && (
           <View style={styles.selectionBadge}>
             <MaterialIcon name="check-circle" size={20} color="#fff" />
+          </View>
+        )}
+        {isDisabled && (
+          <View style={styles.disabledOverlay}>
+            <MaterialIcon name="lock-outline" size={16} color="#666" />
           </View>
         )}
         {showAvatar && (
@@ -101,10 +115,15 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, currentUs
   // video
   return (
     <TouchableOpacity
-      style={[styles.item, isSelected && styles.selectedItem]}
+      style={[
+        styles.item,
+        isSelected && styles.selectedItem,
+        isDisabled && styles.disabledItem
+      ]}
       onPress={() => onPress?.(item)}
       onLongPress={() => onLongPress?.(item)}
-      activeOpacity={0.85}>
+      activeOpacity={isDisabled ? 1 : 0.85}
+      disabled={isDisabled}>
       <View style={styles.videoThumb}>
         {error || !item.thumb ? (
           <View style={styles.fallbackContainer}>
@@ -114,11 +133,12 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, currentUs
         ) : (
           <CustomImage
             source={{ uri: item.thumb }}
-            style={styles.image}
+            style={[styles.image, isDisabled && styles.disabledImage]}
             onError={() => setError(true)}
             isSensitive={item.isSensitive}
             sender={item.sender}
             currentUserId={currentUserId}
+            timestamp={item.createdAt}
           />
         )}
         <View style={styles.playIconWrap}>
@@ -132,6 +152,11 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, currentUs
         {isSelected && (
           <View style={styles.selectionBadge}>
             <MaterialIcon name="check-circle" size={20} color="#fff" />
+          </View>
+        )}
+        {isDisabled && (
+          <View style={styles.disabledOverlay}>
+            <MaterialIcon name="lock-outline" size={16} color="#666" />
           </View>
         )}
         {showAvatar && (
@@ -158,17 +183,16 @@ const GalleryScreen = () => {
   const user = useSelector(state => state.auth.user);
   const currentUserId = user?.id;
   const [activeTab, setActiveTab] = useState('all');
-  const [params, setParams] = useState({
-    page: 1,
-    per_page: 50,
-  });
+
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Dialog states
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [markSensitiveDialog, setMarkSensitiveDialog] = useState(false);
+
 
   // Multi-select state from Redux
   const isSelectionMode = useSelector(state => state.gallery.isSelectionMode);
@@ -203,6 +227,7 @@ const GalleryScreen = () => {
           isSensitive: item.isSensitive,
           sender: item.sender, // Include sender information
           messageContent: item.content, // Include message content
+          timestamp: item.createdAt, // Include timestamp
         };
       });
   };
@@ -246,12 +271,13 @@ const GalleryScreen = () => {
     },
   });
 
-  const loadGalleryData = useCallback(async (pageNum) => {
+  const loadGalleryData = useCallback(async (pageNum, isRefresh = false) => {
     if (!user?.id) {
       return;
     }
 
     dispatch(setGalleryLoading(true));
+
 
     try {
       const response = await getUserGallery({
@@ -299,17 +325,36 @@ const GalleryScreen = () => {
         page: 1,
         per_page: per_page
       }));
+    } finally {
+      dispatch(setGalleryLoading(false));
     }
   }, [user?.id, per_page, dispatch]);
 
+  // Separate refresh function
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+
+    try {
+      await loadGalleryData(1, true);
+    } catch (error) {
+      console.error('Error refreshing gallery data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadGalleryData]);
+
   // Load gallery data when page changes
   useEffect(() => {
-    if (currentPage === 1) {
-      loadGalleryData(1);
-    } else {
-      loadGalleryData(currentPage);
+    if (user?.id) {
+      if (currentPage === 1 && galleryData.length === 0) {
+        // Only load on initial visit when no data exists
+        loadGalleryData(1);
+      } else if (currentPage > 1) {
+        // Load more data for pagination
+        loadGalleryData(currentPage);
+      }
     }
-  }, [user?.id, currentPage, loadGalleryData]);
+  }, [user?.id, currentPage, loadGalleryData, galleryData.length]);
 
   const mediaList = useMemo(() => {
     return galleryData;
@@ -336,6 +381,17 @@ const GalleryScreen = () => {
   const allCount = mediaList.length;
   const shieldCount = mediaList.filter(item => item.isSensitive).length;
 
+  // Helper function to check if item belongs to current user
+  const isItemOwnedByUser = (item) => {
+    return item?.sender?._id === currentUserId;
+  };
+
+  // Helper function to get user-friendly message for non-owned items
+  const getNonOwnedItemMessage = (item) => {
+    const senderName = item?.sender?.name || 'Unknown user';
+    return `You can only select your own images. This image was shared by ${senderName}.`;
+  };
+
   const handleMediaPress = (item, groupIndex, itemIndex) => {
     try {
       if (!item || !item._id) {
@@ -343,7 +399,18 @@ const GalleryScreen = () => {
       }
 
       if (isSelectionMode) {
-        // Toggle selection
+        // Check if user owns this item before allowing selection
+        if (!isItemOwnedByUser(item)) {
+          dispatch(showSnackbar({
+            type: 'warning',
+            title: 'Cannot Select',
+            subtitle: getNonOwnedItemMessage(item),
+            placement: 'top',
+          }));
+          return;
+        }
+
+        // Toggle selection only for owned items
         dispatch(toggleSelectItem(item));
       } else if (item.type === 'image' && item.mediaUrl) {
         try {
@@ -377,6 +444,17 @@ const GalleryScreen = () => {
         return;
       }
 
+      // Check if user owns this item before allowing selection mode
+      if (!isItemOwnedByUser(item)) {
+        dispatch(showSnackbar({
+          type: 'warning',
+          title: 'Cannot Select',
+          subtitle: getNonOwnedItemMessage(item),
+          placement: 'top',
+        }));
+        return;
+      }
+
       if (!isSelectionMode) {
         dispatch(setGallerySelectionMode(true));
         dispatch(setSelectedItems([item]));
@@ -388,9 +466,33 @@ const GalleryScreen = () => {
 
   const handleSelectAll = () => {
     try {
-      // Select all items from the filtered media (respects current tab)
-      const allFilteredItems = filteredMedia;
-      dispatch(selectAll(allFilteredItems));
+      // Select only items owned by current user from the filtered media
+      const userOwnedItems = filteredMedia.filter(item => isItemOwnedByUser(item));
+
+      if (userOwnedItems.length === 0) {
+        dispatch(showSnackbar({
+          type: 'info',
+          title: 'No Images to Select',
+          subtitle: 'You don\'t have any images in this section to select.',
+          placement: 'top',
+        }));
+        return;
+      }
+
+      dispatch(selectAll(userOwnedItems));
+
+      // Show feedback about how many items were selected
+      const totalItems = filteredMedia.length;
+      const selectedCount = userOwnedItems.length;
+
+      if (selectedCount < totalItems) {
+        dispatch(showSnackbar({
+          type: 'info',
+          title: 'Partial Selection',
+          subtitle: `Selected ${selectedCount} of your ${totalItems} total images`,
+          placement: 'top',
+        }));
+      }
     } catch (error) {
       console.log('Error in handleSelectAll:', error);
       dispatch(deselectAll());
@@ -596,6 +698,7 @@ const GalleryScreen = () => {
                     isSelected={isItemSelected(mediaItem)}
                     styles={styles}
                     currentUserId={currentUserId}
+                    isSelectionMode={isSelectionMode}
                   />
                 ) : (
                   <View key={`placeholder-${itemIndex}`} style={[styles.item, { opacity: 0 }]} />
@@ -717,11 +820,8 @@ const GalleryScreen = () => {
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
-              refreshing={isLoadingMedia}
-              onRefresh={() => {
-                // Reset to page 1 and reload
-                setCurrentPage(1);
-              }}
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
               tintColor="#D28A8C"
               colors={["#D28A8C"]}
             />
@@ -826,6 +926,7 @@ const GalleryScreen = () => {
         confirmButtonColor="#D28A8C"
         showCancel={selectedItems.length > 0}
       />
+
 
 
     </View>
@@ -1085,7 +1186,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
-    paddingBottom: 100, // Add extra padding to accommodate selection bar
   },
   loadingText: {
     color: '#fff',
@@ -1177,6 +1277,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 2,
+  },
+  disabledItem: {
+    opacity: 0.5,
+    backgroundColor: '#333',
+    borderColor: '#444',
+    borderWidth: 1,
+  },
+  disabledImage: {
+    opacity: 0.5,
+  },
+  disabledOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 0,
   },
 
 });

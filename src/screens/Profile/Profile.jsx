@@ -10,17 +10,18 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
 import { logoutUser } from '../../redux/slice/authSlice';
 import UserAvatar from '../../components/CustomAvatar/UserAvatar';
 import CustomDialog from '../../components/CustomDialog/CustomDialog';
 import MediaPreview from '../../components/MediaPreview/MediaPreview';
 
 const Profile = ({ 
-  navigation, 
   onNavigateToProfileView, 
   onNavigateToSettings 
 }) => {
   const dispatch = useDispatch();
+  const navigation = useNavigation();
   const user = useSelector(state => state.auth.user);
   
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -56,7 +57,7 @@ const Profile = ({
 
   const handleEditProfile = () => {
     // Navigate to edit profile screen
-    console.log('Navigate to edit profile');
+    navigation.navigate('EditProfile');
   };
 
   const handleChangePassword = () => {
@@ -83,20 +84,24 @@ const Profile = ({
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header Section */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => setPreviewVisible(true)}
-          activeOpacity={0.85}
-          style={styles.avatarContainer}>
-          <UserAvatar
-            profilePicture={user?.profilePicture}
-            name={user?.name}
-            id={user?.id}
-            size={100}
-          />
-          <View style={styles.editAvatarButton}>
+        <View style={styles.avatarContainer}>
+          <TouchableOpacity
+            onPress={() => setPreviewVisible(true)}
+            activeOpacity={0.85}
+            style={styles.avatarTouchable}>
+            <UserAvatar
+              profilePicture={user?.profilePicture}
+              name={user?.name}
+              id={user?.id}
+              size={100}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleEditProfile}
+            style={styles.editAvatarButton}>
             <Icon name="camera" size={16} color="#fff" />
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
         
         <View style={styles.userInfo}>
           <Text style={styles.userName}>{user?.name || 'User Name'}</Text>
@@ -232,8 +237,8 @@ const Profile = ({
         visible={logoutDialog}
         onDismiss={() => setLogoutDialog(false)}
         title="Logout"
-        message="Are you sure you want to logout?"
-        icon="logout"
+        message="Are you sure you want to logout from your account?"
+        icon="logout-variant"
         iconColor="#ff4444"
         confirmText="Logout"
         cancelText="Cancel"
@@ -241,6 +246,7 @@ const Profile = ({
         onCancel={handleLogoutCancel}
         confirmButtonColor="#ff4444"
         destructive={true}
+        showCancel={true}
       />
 
       <MediaPreview
@@ -271,6 +277,9 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginBottom: 16,
   },
+  avatarTouchable: {
+    // This ensures the touchable area is properly sized
+  },
   editAvatarButton: {
     position: 'absolute',
     bottom: 0,
@@ -283,6 +292,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 3,
     borderColor: '#181818',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   userInfo: {
     alignItems: 'center',

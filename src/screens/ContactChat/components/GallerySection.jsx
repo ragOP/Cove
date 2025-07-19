@@ -70,6 +70,7 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, isSelecti
             isSensitive={item?.isSensitive}
             sender={item?.sender}
             currentUserId={currentUserId}
+            timestamp={item?.createdAt}
           />
         )}
         {item?.isSensitive && (
@@ -104,6 +105,7 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, isSelecti
             isSensitive={item?.isSensitive}
             sender={item?.sender}
             currentUserId={currentUserId}
+            timestamp={item?.createdAt}
           />
         )}
         <View style={styles.playIconWrap}>
@@ -301,8 +303,9 @@ const GallerySection = ({ id }) => {
           _id: item._id,
           uri: item.mediaUrl,
           isSensitive: item.isSensitive || false,
-          sender: item.sender, // Include sender information
-          messageContent: item.content, // Include message content
+          sender: item.sender,
+          messageContent: item.content,
+          timestamp: item.createdAt, // Include timestamp
         };
       });
   };
@@ -656,6 +659,8 @@ const GallerySection = ({ id }) => {
     return selectedItems.some(selected => selected._id === item._id);
   };
 
+  console.log(filteredMediaList)
+
   const allImages = prepareImagesForViewer(filteredMediaList);
 
   // Debug logging for selection state
@@ -667,7 +672,10 @@ const GallerySection = ({ id }) => {
     });
   }, [isSelectionMode, selectedItems.length, id]);
 
-  if (galleryLoading) {
+  // Debug logging
+  console.log('GallerySection - id:', id, 'galleryLoading:', galleryLoading, 'galleryData.length:', galleryData.length);
+
+  if (galleryLoading || !id) {
     return (
       <View style={styles.loadingContainer}>
         <PrimaryLoader />
@@ -675,7 +683,7 @@ const GallerySection = ({ id }) => {
     );
   }
 
-  if (!filteredMediaList || filteredMediaList.length === 0) {
+  if (!galleryLoading && galleryData.length === 0) {
     return (
       <View style={styles.emptyContainer}>
         <Icon

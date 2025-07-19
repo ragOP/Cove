@@ -240,7 +240,8 @@ const SendChat = ({
                 e.stopPropagation && e.stopPropagation();
                 handleRemoveFile(idx);
               }}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
               <Icon name="close-circle" size={24} color="#f55" />
             </TouchableOpacity>
           </TouchableOpacity>
@@ -410,8 +411,8 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     position: 'absolute',
-    top: -10,
-    right: -10,
+    top: 0,
+    right: 0,
     backgroundColor: 'transparent',
     zIndex: 2,
   },

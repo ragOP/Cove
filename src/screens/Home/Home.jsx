@@ -50,10 +50,10 @@ const LogoutIcon = () => (
   <MaterialCommunityIcons name="logout" size={24} color="#fff" />
 );
 
-const Home = ({ 
-  onNavigateToChat, 
-  onNavigateToAddContact, 
-  onNavigateToFriendRequests 
+const Home = ({
+  onNavigateToChat,
+  onNavigateToAddContact,
+  onNavigateToFriendRequests
 }) => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
@@ -118,7 +118,7 @@ const Home = ({
       try {
         dispatch(setLoading(true));
         console.log('Fetching contacts for user:', userId);
-        
+
         const apiResponse = await getUserContacts({
           params: {
             page,
@@ -397,7 +397,7 @@ const Home = ({
           style={HomeStyles.searchBar}
           iconColor="#D28A8C"
           placeholderTextColor="#D28A8C"
-          inputStyle={{color: '#fff'}}
+          inputStyle={{ color: '#fff' }}
           editable={true}
           pointerEvents="auto"
         />
@@ -457,7 +457,7 @@ const Home = ({
             : HomeStyles.listContent
         }
         ListEmptyComponent={
-          loading ? (
+          loading || (!isFetched && contacts.length === 0) ? (
             <View style={HomeStyles.loadingContainer}>
               <Avatar.Icon
                 icon="message-text"
@@ -466,7 +466,7 @@ const Home = ({
               />
               <Text style={HomeStyles.loadingText}>Loading chats...</Text>
             </View>
-          ) : !loading && isFetched && contacts.length === 0 ? (
+          ) : isFetched && contacts.length === 0 ? (
             <EmptyContactsState
               onAddPress={handleNavigateToAddContact}
             />
@@ -481,7 +481,7 @@ const Home = ({
         }}
         onEndReachedThreshold={0.5}
       />
-      
+
       {/* Logout Confirmation Dialog */}
       <CustomDialog
         visible={logoutDialogVisible}

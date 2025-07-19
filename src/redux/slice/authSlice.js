@@ -21,10 +21,13 @@ const authSlice = createSlice({
     setUser(state, action) {
       state.user = action.payload;
     },
+    updateUser(state, action) {
+      state.user = {...state.user, ...action.payload};
+    },
   },
 });
 
-export const loginUser = (userData) => dispatch => {
+export const loginUser = userData => dispatch => {
   // Clear contacts from previous user before setting new user data
   dispatch(clearContacts());
   dispatch(login(userData));
@@ -35,7 +38,7 @@ export const logoutUser = () => dispatch => {
   dispatch(logout());
 };
 
-export const {login, logout, setUser} = authSlice.actions;
+export const {login, logout, setUser, updateUser} = authSlice.actions;
 export default authSlice.reducer;
 
 export const selectAuth = state => state.auth;
