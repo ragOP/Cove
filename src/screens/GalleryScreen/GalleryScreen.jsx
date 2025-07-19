@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, FlatList, Dimensions, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -17,7 +17,8 @@ import {
   clearSelectedItems,
   toggleSelectItem,
   selectAll,
-  deselectAll
+  deselectAll,
+  setGalleryPage
 } from '../../redux/slice/gallerySlice';
 import {
   setGalleryData,
@@ -186,9 +187,8 @@ const GalleryScreen = () => {
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
-
+  const [isRefreshed, setIsRefreshed] = useState(false);
   // Dialog states
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [markSensitiveDialog, setMarkSensitiveDialog] = useState(false);
@@ -245,11 +245,12 @@ const GalleryScreen = () => {
       const newMessage = data.data;
 
       if (newMessage.type === 'image' || newMessage.type === 'video') {
+
         dispatch(appendGalleryData({
           data: [newMessage],
           total: total + 1,
           page: page,
-          per_page: per_page
+          per_page: per_page,
         }));
       }
     }
@@ -271,90 +272,76 @@ const GalleryScreen = () => {
     },
   });
 
-  const loadGalleryData = useCallback(async (pageNum, isRefresh = false) => {
-    if (!user?.id) {
-      return;
-    }
-
-    dispatch(setGalleryLoading(true));
-
+  const handleRefresh = async () => {
+    setRefreshing(true);
 
     try {
-      const response = await getUserGallery({
-        params: {
-          page: pageNum,
-          per_page: per_page
-        }
-      });
+      setGalleryPage(1)
+      setIsRefreshed(true);
+    } catch (error) {
+      console.error('Error refreshing gallery data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
-      if (response?.response?.data?.gallery) {
-        const galleryArr = response.response.data.gallery;
-        const total = response?.response?.data?.total || response?.response?.data?.totalCount || 0;
-        const currentPage = response?.response?.data?.page || pageNum;
-        const currentPerPage = response?.response?.data?.per_page || per_page;
+  // Load gallery data when page changes
+  useEffect(() => {
+    const loadGalleryData = async (pageNum) => {
 
-        if (pageNum === 1) {
-          dispatch(setGalleryData({
-            data: galleryArr,
-            total: total,
-            page: currentPage,
-            per_page: currentPerPage
-          }));
+      dispatch(setGalleryLoading(true));
+
+      try {
+        const response = await getUserGallery({
+          params: {
+            page: pageNum,
+            per_page: per_page
+          }
+        });
+
+        if (response?.response?.data?.gallery) {
+          const galleryArr = response.response.data.gallery;
+          const currentTotal = response?.response?.data?.total || response?.response?.data?.totalCount || 0;
+
+          if (pageNum === 1) {
+            dispatch(setGalleryData({
+              data: galleryArr,
+              total: currentTotal,
+            }));
+          } else {
+            dispatch(appendGalleryData({
+              data: galleryArr,
+              total: total,
+            }));
+          }
+
         } else {
-          dispatch(appendGalleryData({
-            data: galleryArr,
-            total: total,
-            page: currentPage,
-            per_page: currentPerPage
+          dispatch(setGalleryData({
+            data: [],
+            total: 0,
+            page: 1,
+            per_page: per_page
           }));
         }
-      } else {
+      } catch (error) {
+        console.error('Error loading gallery data:', error);
+        dispatch(setGalleryError(error.message));
         dispatch(setGalleryData({
           data: [],
           total: 0,
           page: 1,
           per_page: per_page
         }));
-      }
-    } catch (error) {
-      console.error('Error loading gallery data:', error);
-      dispatch(setGalleryError(error.message));
-      dispatch(setGalleryData({
-        data: [],
-        total: 0,
-        page: 1,
-        per_page: per_page
-      }));
-    } finally {
-      dispatch(setGalleryLoading(false));
-    }
-  }, [user?.id, per_page, dispatch]);
-
-  // Separate refresh function
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-
-    try {
-      await loadGalleryData(1, true);
-    } catch (error) {
-      console.error('Error refreshing gallery data:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  }, [loadGalleryData]);
-
-  // Load gallery data when page changes
-  useEffect(() => {
-    if (user?.id) {
-      if (currentPage === 1 && galleryData.length === 0) {
-        // Only load on initial visit when no data exists
-        loadGalleryData(1);
-      } else if (currentPage > 1) {
-        // Load more data for pagination
-        loadGalleryData(currentPage);
+      } finally {
+        dispatch(setGalleryLoading(false));
+        if (isRefreshed) {
+          setIsRefreshed(false);
+        }
       }
     }
-  }, [user?.id, currentPage, loadGalleryData, galleryData.length]);
+
+    loadGalleryData(page);
+  }, [page, isRefreshed]);
 
   const mediaList = useMemo(() => {
     return galleryData;
@@ -642,8 +629,6 @@ const GalleryScreen = () => {
     }));
   };
 
-
-
   const handleImageViewerMarkUnsensitive = (image) => {
     // Update Redux state immediately for UI feedback
     dispatch(updateMultipleGalleryItems({
@@ -651,8 +636,6 @@ const GalleryScreen = () => {
       updates: { isSensitive: false }
     }));
   };
-
-
 
   const handleCancelSelection = () => {
     try {
@@ -839,14 +822,14 @@ const GalleryScreen = () => {
           onEndReached={() => {
             // Load more data if available
             if (hasMore && !isLoadingMedia) {
-              setCurrentPage(page + 1);
+              setGalleryPage(page + 1);
             }
           }}
           onEndReachedThreshold={0.5}
           ListEmptyComponent={
             isLoadingMedia ? (
               <View style={styles.loadingContainer}>
-                <PrimaryLoader size={48} color="#D28A8C" />
+                <MaterialIcon name="image-multiple" size={64} color="#D28A8C" />
                 <Text style={styles.loadingText}>Loading media...</Text>
               </View>
             ) : mediaError ? (
@@ -1100,14 +1083,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 32,
+    paddingHorizontal: 16,
   },
   emptyContainer: {
     flex: 1,
@@ -1196,8 +1176,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   loadingText: {
-    color: '#fff',
-    marginTop: 12,
+    color: '#bbb',
+    marginTop: 16,
     fontSize: 16,
   },
   errorContainer: {
@@ -1233,7 +1213,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   loadingMoreText: {
-    color: '#fff',
+    color: '#bbb',
     marginTop: 10,
     fontSize: 14,
   },

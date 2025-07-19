@@ -168,9 +168,8 @@ const SendChat = ({
             ReactNativeHapticFeedback.trigger('impactLight');
 
             const newMediaItem = apiResponse.response.data;
-            console.log("newMediaItem >>>", newMediaItem)
+
             if (newMediaItem && newMediaItem.type === 'image') {
-              console.log("2222 >>>", currentGalleryTotal)
               dispatch(appendGalleryData({
                 data: [newMediaItem],
                 total: currentGalleryTotal + 1,

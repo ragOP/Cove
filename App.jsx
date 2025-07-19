@@ -26,7 +26,7 @@ import { SocketProvider } from './src/context/SocketContext';
 import messaging from '@react-native-firebase/messaging';
 import { PermissionsAndroid, Platform, View, Text, ActivityIndicator } from 'react-native';
 import useNotificationSocket from './src/hooks/useNotificationSocket';
-import {CaptureProtection} from 'react-native-capture-protection';
+import { CaptureProtection } from 'react-native-capture-protection';
 import { Portal } from 'react-native-paper';
 
 export const queryClient = new QueryClient();
@@ -47,7 +47,6 @@ const AppStack = () => {
   useEffect(() => {
     CaptureProtection.prevent();
   }, [])
-
 
   async function requestUserPermission() {
     const authStatus = await messaging().requestPermission();

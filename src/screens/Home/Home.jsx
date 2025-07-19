@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { View, FlatList, TouchableOpacity } from 'react-native';
+import { View, FlatList, TouchableOpacity, Platform, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Text,
   Searchbar,
@@ -58,6 +59,7 @@ const Home = ({
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
 
   // Use passed navigation handlers or fall back to direct navigation
   const handleNavigateToChat = onNavigateToChat || ((contact) => {
@@ -84,7 +86,6 @@ const Home = ({
   const isFetched = useSelector(state => state.chat.isFetched);
 
   const userId = useSelector(state => state.auth.user?.id);
-  const isUserLoaded = useSelector(state => state.auth.user !== null);
 
   const [selectedIds, setSelectedIds] = useState([]);
   const [selectedContacts, setSelectedContacts] = useState([]);
@@ -110,14 +111,11 @@ const Home = ({
 
   // Simple contact fetching logic
   useEffect(() => {
-    if (!userId || !isUserLoaded) {
-      return;
-    }
+
 
     const fetchContacts = async () => {
       try {
         dispatch(setLoading(true));
-        console.log('Fetching contacts for user:', userId);
 
         const apiResponse = await getUserContacts({
           params: {
@@ -128,7 +126,7 @@ const Home = ({
         });
 
         if (apiResponse?.response?.success) {
-          console.log("FETCHED CONTACTS", apiResponse.response.data);
+          console.log('API Response:', apiResponse.response.data);
           dispatch(
             setContacts({
               contacts: apiResponse.response.data || [],
@@ -151,17 +149,15 @@ const Home = ({
     };
 
     fetchContacts();
-  }, [userId, isUserLoaded, page, perPage, contactType, dispatch]);
+  }, [userId, page, perPage, contactType, dispatch]);
 
-  // Clear contacts when user changes
-  useEffect(() => {
-    if (userId && isUserLoaded) {
-      console.log('User loaded, clearing contacts for fresh start');
-      dispatch(clearContacts());
-      queryClient.clear();
-    }
-  }, [userId, isUserLoaded, dispatch, queryClient]);
-
+  // useEffect(() => {
+  //   if (userId && isUserLoaded) {
+  //     console.log('User loaded, clearing contacts for fresh start');
+  //     dispatch(clearContacts());
+  //     queryClient.clear();
+  //   }
+  // }, [userId, isUserLoaded, dispatch, queryClient]);
 
   useEffect(() => {
     if (!searchInput.trim()) {
@@ -307,7 +303,12 @@ const Home = ({
   }, [requests]);
 
   return (
-    <View style={HomeStyles.container}>
+    <View style={[
+      HomeStyles.container,
+      {
+        paddingTop: selectedContacts.length > 0 ? insets.top : Math.max(insets.top, 12),
+      }
+    ]}>
       {selectedContacts.length > 0 ? (
         <SelectedContactBar
           selectedContacts={selectedContacts}

@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect} from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -12,29 +12,29 @@ import {
   ScrollView,
   RefreshControl,
 } from 'react-native';
-import {Avatar, IconButton, Button} from 'react-native-paper';
+import { Avatar, IconButton, Button } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {request, PERMISSIONS, RESULTS, check} from 'react-native-permissions';
-import {useNavigation} from '@react-navigation/native';
-import {useQuery} from '@tanstack/react-query';
-import {searchUsers} from '../../apis/searchUsers';
-import {fetchSuggestedUsers} from '../../apis/fetchSuggestedUsers';
+import { request, PERMISSIONS, RESULTS, check } from 'react-native-permissions';
+import { useNavigation } from '@react-navigation/native';
+import { useQuery } from '@tanstack/react-query';
+import { searchUsers } from '../../apis/searchUsers';
+import { fetchSuggestedUsers } from '../../apis/fetchSuggestedUsers';
 import useDebounce from '../../hooks/useDebounce';
-import {getInitials} from '../../utils/name/getInitials';
-import {sendFriendRequest} from '../../apis/sendFriendRequest';
-import {useDispatch} from 'react-redux';
-import {showSnackbar} from '../../redux/slice/snackbarSlice';
+import { getInitials } from '../../utils/name/getInitials';
+import { sendFriendRequest } from '../../apis/sendFriendRequest';
+import { useDispatch } from 'react-redux';
+import { showSnackbar } from '../../redux/slice/snackbarSlice';
 import PrimaryLoader from '../../components/Loaders/PrimaryLoader';
-import {getConversations} from '../../apis/conversations';
-import {Paths} from '../../navigaton/paths';
+import { getConversations } from '../../apis/conversations';
+import { Paths } from '../../navigaton/paths';
 import Contacts from 'react-native-contacts';
-import {checkContactsOnCove} from '../../apis/checkContactsOnCove';
+import { checkContactsOnCove } from '../../apis/checkContactsOnCove';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const contactOptions = [
-  {key: 'add', label: 'Add Friend', icon: 'account-plus-outline'},
-  {key: 'block', label: 'Block', icon: 'block-helper'},
+  { key: 'add', label: 'Add Friend', icon: 'account-plus-outline' },
+  { key: 'block', label: 'Block', icon: 'block-helper' },
 ];
 
 const ContactListItem = ({
@@ -46,7 +46,7 @@ const ContactListItem = ({
 }) => (
   <View style={styles.userRow}>
     {item.profilePicture ? (
-      <Avatar.Image size={44} source={{uri: item.profilePicture}} />
+      <Avatar.Image size={44} source={{ uri: item.profilePicture }} />
     ) : (
       <Avatar.Text
         size={44}
@@ -64,8 +64,8 @@ const ContactListItem = ({
         item.isFriend
           ? () => handleNavigateToChat(item)
           : item.isRequestPending
-          ? undefined
-          : () => handleAdd(item)
+            ? undefined
+            : () => handleAdd(item)
       }
       disabled={
         addingId === (item.id || item._id) ||
@@ -102,15 +102,15 @@ const ContactListItem = ({
   </View>
 );
 
-const ImportContactListItem = ({item, addingId, handleAdd, handleInvite}) => (
+const ImportContactListItem = ({ item, addingId, handleAdd, handleInvite }) => (
   <View style={styles.userRow}>
     {item.profilePicture ? (
-      <Avatar.Image size={44} source={{uri: item.profilePicture}} />
+      <Avatar.Image size={44} source={{ uri: item.profilePicture }} />
     ) : (
       <Avatar.Text
         size={44}
         label={getInitials(item.name) || item._id}
-        style={{backgroundColor: '#444'}}
+        style={{ backgroundColor: '#444' }}
       />
     )}
     <View style={styles.userInfo}>
@@ -156,7 +156,7 @@ const AddContact = () => {
   const dispatch = useDispatch();
 
   const [search, setSearch] = useState('');
-  const [params, setParams] = useState({page: 1, per_page: 20, query: ''});
+  const [params, setParams] = useState({ page: 1, per_page: 20, query: '' });
   const [addingId, setAddingId] = useState(null);
   const [showAllSuggested, setShowAllSuggested] = useState(false);
   const [contactsPermission, setContactsPermission] = useState('undetermined');
@@ -170,7 +170,7 @@ const AddContact = () => {
   const debouncedSearch = useDebounce(search, 400);
 
   useEffect(() => {
-    setParams(prev => ({...prev, query: debouncedSearch}));
+    setParams(prev => ({ ...prev, query: debouncedSearch }));
   }, [debouncedSearch]);
 
   const {
@@ -181,14 +181,19 @@ const AddContact = () => {
   } = useQuery({
     queryKey: ['contacts', params],
     queryFn: async () => {
-      const apiResponse = await searchUsers({params});
-      if (apiResponse?.response?.success) {
-        const data = apiResponse.response.data || [];
-        return data;
+      if (params?.search?.trim() !== '') {
+        console.log('params', params)
+        const apiResponse = await searchUsers({ params });
+        if (apiResponse?.response?.success) {
+          const data = apiResponse.response.data || [];
+          return data;
+        } else {
+          return [];
+        }
       } else {
         return [];
       }
-    },
+    }
   });
 
   const {
@@ -205,7 +210,7 @@ const AddContact = () => {
   const requestContactsPermission = async () => {
     setContactsLoading(true);
     if (Platform.OS === 'android') {
-      const {PermissionsAndroid} = require('react-native');
+      const { PermissionsAndroid } = require('react-native');
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
       );
@@ -222,7 +227,7 @@ const AddContact = () => {
   useEffect(() => {
     const checkPermission = async () => {
       if (Platform.OS === 'android') {
-        const {PermissionsAndroid} = require('react-native');
+        const { PermissionsAndroid } = require('react-native');
         const granted = await PermissionsAndroid.check(
           PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
         );
@@ -233,8 +238,8 @@ const AddContact = () => {
           result === RESULTS.GRANTED
             ? 'granted'
             : result === RESULTS.DENIED
-            ? 'denied'
-            : 'undetermined',
+              ? 'denied'
+              : 'undetermined',
         );
       }
     };
@@ -294,7 +299,7 @@ const AddContact = () => {
     setAddingId(id);
     try {
       const apiResponse = await sendFriendRequest({
-        payload: {receiverId: id},
+        payload: { receiverId: id },
       });
       if (apiResponse?.response?.success) {
         dispatch(
@@ -332,9 +337,8 @@ const AddContact = () => {
 
   const handleInvite = (phone, name) => {
     const smsBody = `Hey ${name}, join me on Cove! Download the app: https://cove.link`;
-    let url = `sms:${phone}${
-      Platform.OS === 'ios' ? '&' : '?'
-    }body=${encodeURIComponent(smsBody)}`;
+    let url = `sms:${phone}${Platform.OS === 'ios' ? '&' : '?'
+      }body=${encodeURIComponent(smsBody)}`;
     Linking.openURL(url);
   };
 
@@ -373,9 +377,9 @@ const AddContact = () => {
 
   const handleNavigateToChat = async user => {
     try {
-      const apiResponse = await getConversations({id: user._id});
+      const apiResponse = await getConversations({ id: user._id });
       if (apiResponse?.response?.success) {
-        navigation.navigate(Paths.CONTACT_CHAT, {contact: user});
+        navigation.navigate(Paths.CONTACT_CHAT, { contact: user });
       } else {
         dispatch(
           showSnackbar({
@@ -416,12 +420,12 @@ const AddContact = () => {
         ]}>
         <View style={styles.optionsHeader}>
           {optionUser.profilePicture ? (
-            <Avatar.Image size={44} source={{uri: optionUser.profilePicture}} />
+            <Avatar.Image size={44} source={{ uri: optionUser.profilePicture }} />
           ) : (
             <Avatar.Text
               size={44}
               label={getInitials(optionUser.name) || optionUser._id}
-              style={{backgroundColor: '#444'}}
+              style={{ backgroundColor: '#444' }}
             />
           )}
           <View style={styles.optionsHeaderInfo}>
@@ -468,7 +472,7 @@ const AddContact = () => {
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <IconButton
-          icon={({size}) => (
+          icon={({ size }) => (
             <Ionicons name="arrow-back" size={size} color={'#fff'} />
           )}
           size={28}
@@ -656,15 +660,15 @@ const AddContact = () => {
 export default AddContact;
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#181818', paddingTop: 12},
+  container: { flex: 1, backgroundColor: '#181818', paddingTop: 12 },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
     marginBottom: 8,
   },
-  backBtn: {margin: 0},
-  headerText: {fontSize: 22, fontWeight: 'bold', color: '#fff', marginLeft: 8},
+  backBtn: { margin: 0 },
+  headerText: { fontSize: 22, fontWeight: 'bold', color: '#fff', marginLeft: 8 },
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -675,7 +679,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 4,
   },
-  searchIcon: {marginLeft: 8},
+  searchIcon: { marginLeft: 8 },
   searchInput: {
     flex: 1,
     color: '#fff',
@@ -684,9 +688,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     backgroundColor: 'transparent',
   },
-  clearBtn: {marginRight: 8},
-  scroll: {flex: 1},
-  scrollContent: {paddingBottom: 24},
+  clearBtn: { marginRight: 8 },
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 24 },
   section: {
     backgroundColor: '#202124',
     borderRadius: 18,
@@ -707,8 +711,8 @@ const styles = StyleSheet.create({
     fontSize: 17,
     letterSpacing: 0.2,
   },
-  showMoreBtn: {paddingHorizontal: 8, paddingVertical: 2},
-  showMoreText: {color: '#D28A8C', fontWeight: 'bold', fontSize: 15},
+  showMoreBtn: { paddingHorizontal: 8, paddingVertical: 2 },
+  showMoreText: { color: '#D28A8C', fontWeight: 'bold', fontSize: 15 },
   userRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -718,10 +722,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     position: 'relative',
   },
-  userInfo: {flex: 1, marginLeft: 16, justifyContent: 'center'},
-  name: {fontWeight: 'bold', fontSize: 16, color: '#fff'},
-  username: {color: '#fff', fontSize: 14, marginTop: 2},
-  userId: {color: '#888', fontSize: 12, marginTop: 2},
+  userInfo: { flex: 1, marginLeft: 16, justifyContent: 'center' },
+  name: { fontWeight: 'bold', fontSize: 16, color: '#fff' },
+  username: { color: '#fff', fontSize: 14, marginTop: 2 },
+  userId: { color: '#888', fontSize: 12, marginTop: 2 },
   addBtn: {
     marginLeft: 8,
     backgroundColor: '#383838',
@@ -739,7 +743,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  inviteText: {color: '#fff', fontWeight: 'bold', marginLeft: 6, fontSize: 15},
+  inviteText: { color: '#fff', fontWeight: 'bold', marginLeft: 6, fontSize: 15 },
   optionsBtn: {
     marginLeft: 6,
     padding: 6,
@@ -747,13 +751,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emptyContainer: {alignItems: 'center', marginTop: 12},
-  emptyText: {color: '#bbb', fontSize: 15},
-  permissionContainer: {alignItems: 'center', padding: 16},
-  permissionText: {color: '#bbb', fontSize: 15, textAlign: 'center'},
-  allowBtn: {marginTop: 12},
-  loadingContainer: {alignItems: 'center', padding: 16},
-  loadingText: {color: '#fff', marginTop: 8},
+  emptyContainer: { alignItems: 'center', marginTop: 12 },
+  emptyText: { color: '#bbb', fontSize: 15 },
+  permissionContainer: { alignItems: 'center', padding: 16 },
+  permissionText: { color: '#bbb', fontSize: 15, textAlign: 'center' },
+  allowBtn: { marginTop: 12 },
+  loadingContainer: { alignItems: 'center', padding: 16 },
+  loadingText: { color: '#fff', marginTop: 8 },
   optionsSheet: {
     position: 'absolute',
     left: 0,
@@ -766,8 +770,8 @@ const styles = StyleSheet.create({
     elevation: 10,
     zIndex: 100,
   },
-  optionsHeader: {flexDirection: 'row', alignItems: 'center', marginBottom: 18},
-  optionsHeaderInfo: {marginLeft: 12},
+  optionsHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
+  optionsHeaderInfo: { marginLeft: 12 },
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -775,12 +779,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: 'rgba(255,255,255,0.08)',
   },
-  optionIcon: {marginRight: 16},
-  optionText: {color: '#fff', fontSize: 16, fontWeight: '500'},
-  optionCancel: {marginTop: 16, alignItems: 'center'},
-  optionCancelText: {color: '#bbb', fontSize: 16, fontWeight: 'bold'},
-  avatarFallback: {backgroundColor: '#444'},
-  emptyIcon: {marginTop: 10},
+  optionIcon: { marginRight: 16 },
+  optionText: { color: '#fff', fontSize: 16, fontWeight: '500' },
+  optionCancel: { marginTop: 16, alignItems: 'center' },
+  optionCancelText: { color: '#bbb', fontSize: 16, fontWeight: 'bold' },
+  avatarFallback: { backgroundColor: '#444' },
+  emptyIcon: { marginTop: 10 },
   emptyTitle: {
     color: '#fff',
     fontSize: 20,

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import {BACKEND_URL} from './backendUrl';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {TOKEN} from '../constants/AUTH';
+import {selectToken} from '../redux/slice/authSlice';
+import {store} from '../redux/store';
 
 export const apiService = async ({
   endpoint,
@@ -15,7 +15,7 @@ export const apiService = async ({
   signal,
 }) => {
   try {
-    const token = await AsyncStorage.getItem(TOKEN);
+    const token = selectToken(store.getState());
 
     const requestObj = {
       url: `${customUrl ? customUrl : BACKEND_URL}/${endpoint}`,
@@ -37,7 +37,7 @@ export const apiService = async ({
 
     return {response: res};
   } catch (error) {
-    console.error('API Error:', error.response || error);
+    console.error('API Error:', error.response || error, endpoint);
     return {success: false, error: true, ...(error || {})};
   }
 };

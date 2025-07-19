@@ -32,9 +32,6 @@ const CustomBottomNavigation = () => {
   const chatNotificationCount = contacts.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
   const statusNotificationCount = 0; // Set to 0 for now, can be updated later
 
-  console.log('Bottom Navigation - Chat notification count:', chatNotificationCount);
-  console.log('Bottom Navigation - Status notification count:', statusNotificationCount);
-
   const PRIMARY_COLOR = '#D28A8C';
   const NAV_BG_COLOR = '#181818';
 

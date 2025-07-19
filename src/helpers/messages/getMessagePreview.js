@@ -25,7 +25,6 @@ export function getMessagePreview(message, currentUserId, isGroup = false) {
     // You sent the message: show tick icon based on status
     const status = message.status || 'delivered';
 
-    console.log('status', status);
     let iconColor = '#bbb'; // Default to gray (delivered)
     
     if (status === 'read') {

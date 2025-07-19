@@ -28,8 +28,7 @@ const authSlice = createSlice({
 });
 
 export const loginUser = userData => dispatch => {
-  // Clear contacts from previous user before setting new user data
-  dispatch(clearContacts());
+  // dispatch(clearContacts());
   dispatch(login(userData));
 };
 

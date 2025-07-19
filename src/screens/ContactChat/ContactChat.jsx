@@ -37,9 +37,7 @@ const ContactChat = () => {
 
   const queryClient = useQueryClient();
 
-
   const contact = route.params?.contact;
-  console.log("CONTACT >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", contact)
   const conversationId = contact?._id;
 
   const contactDetails = getChatDisplayInfo(contact, userId);
