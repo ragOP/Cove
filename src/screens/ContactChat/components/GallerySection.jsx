@@ -21,6 +21,7 @@ import { showSnackbar } from '../../../redux/slice/snackbarSlice';
 import PrimaryLoader from '../../../components/Loaders/PrimaryLoader';
 import CustomImage from '../../../components/Image/CustomImage';
 import ImagePlaceholder from '../../../components/Placeholder/ImagePlaceholder';
+import UserAvatar from '../../../components/CustomAvatar/UserAvatar';
 import { format } from 'date-fns';
 import { formatDateLabel } from '../../../utils/date/formatDateLabel';
 import ImageViewer from '../../../components/ImageViewer/ImageViewer';
@@ -49,23 +50,34 @@ const chunkArray = (array, size) => {
 
 const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, isSelectionMode, currentUserId }) => {
   const [error, setError] = React.useState(false);
+
   if (!item || !item._id) {
     return <View style={[styles.item, { opacity: 0 }]} />;
   }
+
+  const showAvatar = item.sender && item.sender._id && item.sender._id !== currentUserId;
+  const isOwnedByUser = item?.sender?._id === currentUserId;
+  const isDisabled = isSelectionMode && !isOwnedByUser;
+
   if (item.type === 'image') {
     return (
       <TouchableOpacity
-        style={[styles.item, isSelected && styles.selectedItem]}
+        style={[
+          styles.item,
+          isSelected && styles.selectedItem,
+          isDisabled && styles.disabledItem
+        ]}
         onPress={() => onPress?.(item)}
         onLongPress={() => onLongPress?.(item)}
         delayLongPress={500}
-        activeOpacity={0.85}>
+        activeOpacity={isDisabled ? 1 : 0.85}
+        disabled={isDisabled}>
         {error ? (
           <ImagePlaceholder style={styles.image} />
         ) : (
           <CustomImage
             source={{ uri: item?.mediaUrl }}
-            style={styles.image}
+            style={[styles.image, isDisabled && styles.disabledImage]}
             onError={() => setError(true)}
             isSensitive={item?.isSensitive}
             sender={item?.sender}
@@ -83,24 +95,45 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, isSelecti
             <MaterialIcon name="check-circle" size={20} color="#fff" />
           </View>
         )}
+        {isDisabled && (
+          <View style={styles.disabledOverlay}>
+            <MaterialIcon name="lock-outline" size={16} color="#666" />
+          </View>
+        )}
+        {showAvatar && (
+          <View style={styles.avatarContainer}>
+            <UserAvatar
+              profilePicture={item.sender?.profilePicture}
+              name={item.sender?.name || 'Unknown'}
+              id={item.sender?._id || 'unknown'}
+              size={20}
+              showPreview={false}
+            />
+          </View>
+        )}
       </TouchableOpacity>
     );
   }
   // video
   return (
     <TouchableOpacity
-      style={[styles.item, isSelected && styles.selectedItem]}
+      style={[
+        styles.item,
+        isSelected && styles.selectedItem,
+        isDisabled && styles.disabledItem
+      ]}
       onPress={() => onPress?.(item)}
       onLongPress={() => onLongPress?.(item)}
       delayLongPress={500}
-      activeOpacity={0.85}>
+      activeOpacity={isDisabled ? 1 : 0.85}
+      disabled={isDisabled}>
       <View style={styles.videoThumb}>
         {error ? (
           <ImagePlaceholder style={styles.image} />
         ) : (
           <CustomImage
             source={{ uri: item?.thumb }}
-            style={styles.image}
+            style={[styles.image, isDisabled && styles.disabledImage]}
             onError={() => setError(true)}
             isSensitive={item?.isSensitive}
             sender={item?.sender}
@@ -121,6 +154,22 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, isSelecti
             <MaterialIcon name="check-circle" size={20} color="#fff" />
           </View>
         )}
+        {isDisabled && (
+          <View style={styles.disabledOverlay}>
+            <MaterialIcon name="lock-outline" size={16} color="#666" />
+          </View>
+        )}
+        {showAvatar && (
+          <View style={styles.avatarContainer}>
+            <UserAvatar
+              profilePicture={item.sender?.profilePicture}
+              name={item.sender?.name || 'Unknown'}
+              id={item.sender?._id || 'unknown'}
+              size={20}
+              showPreview={false}
+            />
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -138,6 +187,17 @@ const GallerySection = ({ id }) => {
 
   // Get current user ID from Redux
   const currentUserId = useSelector(state => state.auth.user?.id);
+
+  // Helper function to get user-friendly message for non-owned items
+  const getNonOwnedItemMessage = (item) => {
+    const senderName = item?.sender?.name || 'Unknown user';
+    return `You can only select your own images. This image was shared by ${senderName}.`;
+  };
+
+  // Helper function to check if item is owned by current user
+  const isItemOwnedByUser = (item) => {
+    return item?.sender?._id === currentUserId;
+  };
 
   // Reset states when contact changes
   useEffect(() => {
@@ -315,8 +375,20 @@ const GallerySection = ({ id }) => {
       return;
     }
 
-    // If in selection mode, always toggle selection regardless of item type
+    // If in selection mode, check ownership before allowing selection
     if (isSelectionMode) {
+      // Check if user owns this item before allowing selection
+      if (!isItemOwnedByUser(item)) {
+        dispatch(showSnackbar({
+          type: 'warning',
+          title: 'Cannot Select',
+          subtitle: getNonOwnedItemMessage(item),
+          placement: 'top',
+        }));
+        return;
+      }
+
+      // Toggle selection only for owned items
       const exists = selectedItems.some(selected => selected._id === item._id);
       if (exists) {
         setSelectedItems(prev => prev.filter(selected => selected._id !== item._id));
@@ -356,10 +428,21 @@ const GallerySection = ({ id }) => {
       return;
     }
 
+    // Check if user owns this item before allowing selection mode
+    if (!isItemOwnedByUser(item)) {
+      dispatch(showSnackbar({
+        type: 'warning',
+        title: 'Cannot Select',
+        subtitle: getNonOwnedItemMessage(item),
+        placement: 'top',
+      }));
+      return;
+    }
+
     // Add haptic feedback
     Vibration.vibrate(100);
 
-    // Always enter selection mode on long press, regardless of current state
+    // Enter selection mode only for owned items
     if (!isSelectionMode) {
       setIsSelectionMode(true);
       setSelectedItems([item]);
@@ -378,7 +461,33 @@ const GallerySection = ({ id }) => {
   };
 
   const handleSelectAll = () => {
-    setSelectedItems(filteredMediaList);
+    // Select only items owned by current user
+    const userOwnedItems = filteredMediaList.filter(item => isItemOwnedByUser(item));
+
+    if (userOwnedItems.length === 0) {
+      dispatch(showSnackbar({
+        type: 'info',
+        title: 'No Images to Select',
+        subtitle: 'You don\'t have any images in this section to select.',
+        placement: 'top',
+      }));
+      return;
+    }
+
+    setSelectedItems(userOwnedItems);
+
+    // Show feedback about how many items were selected
+    const totalItems = filteredMediaList.length;
+    const selectedCount = userOwnedItems.length;
+
+    if (selectedCount < totalItems) {
+      dispatch(showSnackbar({
+        type: 'info',
+        title: 'Partial Selection',
+        subtitle: `Selected ${selectedCount} of your ${totalItems} total images`,
+        placement: 'top',
+      }));
+    }
   };
 
   const handleDeselectAll = () => {
@@ -457,7 +566,63 @@ const GallerySection = ({ id }) => {
       return;
     }
 
-    // For multiple items, show confirmation dialog
+    // For multiple items, check if all are sensitive
+    const allSensitive = itemsArray.every(item => item.isSensitive);
+
+    // If all items are sensitive, delete directly without showing dialog
+    if (allSensitive) {
+      const itemIds = itemsArray.map(item => item._id);
+
+      try {
+        // Make the actual API call
+        const response = await deleteMessages({ ids: itemIds });
+
+        if (response?.response?.success) {
+          // Update cache to remove the items
+          try {
+            removeItemsFromCache(itemIds);
+          } catch (cacheError) {
+            console.warn('Cache update failed, falling back to refetch:', cacheError);
+            // Fallback: refetch the data
+            queryClient.invalidateQueries({ queryKey: ['gallery', id] });
+          }
+
+          // Also add to deletedMessageIds for immediate UI feedback
+          setDeletedMessageIds(prev => [...prev, ...itemIds]);
+
+          // Clear selection and exit selection mode
+          setSelectedItems([]);
+          setIsSelectionMode(false);
+
+          dispatch(showSnackbar({
+            type: 'success',
+            title: 'Deleted',
+            subtitle: `${itemIds.length} images deleted successfully`,
+            placement: 'top',
+          }));
+        } else {
+          console.error('Failed to delete images:', response);
+          const errorMessage = response?.response?.data?.message || 'Failed to delete images';
+          dispatch(showSnackbar({
+            type: 'error',
+            title: 'Error',
+            subtitle: errorMessage,
+            placement: 'top',
+          }));
+        }
+      } catch (error) {
+        console.error('Error deleting images:', error);
+        dispatch(showSnackbar({
+          type: 'error',
+          title: 'Server Error',
+          subtitle: 'Failed to delete images',
+          placement: 'top',
+        }));
+      }
+      return;
+    }
+
+    // For multiple items that are not all sensitive, show confirmation dialog
     setPendingAction({ type: 'delete', items: itemsArray });
     setShowDeleteDialog(true);
   };
@@ -705,13 +870,6 @@ const GallerySection = ({ id }) => {
 
   return (
     <View style={{ flex: 1 }}>
-      {isSelectionMode && (
-        <View style={styles.selectionOverlay}>
-          <Text style={styles.selectionModeText}>
-            Selection Mode - {selectedItems.length} item(s) selected
-          </Text>
-        </View>
-      )}
       <ScrollView
         style={styles.container}
         contentContainerStyle={{
@@ -1006,6 +1164,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  avatarContainer: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 10,
+    padding: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  disabledItem: {
+    opacity: 0.5,
+    backgroundColor: '#333',
+    borderColor: '#444',
+    borderWidth: 1,
+  },
+  disabledImage: {
+    opacity: 0.5,
+  },
+  disabledOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 0,
   },
 
 });

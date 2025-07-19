@@ -65,6 +65,16 @@ const GallerySelectionBar = ({
     };
 
     const handleReduxDelete = () => {
+        // Check if all selected items are sensitive
+        const allSensitive = items.every(item => item.isSensitive);
+
+        // If all items are sensitive, delete directly without showing dialog
+        if (allSensitive) {
+            handleDeleteConfirm();
+            return;
+        }
+
+        // Otherwise, show the confirmation dialog
         setDeleteDialog(true);
     };
 
