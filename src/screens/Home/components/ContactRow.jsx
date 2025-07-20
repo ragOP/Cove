@@ -1,14 +1,14 @@
-import React, {useRef, useState} from 'react';
-import {Animated, Pressable, View} from 'react-native';
-import {Text, Badge} from 'react-native-paper';
-import Icon from 'react-native-vector-icons/Ionicons';
+import React, { useRef, useState } from 'react';
+import { Animated, Pressable, View } from 'react-native';
+import { Text, Badge, Tooltip } from 'react-native-paper';
+import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import UserAvatar from '../../../components/CustomAvatar/UserAvatar';
-import {getChatDisplayInfo} from '../../../utils/chat/getChatDisplayInfo';
-import {getMessagePreview} from '../../../helpers/messages/getMessagePreview';
-import {formatChatTime} from '../../../utils/message/formatChatTime';
+import { getChatDisplayInfo } from '../../../utils/chat/getChatDisplayInfo';
+import { getMessagePreview } from '../../../helpers/messages/getMessagePreview';
+import { formatChatTime } from '../../../utils/message/formatChatTime';
 import HomeStyles from '../styles/HomeStyles';
 
-const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
+const ContactRow = ({ item, onPress, onLongPress, selected, userId, isActive = true }) => {
   const scale = useRef(new Animated.Value(1)).current;
   const rippleAnim = useRef(new Animated.Value(0)).current;
   const [isHeld, setIsHeld] = useState(false);
@@ -76,9 +76,9 @@ const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
       onPressOut={handlePressOut}
       onLongPress={handleLongPress}
       style={HomeStyles.pressable}
-      android_ripple={{color: '#233d2e'}}>
+      android_ripple={{ color: '#233d2e' }}>
       <Animated.View
-        style={[HomeStyles.contactRow, {transform: [{scale}], backgroundColor}]}
+        style={[HomeStyles.contactRow, { transform: [{ scale }], backgroundColor }]}
       >
         <UserAvatar
           profilePicture={display.profilePicture}
@@ -114,14 +114,21 @@ const ContactRow = ({item, onPress, onLongPress, selected, userId}) => {
           )}
         </View>
         <View style={HomeStyles.contactMeta}>
-          <Text style={HomeStyles.contactTime}>
-            {formatChatTime(lastMessageTime)}
-          </Text>
-          {unreadCount > 0 && (
-            <Badge style={HomeStyles.badge}>
-              {unreadCount === 1 ? 1 : `+${unreadCount - 1}`}
-            </Badge>
+          {!isActive && (
+            <Tooltip title="User inactive">
+              <MaterialIcon name="person-off" size={20} color="#666" />
+            </Tooltip>
           )}
+          <View style={{ gap: 8 }}>
+            <Text style={HomeStyles.contactTime}>
+              {formatChatTime(lastMessageTime)}
+            </Text>
+            {unreadCount > 0 && (
+              <Badge style={HomeStyles.badge}>
+                {unreadCount === 1 ? 1 : `+${unreadCount - 1}`}
+              </Badge>
+            )}
+          </View>
         </View>
       </Animated.View>
     </Pressable>

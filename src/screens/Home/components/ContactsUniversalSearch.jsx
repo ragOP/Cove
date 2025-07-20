@@ -64,6 +64,7 @@ const ContactsUniversalSearch = ({ contacts, onClose, navigation, userId }) => {
                 navigation.navigate(Paths.CONTACT_CHAT, { contact: item });
               }}
               userId={userId}
+              isActive={item.isActive !== false}
             />
           </View>
         )}

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, FlatList, Dimensions, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -730,10 +731,10 @@ const GalleryScreen = () => {
   const allImages = useMemo(() => prepareImagesForViewer(filteredMedia), [filteredMedia]);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>
+      <SafeAreaView style={styles.header}>
+        <Text style={[styles.headerTitle, { fontSize: isSelectionMode ? 18 : 22 }]}>
           {isSelectionMode
             ? `Selected ${selectedItems.length} item${selectedItems.length !== 1 ? 's' : ''}`
             : `Gallery${filteredMedia && filteredMedia.length ? ` (${filteredMedia.length})` : ''}`
@@ -753,7 +754,7 @@ const GalleryScreen = () => {
             </TouchableOpacity>
           </View>
         ) : null}
-      </View>
+      </SafeAreaView>
 
       {/* Tab Navigation */}
       <View style={styles.tabToggleRow}>
@@ -917,7 +918,7 @@ const GalleryScreen = () => {
 
 
 
-    </View>
+    </SafeAreaView>
   );
 };
 

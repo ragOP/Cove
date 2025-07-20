@@ -589,34 +589,36 @@ const ImageViewer = ({
         {/* Header with back button, sender info, and time */}
         {showNavigation && (
           <SafeAreaView style={styles.headerContainer}>
-            <TouchableOpacity
-              style={styles.arrowButton}
-              onPress={handleClose}
-              activeOpacity={0.8}
-            // hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <MaterialCommunityIcons name="arrow-left" size={28} color="#fff" />
-            </TouchableOpacity>
+            <View style={styles.headerContent}>
+              <TouchableOpacity
+                style={styles.arrowButton}
+                onPress={handleClose}
+                activeOpacity={0.8}
+              // hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <MaterialCommunityIcons name="arrow-left" size={28} color="#fff" />
+              </TouchableOpacity>
 
-            <View style={styles.headerInfoContainer}>
-              <View style={styles.senderInfoRow}>
-                {senderInfo && (
-                  <Text style={styles.senderNameText}>
-                    {senderInfo.name || "Unknown"}
-                  </Text>
-                )}
-                {currentImage?.timestamp && (
-                  <Text style={styles.timeText}>
-                    {formatTime(currentImage.timestamp)}
-                  </Text>
-                )}
+              <View style={styles.headerInfoContainer}>
+                <View style={styles.senderInfoRow}>
+                  {senderInfo && (
+                    <Text style={styles.senderNameText}>
+                      {senderInfo.name || "Unknown"}
+                    </Text>
+                  )}
+                  {currentImage?.timestamp && (
+                    <Text style={styles.timeText}>
+                      {formatTime(currentImage.timestamp)}
+                    </Text>
+                  )}
+                </View>
               </View>
-            </View>
 
-            <View style={styles.imageCounterContainer}>
-              <Text style={styles.imageCounterText}>
-                {currentIndex + 1} of {images.length}
-              </Text>
+              <View style={styles.imageCounterContainer}>
+                <Text style={styles.imageCounterText}>
+                  {currentIndex + 1} of {images.length}
+                </Text>
+              </View>
             </View>
           </SafeAreaView>
         )}
@@ -848,13 +850,16 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    zIndex: 100,
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 20,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    zIndex: 100,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
   arrowButton: {
     backgroundColor: 'rgba(0,0,0,0.5)',

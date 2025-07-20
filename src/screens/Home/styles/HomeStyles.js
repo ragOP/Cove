@@ -118,9 +118,10 @@ const HomeStyles = StyleSheet.create({
     marginTop: 2,
   },
   contactMeta: {
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 6,
   },
   contactTime: {
     fontSize: 12,

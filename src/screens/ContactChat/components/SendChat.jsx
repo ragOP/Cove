@@ -34,8 +34,8 @@ const SendChat = ({
 }) => {
   const reduxUser = useSelector(selectUser);
   const userId = reduxUser?.id;
-  const queryClient = useQueryClient(); // Add this for cache invalidation
-  const dispatch = useDispatch(); // Add this for Redux state updates
+  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
 
   // Get current gallery state for total calculation
   const currentGalleryTotal = useSelector(state => state.gallery.total);
@@ -238,7 +238,7 @@ const SendChat = ({
                 handleRemoveFile(idx);
               }}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
+            >
               <Icon name="close-circle" size={24} color="#f55" />
             </TouchableOpacity>
           </TouchableOpacity>

@@ -289,6 +289,8 @@ const Home = ({
     }
   };
 
+  console.log(">>>", contacts)
+
   const handleDebugLoadContacts = () => {
     dispatch(setPage(1));
     dispatch(setContactType('all'));
@@ -451,6 +453,7 @@ const Home = ({
             onLongPress={() => handleContactLongPress(item)}
             selected={selectedIds.includes(item._id)}
             userId={userId}
+            isActive={item.isActive}
           />
         )}
         contentContainerStyle={
