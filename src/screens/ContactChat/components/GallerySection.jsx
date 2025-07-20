@@ -10,6 +10,7 @@ import {
   ScrollView,
   Alert,
   Vibration,
+  SafeAreaView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -864,7 +865,7 @@ const GallerySection = ({ id, setConversations, conversationId }) => {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={{
@@ -948,7 +949,7 @@ const GallerySection = ({ id, setConversations, conversationId }) => {
         destructive={true}
       />
 
-    </View>
+    </SafeAreaView>
   );
 };
 
