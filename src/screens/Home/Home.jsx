@@ -283,8 +283,9 @@ const Home = ({
   };
 
   const handlePendingRequestCountUpdate = data => {
-    if (data?.count) {
+    if (data?.count !== undefined) {
       setPendingRequestsCount(data?.count);
+      queryClient.invalidateQueries({ queryKey: ['pendingRequests'] });
     }
   };
 
@@ -296,6 +297,7 @@ const Home = ({
   useChatListSocket({
     onChatListUpdate: handleChatListUpdate,
     onFriendRequestReceived: handlePendingRequestCountUpdate,
+    onFriendRequestRejected: handlePendingRequestCountUpdate,
   });
 
   useEffect(() => {
@@ -323,7 +325,6 @@ const Home = ({
             <TouchableOpacity
               style={HomeStyles.friendRequestBtn}
               onPress={() => {
-                console.log('Friend request button pressed');
                 handleNavigateToFriendRequests();
               }}
               activeOpacity={0.8}>

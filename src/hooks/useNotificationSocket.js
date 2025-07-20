@@ -19,21 +19,25 @@ export default function useNotificationSocket() {
       return;
     }
 
+    console.log('LISTENING TO NOTIFICATION');
+
     const handleNotification = data => {
-      if (!data?.notification) {
+      console.info('[NOTIFICATION] Connected:', data);
+
+      if (!data?.data) {
         return;
       }
 
-      console.info('[NOTIFICATION] Connected:', data?.notification);
+      const notificationData = data?.data;
 
       dispatch(
         showSnackbar({
           type: 'info',
-          title: data?.title,
-          subtitle: data?.body,
+          title: notificationData?.title,
+          subtitle: notificationData?.body,
           placement: 'top',
           onPress: () => {
-            const redirect = notificationTypeToRedirect[data.type];
+            const redirect = notificationTypeToRedirect[notificationData.type];
             if (redirect) {
               navigation.navigate(redirect);
             }

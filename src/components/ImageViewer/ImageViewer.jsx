@@ -11,6 +11,7 @@ import {
   ScrollView,
   BackHandler,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Share from 'react-native-share';
@@ -569,8 +570,6 @@ const ImageViewer = ({
     }
   };
 
-  console.log(1111111)
-
   return (
     <Modal
       visible={visible}
@@ -589,7 +588,7 @@ const ImageViewer = ({
 
         {/* Header with back button, sender info, and time */}
         {showNavigation && (
-          <View style={styles.headerContainer}>
+          <SafeAreaView style={styles.headerContainer}>
             <TouchableOpacity
               style={styles.arrowButton}
               onPress={handleClose}
@@ -619,7 +618,7 @@ const ImageViewer = ({
                 {currentIndex + 1} of {images.length}
               </Text>
             </View>
-          </View>
+          </SafeAreaView>
         )}
 
         {/* Main Image Container with Navigation */}
@@ -853,8 +852,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 50,
-    paddingBottom: 16,
+    paddingTop: 20,
     backgroundColor: 'rgba(0,0,0,0.8)',
     zIndex: 100,
   },

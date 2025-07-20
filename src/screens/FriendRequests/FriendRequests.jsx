@@ -112,6 +112,7 @@ const FriendRequests = ({ navigation }) => {
     if (isAcceptingId) {
       return;
     }
+
     try {
       setIsAcceptingId(id);
       const apiResponse = await acceptFriendRequest({ requestId: id });

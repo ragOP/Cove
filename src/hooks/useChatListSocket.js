@@ -6,6 +6,7 @@ import {selectUser} from '../redux/slice/authSlice';
 export default function useChatListSocket({
   onChatListUpdate,
   onFriendRequestReceived,
+  onFriendRequestRejected,
 }) {
   const socket = useSocketContext();
 
@@ -28,14 +29,25 @@ export default function useChatListSocket({
       onFriendRequestReceived?.(data?.data);
     };
 
+    const handleFriendRequestRejected = data => {
+      console.info('[FRIEND REQUEST REJECTED]', data);
+      onFriendRequestRejected?.(data?.data);
+    };
+
     socket.on('chat_list_update', handleChatListUpdate);
     socket.on('friend_request_received', handleFriendRequestReceived);
 
     return () => {
       socket.off('chat_list_update', handleChatListUpdate);
       socket.off('friend_request_received', handleFriendRequestReceived);
+      socket.off('friend_request_rejected', handleFriendRequestRejected);
     };
-  }, [socket, onChatListUpdate, onFriendRequestReceived]);
+  }, [
+    socket,
+    onChatListUpdate,
+    onFriendRequestReceived,
+    onFriendRequestRejected,
+  ]);
 
   return {socket};
 }
