@@ -578,8 +578,7 @@ const ImageViewer = ({
       onRequestClose={handleModalClose}
       statusBarTranslucent={true}>
       <StatusBar hidden />
-      <View style={styles.modalOverlay}>
-
+      <SafeAreaView style={styles.modalOverlay}>
         <TouchableOpacity
           style={styles.overlayTouchable}
           onPress={handleClose}
@@ -588,7 +587,7 @@ const ImageViewer = ({
 
         {/* Header with back button, sender info, and time */}
         {showNavigation && (
-          <SafeAreaView style={styles.headerContainer}>
+          <View style={styles.headerContainer}>
             <View style={styles.headerContent}>
               <TouchableOpacity
                 style={styles.arrowButton}
@@ -620,7 +619,7 @@ const ImageViewer = ({
                 </Text>
               </View>
             </View>
-          </SafeAreaView>
+          </View>
         )}
 
         {/* Main Image Container with Navigation */}
@@ -825,7 +824,7 @@ const ImageViewer = ({
           confirmButtonColor="#D28A8C"
           showCancel={true}
         />
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };
