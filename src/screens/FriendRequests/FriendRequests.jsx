@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { Text, Avatar, IconButton } from 'react-native-paper';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getUserPendingRequests } from '../../apis/getUserPendingRequests';
 import { acceptFriendRequest } from '../../apis/acceptFriendRequest';
@@ -29,7 +29,7 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const FriendRequestRow = ({ item, onAccept, onDecline, isAcceptingId }) => (
+const FriendRequestRow = ({ item, onAccept, onDecline, isAcceptingId, isDecliningId }) => (
   <View style={styles.card}>
     <View style={styles.avatarContainer}>
       <UserAvatar
@@ -65,8 +65,13 @@ const FriendRequestRow = ({ item, onAccept, onDecline, isAcceptingId }) => (
       </TouchableOpacity>
       <TouchableOpacity
         onPress={() => onDecline(item?._id)}
-        style={styles.declineBtn}>
-        <MaterialCommunityIcons name="close" size={20} color="#D28A8C" />
+        style={styles.declineBtn}
+        disabled={isDecliningId === item._id}>
+        {isDecliningId === item._id ? (
+          <PrimaryLoader size={20} color="#D28A8C" />
+        ) : (
+          <MaterialCommunityIcons name="close" size={20} color="#D28A8C" />
+        )}
       </TouchableOpacity>
     </View>
   </View>
@@ -74,13 +79,14 @@ const FriendRequestRow = ({ item, onAccept, onDecline, isAcceptingId }) => (
 
 const FriendRequests = ({ navigation }) => {
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
 
   const contacts = useSelector(state => state.chat.contacts);
 
   const [expanded, setExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [isAcceptingId, setIsAcceptingId] = useState(null);
-  const [isDeclining, setIsDeclining] = useState(false);
+  const [isDecliningId, setIsDecliningId] = useState(null);
 
   const {
     data: requests = [],
@@ -122,7 +128,8 @@ const FriendRequests = ({ navigation }) => {
         if (apiResponse?.response?.data) {
           dispatch(addContact(apiResponse.response.data));
         }
-        refetch();
+
+        queryClient.invalidateQueries({ queryKey: ['pendingRequests'] });
       } else {
         const errorMessage =
           apiResponse?.response?.message || 'Failed to accept friend request.';
@@ -136,17 +143,24 @@ const FriendRequests = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Error accepting friend request:', error);
+      dispatch(
+        showSnackbar({
+          title: 'Error',
+          subtitle: 'Failed to accept friend request.',
+          type: 'error',
+        }),
+      );
     } finally {
       setIsAcceptingId(null);
     }
   };
 
   const handleDecline = async id => {
-    if (isDeclining) {
+    if (isDecliningId) {
       return;
     }
     try {
-      setIsDeclining(true);
+      setIsDecliningId(id);
       const apiResponse = await declineFriendRequest({ requestId: id });
       if (apiResponse?.response?.success) {
         dispatch(
@@ -156,7 +170,8 @@ const FriendRequests = ({ navigation }) => {
             type: 'info',
           }),
         );
-        refetch();
+
+        queryClient.invalidateQueries({ queryKey: ['pendingRequests'] });
       } else {
         const errorMessage =
           apiResponse?.response?.message || 'Failed to decline friend request.';
@@ -177,7 +192,7 @@ const FriendRequests = ({ navigation }) => {
         }),
       );
     } finally {
-      setIsDeclining(false);
+      setIsDecliningId(null);
     }
   };
 
@@ -189,6 +204,7 @@ const FriendRequests = ({ navigation }) => {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
+      // For refresh, we actually want to fetch fresh data
       await Promise.all([refetch(), refetchSent()]);
     } catch (error) {
       console.error(error);
@@ -226,6 +242,7 @@ const FriendRequests = ({ navigation }) => {
       onAccept={handleAccept}
       onDecline={handleDecline}
       isAcceptingId={isAcceptingId}
+      isDecliningId={isDecliningId}
     />
   );
 

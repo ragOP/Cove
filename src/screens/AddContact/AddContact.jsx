@@ -27,7 +27,7 @@ import { useDispatch } from 'react-redux';
 import { showSnackbar } from '../../redux/slice/snackbarSlice';
 import PrimaryLoader from '../../components/Loaders/PrimaryLoader';
 import { getConversations } from '../../apis/conversations';
-import { Paths } from '../../navigaton/paths';
+import { Paths } from '../../navigation/paths';
 import Contacts from 'react-native-contacts';
 import { checkContactsOnCove } from '../../apis/checkContactsOnCove';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';

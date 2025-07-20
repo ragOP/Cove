@@ -4,7 +4,7 @@ import {Text, Searchbar} from 'react-native-paper';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ContactRow from './ContactRow';
 import HomeStyles from '../styles/HomeStyles';
-import {Paths} from '../../../navigaton/paths';
+import {Paths} from '../../../navigation/paths';
 
 const UniversalSearchSeparator = () => <View style={HomeStyles.universalSearchSeparator} />;
 

@@ -7,12 +7,16 @@ import {endpoints} from './endpoints';
  * @param {Array<string>} payload.ids - Array of message IDs to delete
  * @returns {Promise<Object>} - API response
  */
-export const deleteMessages = async ({ids}) => {
+export const deleteMessages = async ({ids, conversationId}) => {
   try {
+    const payload = {
+      ids,
+      ...(conversationId && {conversationId}),
+    };
     const apiResponse = await apiService({
       endpoint: endpoints.deleteMessages,
       method: 'POST',
-      data: { ids },
+      data: payload,
     });
     console.log('Delete messages response:', apiResponse);
     return apiResponse;
@@ -20,4 +24,4 @@ export const deleteMessages = async ({ids}) => {
     console.error('Delete messages error:', error);
     return {success: false, error: true, ...error};
   }
-}; 
+};

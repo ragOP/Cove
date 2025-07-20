@@ -7,6 +7,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 
 const MessageItem = memo(({
   item,
+  conversationId,
   index,
   showDateLabel,
   userId,
@@ -52,6 +53,7 @@ const MessageItem = memo(({
         ]}>
         <RenderMessageContent
           item={item}
+          conversationId={conversationId}
           isSent={isSent}
           onMarkSensitive={onMarkSensitive}
           onMarkUnsensitive={onMarkUnsensitive}

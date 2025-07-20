@@ -5,35 +5,43 @@ import Icon from 'react-native-vector-icons/Ionicons';
 /**
  * WhatsApp-style action bar for selected message(s).
  * Props:
- * - selectedMessage: the message object currently selected
+ * - selectedMessages: array of message objects currently selected
  * - onClose: function to clear selection
- * - onCopy: function to copy message
- * - onDelete: function to delete message (optional)
+ * - onCopy: function to copy message(s)
+ * - onDelete: function to delete message(s) (optional)
  * - onReply: function to reply to message (optional)
  */
-const SelectedMessageBar = ({ selectedMessage, onClose, onCopy, onDelete, onReply }) => {
-  if (!selectedMessage) return null;
+const SelectedMessageBar = ({ selectedMessages, onClose, onCopy, onDelete, onReply }) => {
+  if (!selectedMessages || selectedMessages.length === 0) return null;
+  
+  const isSingleMessage = selectedMessages.length === 1;
+  const selectedMessage = selectedMessages[0]; // For single message operations
+  
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={onClose} style={styles.iconBtn}>
         <Icon name="close" size={24} color="#fff" />
       </TouchableOpacity>
       <View style={styles.messagePreview}>
-        <Text style={styles.sender}>{selectedMessage.sender?.name || 'You'}</Text>
-        <Text style={styles.previewText} numberOfLines={1}>
-          {selectedMessage.content || '[media]'}
+        <Text style={styles.selectionCount}>
+          {selectedMessages.length} message{selectedMessages.length > 1 ? 's' : ''} selected
         </Text>
+        {isSingleMessage && (
+          <Text style={styles.previewText} numberOfLines={1}>
+            {selectedMessage.content || '[media]'}
+          </Text>
+        )}
       </View>
       <TouchableOpacity onPress={() => onCopy(selectedMessage)} style={styles.iconBtn}>
         <Icon name="copy" size={22} color="#fff" />
       </TouchableOpacity>
-      {onReply && (
+      {onReply && isSingleMessage && (
         <TouchableOpacity onPress={() => onReply(selectedMessage)} style={styles.iconBtn}>
           <Icon name="return-up-back" size={22} color="#fff" />
         </TouchableOpacity>
       )}
       {onDelete && (
-        <TouchableOpacity onPress={() => onDelete(selectedMessage)} style={styles.iconBtn}>
+        <TouchableOpacity onPress={() => onDelete()} style={styles.iconBtn}>
           <Icon name="trash" size={22} color="#f55" />
         </TouchableOpacity>
       )}
@@ -68,6 +76,11 @@ const styles = StyleSheet.create({
   previewText: {
     color: '#fff',
     fontSize: 15,
+  },
+  selectionCount: {
+    color: '#bbb',
+    fontSize: 12,
+    marginBottom: 2,
   },
 });
 

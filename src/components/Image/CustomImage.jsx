@@ -30,6 +30,7 @@ const CustomImage = ({
   sender,
   currentUserId,
   timestamp,
+  conversationId,
   ...props
 }) => {
   const [error, setError] = useState(false);
@@ -105,6 +106,7 @@ const CustomImage = ({
           autoHideNavigation={false}
           showSnackbarNotifications={false}
           currentUserId={currentUserId}
+          conversationId={conversationId}
         />
       )}
     </>

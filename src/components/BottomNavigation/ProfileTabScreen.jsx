@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Profile from '../../screens/Profile/Profile';
-import { Paths } from '../../navigaton/paths';
+import { Paths } from '../../navigation/paths';
 
 const ProfileTabScreen = () => {
   const navigation = useNavigation();

@@ -43,7 +43,7 @@ const ContactChat = () => {
   const contactDetails = getChatDisplayInfo(contact, userId);
 
   const [conversations, setConversations] = useState([]);
-  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [selectedMessages, setSelectedMessages] = useState([]);
   const [replyMessage, setReplyMessage] = useState(null);
   const [tab, setTab] = useState('chat');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -127,45 +127,100 @@ const ContactChat = () => {
     receiverId: contactDetails?._id,
   });
 
-  const handleSelectMessage = msg => setSelectedMessage(msg);
-  const handleClearSelected = () => setSelectedMessage(null);
-  const handleCopySelected = msg => Clipboard.setString(msg.content || '');
-  const handleReplySelected = msg => {
-    setReplyMessage(msg);
-    handleClearSelected();
+  const handleSelectMessage = msg => {
+    setSelectedMessages(prev => {
+      const isAlreadySelected = prev.some(selected => selected._id === msg._id);
+      if (isAlreadySelected) {
+        // Remove from selection
+        return prev.filter(selected => selected._id !== msg._id);
+      } else {
+        // Add to selection
+        return [...prev, msg];
+      }
+    });
   };
 
-  const handleDeleteSelected = async msg => {
-    setMessageToDelete(msg);
+  const handleClearSelected = () => setSelectedMessages([]);
+
+  const handleCopySelected = msg => {
+    if (selectedMessages.length === 1) {
+      Clipboard.setString(msg.content || '');
+    } else {
+      // Copy multiple messages
+      const textToCopy = selectedMessages
+        .map(msg => msg.content || '[media]')
+        .join('\n\n');
+      Clipboard.setString(textToCopy);
+    }
+  };
+
+  const handleReplySelected = msg => {
+    if (selectedMessages.length === 1) {
+      setReplyMessage(msg);
+      handleClearSelected();
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    // Safety check: Only allow deletion of own messages
+    const ownMessages = selectedMessages.filter(msg =>
+      msg?.sender?._id && msg.sender._id === userId
+    );
+
+    if (ownMessages.length === 0) {
+      dispatch(
+        showSnackbar({
+          type: 'warning',
+          title: 'Cannot Delete',
+          subtitle: 'You can only delete your own messages',
+          placement: 'top',
+        }),
+      );
+      return;
+    }
+
+    if (ownMessages.length < selectedMessages.length) {
+      dispatch(
+        showSnackbar({
+          type: 'info',
+          title: 'Partial Selection',
+          subtitle: `Only ${ownMessages.length} of ${selectedMessages.length} messages can be deleted`,
+          placement: 'top',
+        }),
+      );
+    }
+
+    setMessageToDelete(ownMessages);
     setShowDeleteDialog(true);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!messageToDelete) return;
+    if (!messageToDelete || !Array.isArray(messageToDelete)) return;
 
     try {
-      const response = await deleteMessages({ ids: [messageToDelete._id] });
+      const messageIds = messageToDelete.map(msg => msg._id);
+      const response = await deleteMessages({ ids: messageIds });
 
       if (response?.response?.success) {
-        // Remove the message from conversations
-        setConversations(prev => prev.filter(m => m._id !== messageToDelete._id));
+        // Remove the messages from conversations
+        setConversations(prev => prev.filter(m => !messageIds.includes(m._id)));
         handleClearSelected();
 
         queryClient.invalidateQueries({ queryKey: ['gallery', contactDetails?._id] });
-
         queryClient.invalidateQueries({ queryKey: ['gallery'] });
 
+        const messageCount = messageToDelete.length;
         dispatch(
           showSnackbar({
             type: 'success',
-            title: 'Message Deleted',
-            subtitle: 'Message has been deleted successfully',
+            title: 'Messages Deleted',
+            subtitle: `${messageCount} message${messageCount > 1 ? 's' : ''} deleted successfully`,
             placement: 'top',
           }),
         );
       } else {
-        console.error('Failed to delete message:', response);
-        const errorMessage = response?.response?.data?.message || 'Failed to delete message';
+        console.error('Failed to delete messages:', response);
+        const errorMessage = response?.response?.data?.message || 'Failed to delete messages';
         dispatch(
           showSnackbar({
             type: 'error',
@@ -176,12 +231,12 @@ const ContactChat = () => {
         );
       }
     } catch (error) {
-      console.error('Error deleting message:', error);
+      console.error('Error deleting messages:', error);
       dispatch(
         showSnackbar({
           type: 'error',
           title: 'Server Error',
-          subtitle: 'Failed to delete message',
+          subtitle: 'Failed to delete messages',
           placement: 'top',
         }),
       );
@@ -275,9 +330,9 @@ const ContactChat = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
         <View style={styles.container}>
-          {selectedMessage ? (
+          {selectedMessages.length > 0 ? (
             <SelectedMessageBar
-              selectedMessage={selectedMessage}
+              selectedMessages={selectedMessages}
               onClose={handleClearSelected}
               onCopy={handleCopySelected}
               onReply={handleReplySelected}
@@ -304,7 +359,7 @@ const ContactChat = () => {
                 conversations={conversations}
                 setConversations={setConversations}
                 onSelectMessage={handleSelectMessage}
-                selectedMessage={selectedMessage}
+                selectedMessages={selectedMessages}
                 onReply={msg => setReplyMessage(msg)}
                 setUserConversationId={setUserConversationId}
                 onMarkSensitive={handleMarkSensitive}
@@ -325,6 +380,7 @@ const ContactChat = () => {
             <View style={styles.galleryContainer}>
               <GallerySection
                 id={contactDetails?._id}
+                conversationId={conversationId}
               />
             </View>
           )}
@@ -335,8 +391,8 @@ const ContactChat = () => {
       <CustomDialog
         visible={showDeleteDialog}
         onDismiss={handleDeleteCancel}
-        title="Delete Message"
-        message="Are you sure you want to delete this message?"
+        title="Delete Messages"
+        message={`Are you sure you want to delete ${messageToDelete?.length || 0} message${messageToDelete?.length > 1 ? 's' : ''}?`}
         icon="delete-outline"
         iconColor="#ff4444"
         confirmText="Delete"

@@ -17,7 +17,8 @@ const GallerySelectionBar = ({
     onDelete,
     onCancel,
     // Redux-based mode (for main gallery)
-    useRedux = false
+    useRedux = false,
+    conversationId
 }) => {
     const dispatch = useDispatch();
 
@@ -188,7 +189,7 @@ const GallerySelectionBar = ({
             const ids = items.map(item => item._id);
             console.log('Deleting items:', ids);
 
-            const response = await deleteMessages({ ids });
+            const response = await deleteMessages({ ids, conversationId });
 
             if (response?.response?.success) {
                 console.log('Successfully deleted items:', response.response.data);
@@ -233,8 +234,6 @@ const GallerySelectionBar = ({
     const handleMarkUnsensitive = useRedux ? handleReduxMarkUnsensitive : () => onMarkUnsensitive?.(items);
     const handleDelete = useRedux ? handleReduxDelete : () => onDelete?.(items);
     const handleCancel = useRedux ? handleReduxCancel : onCancel;
-
-    console.log('GallerySelectionBar - Rendering with selectedItems:', items.length, 'useRedux:', useRedux);
 
     return (
         <>

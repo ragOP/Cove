@@ -1,4 +1,4 @@
-import { SafeAreaView, StyleSheet } from 'react-native';
+import { SafeAreaView, StatusBar, StyleSheet } from 'react-native';
 import React, { useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Splash from './src/screens/Splash/Splash';
@@ -8,7 +8,6 @@ import MainScreen from './src/screens/MainScreen/MainScreen';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Paths } from './src/navigaton/paths';
 import Start from './src/screens/Start/Start';
 import { Provider, useSelector } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -28,6 +27,7 @@ import { PermissionsAndroid, Platform, View, Text, ActivityIndicator } from 'rea
 import useNotificationSocket from './src/hooks/useNotificationSocket';
 import { CaptureProtection } from 'react-native-capture-protection';
 import { Portal } from 'react-native-paper';
+import { Paths } from './src/navigation/paths';
 
 export const queryClient = new QueryClient();
 
@@ -122,12 +122,27 @@ const App = () => {
     requestNotificationPermission();
   }, []);
 
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      StatusBar.setBarStyle('light-content', true);
+      StatusBar.setBackgroundColor('#181818', true);
+      StatusBar.setTranslucent(false);
+    } else {
+      StatusBar.setBarStyle('light-content', true);
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Provider store={store}>
         <PersistGate loading={<PersistLoadingScreen />} persistor={persistor}>
           <GestureHandlerRootView style={styles.container}>
             <SafeAreaProvider>
+              <StatusBar
+                barStyle="light-content"
+                backgroundColor="#181818"
+                translucent={false}
+              />
               <SafeAreaView style={styles.safeAreaContainer}>
                 <PaperProvider>
                   <Portal.Host>

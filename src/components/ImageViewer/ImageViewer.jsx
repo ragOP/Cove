@@ -39,6 +39,7 @@ const ImageViewer = ({
   autoHideNavigation = true,
   showSnackbarNotifications = true,
   currentUserId,
+  conversationId
 }) => {
   const dispatch = useDispatch();
 
@@ -317,7 +318,7 @@ const ImageViewer = ({
         return;
       }
 
-      const response = await deleteMessages({ ids });
+      const response = await deleteMessages({ ids, conversationId });
 
       if (response?.response?.success) {
         // Call the callback to update UI if provided
@@ -593,7 +594,7 @@ const ImageViewer = ({
               style={styles.arrowButton}
               onPress={handleClose}
               activeOpacity={0.8}
-              // hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            // hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <MaterialCommunityIcons name="arrow-left" size={28} color="#fff" />
             </TouchableOpacity>

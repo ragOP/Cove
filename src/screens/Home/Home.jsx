@@ -30,7 +30,7 @@ import {
   clearContacts,
   setBottomNavIndex,
 } from '../../redux/slice/chatSlice';
-import { Paths } from '../../navigaton/paths';
+import { Paths } from '../../navigation/paths';
 import ContactRow from './components/ContactRow';
 import SelectedContactBar from './components/SelectedContactBar';
 import EmptyContactsState from './components/EmptyContactsState';

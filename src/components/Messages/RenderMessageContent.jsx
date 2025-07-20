@@ -1,8 +1,8 @@
 import React, { memo } from 'react';
-import {Text, View, TouchableOpacity} from 'react-native';
+import { Text, View, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {styles} from './MessageItem';
+import { styles } from './MessageItem';
 import ChatText from './ChatText';
 import CustomImage from '../Image/CustomImage';
 import { markAsSensitive } from '../../apis/markAsSensitive';
@@ -12,10 +12,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { showSnackbar } from '../../redux/slice/snackbarSlice';
 
 const chatTextStyles = {
-  videoIcon: {marginBottom: 4},
+  videoIcon: { marginBottom: 4 },
 };
 
-const RenderMessageContent = memo(({item, isSent, onMarkSensitive, onMarkUnsensitive, onDelete}) => {
+const RenderMessageContent = memo(({ item, conversationId, isSent, onMarkSensitive, onMarkUnsensitive, onDelete }) => {
   const textStyle = isSent ? styles.sentText : styles.receivedText;
   const dispatch = useDispatch();
 
@@ -103,8 +103,21 @@ const RenderMessageContent = memo(({item, isSent, onMarkSensitive, onMarkUnsensi
   };
 
   const handleDelete = async () => {
+    // Safety check: Only allow deletion of own messages
+    if (!item?.sender?._id || item.sender._id !== currentUserId) {
+      dispatch(
+        showSnackbar({
+          type: 'warning',
+          title: 'Cannot Delete',
+          subtitle: 'You can only delete your own messages',
+          placement: 'top',
+        }),
+      );
+      return;
+    }
+
     try {
-      const response = await deleteMessages({ ids: [item._id] });
+      const response = await deleteMessages({ ids: [item._id], conversationId });
       if (response?.response?.success) {
         // Update the message in the parent component
         if (onDelete) {
@@ -148,9 +161,9 @@ const RenderMessageContent = memo(({item, isSent, onMarkSensitive, onMarkUnsensi
     case 'image':
       return (
         <View>
-          <View style={{position: 'relative'}}>
+          <View style={{ position: 'relative' }}>
             <CustomImage
-              source={{uri: item.mediaUrl}}
+              source={{ uri: item.mediaUrl }}
               style={styles.imageMessage}
               showPreview={true}
               resizeMode="cover"
@@ -163,6 +176,7 @@ const RenderMessageContent = memo(({item, isSent, onMarkSensitive, onMarkUnsensi
               onMarkSensitive={handleMarkSensitive}
               onMarkUnsensitive={handleMarkUnsensitive}
               onDelete={handleDelete}
+              conversationId={conversationId}
             />
             {item.isSensitive && (
               <View style={styles.protectedBadge}>
@@ -178,9 +192,9 @@ const RenderMessageContent = memo(({item, isSent, onMarkSensitive, onMarkUnsensi
     case 'text-image':
       return (
         <View>
-          <View style={{position: 'relative'}}>
+          <View style={{ position: 'relative' }}>
             <CustomImage
-              source={{uri: item.mediaUrl}}
+              source={{ uri: item.mediaUrl }}
               style={styles.imageMessage}
               showPreview={true}
               resizeMode="cover"
@@ -193,6 +207,7 @@ const RenderMessageContent = memo(({item, isSent, onMarkSensitive, onMarkUnsensi
               onMarkSensitive={handleMarkSensitive}
               onMarkUnsensitive={handleMarkUnsensitive}
               onDelete={handleDelete}
+              conversationId={conversationId}
             />
             {item.isSensitive && (
               <View style={styles.protectedBadge}>

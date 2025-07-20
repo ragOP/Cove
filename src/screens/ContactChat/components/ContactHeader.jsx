@@ -6,7 +6,7 @@ import FeatherIcon from 'react-native-vector-icons/Feather';
 import {Text, Menu} from 'react-native-paper';
 import {useNavigation} from '@react-navigation/native';
 import UserAvatar from '../../../components/CustomAvatar/UserAvatar';
-import {Paths} from '../../../navigaton/paths';
+import {Paths} from '../../../navigation/paths';
 
 const AccountOutlineIconWhite = props => (
   <MaterialIcon name="account-outline" {...props} color="#fff" />

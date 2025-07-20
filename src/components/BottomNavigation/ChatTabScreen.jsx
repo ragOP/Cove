@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Home from '../../screens/Home/Home';
-import { Paths } from '../../navigaton/paths';
+import { Paths } from '../../navigation/paths';
 
 const ChatTabScreen = () => {
   const navigation = useNavigation();

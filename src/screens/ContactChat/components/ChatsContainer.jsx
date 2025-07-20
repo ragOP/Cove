@@ -29,6 +29,7 @@ const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 
 const ChatMessageRow = ({
   item,
+  conversationId,
   index,
   showDateLabel,
   userId,
@@ -93,6 +94,7 @@ const ChatMessageRow = ({
       <Animated.View style={[styles.fullRow, animatedStyle]}>
         <MessageItem
           item={item}
+          conversationId={conversationId}
           index={index}
           showDateLabel={showDateLabel}
           userId={userId}
@@ -111,7 +113,7 @@ const ChatsContainer = ({
   setConversations,
   onReply,
   onSelectMessage,
-  selectedMessage,
+  selectedMessages,
   setUserConversationId,
   onLoadMore,
   hasMore,
@@ -260,21 +262,16 @@ const ChatsContainer = ({
               : null;
           const showDateLabel = index === reversedConversations?.length - 1 || currentDate !== previousDate;
           const isSelected =
-            selectedMessage && item?._id === selectedMessage._id;
+            selectedMessages && selectedMessages.some(selected => selected._id === item._id);
           return (
             <ChatMessageRow
               item={item}
+              conversationId={conversationId}
               index={index}
               showDateLabel={showDateLabel}
               userId={userId}
               onReply={onReply}
-              onSelectMessage={msg => {
-                if (selectedMessage && selectedMessage?._id === msg?._id) {
-                  onSelectMessage(null);
-                } else {
-                  onSelectMessage(msg);
-                }
-              }}
+              onSelectMessage={onSelectMessage}
               selected={isSelected}
               onMarkSensitive={onMarkSensitive}
               onMarkUnsensitive={onMarkUnsensitive}

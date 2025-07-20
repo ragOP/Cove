@@ -48,7 +48,7 @@ const chunkArray = (array, size) => {
   return result;
 };
 
-const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, isSelectionMode, currentUserId }) => {
+const GalleryItem = ({ item, conversationId, onPress, onLongPress, isSelected, styles, isSelectionMode, currentUserId }) => {
   const [error, setError] = React.useState(false);
 
   if (!item || !item._id) {
@@ -83,6 +83,8 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, isSelecti
             sender={item?.sender}
             currentUserId={currentUserId}
             timestamp={item?.createdAt}
+            conversationId={conversationId}
+
           />
         )}
         {item?.isSensitive && (
@@ -139,6 +141,7 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, isSelecti
             sender={item?.sender}
             currentUserId={currentUserId}
             timestamp={item?.createdAt}
+            conversationId={conversationId}
           />
         )}
         <View style={styles.playIconWrap}>
@@ -175,7 +178,7 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, isSelecti
   );
 };
 
-const GallerySection = ({ id }) => {
+const GallerySection = ({ id, conversationId }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -251,7 +254,7 @@ const GallerySection = ({ id }) => {
   useChatSocket({
     onMessageDeleted: data => {
       if (data?.data && Array.isArray(data.data)) {
-        const newDeletedIds = data.data; 
+        const newDeletedIds = data.data;
         setDeletedMessageIds(prev => [...prev, ...newDeletedIds]);
         queryClient.invalidateQueries({ queryKey: ['gallery', id] });
       }
@@ -923,6 +926,7 @@ const GallerySection = ({ id }) => {
           onMarkUnsensitive={handleMarkUnsensitive}
           showSnackbarNotifications={false}
           currentUserId={currentUserId}
+          conversationId={conversationId}
         />
       </ScrollView>
       {isSelectionMode && (
@@ -934,6 +938,7 @@ const GallerySection = ({ id }) => {
             onDelete={handleDelete}
             onCancel={handleCancelSelection}
             useRedux={false}
+            conversationId={conversationId}
           />
         </View>
       )}

@@ -1,7 +1,7 @@
 import React from 'react';
 import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {Paths} from '../../navigaton/paths';
+import {Paths} from '../../navigation/paths';
 import {useNavigation} from '@react-navigation/native';
 import UserAgreementFooter from '../../components/Footer/UserAgreementFooter';
 
