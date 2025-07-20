@@ -193,7 +193,6 @@ const GalleryScreen = () => {
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [markSensitiveDialog, setMarkSensitiveDialog] = useState(false);
 
-
   // Multi-select state from Redux
   const isSelectionMode = useSelector(state => state.gallery.isSelectionMode);
   const selectedItems = useSelector(state => state.gallery.selectedItems);
@@ -259,6 +258,7 @@ const GalleryScreen = () => {
   const onHandleGalleryMessageDeleted = (data) => {
     if (data?.data && Array.isArray(data.data)) {
       const deletedMessageIds = data.data;
+      console.log('deletedMessageIds', deletedMessageIds);
       dispatch(removeGalleryItems(deletedMessageIds));
     }
   }
@@ -622,7 +622,6 @@ const GalleryScreen = () => {
   };
 
   const handleImageViewerMarkSensitive = (image) => {
-    // Update Redux state immediately for UI feedback
     dispatch(updateMultipleGalleryItems({
       itemIds: [image._id],
       updates: { isSensitive: true }
@@ -865,8 +864,6 @@ const GalleryScreen = () => {
           }
         />
       </View>
-
-
 
       {/* Image Viewer */}
       <ImageViewer

@@ -175,7 +175,6 @@ const GalleryItem = ({ item, onPress, onLongPress, isSelected, styles, isSelecti
   );
 };
 
-
 const GallerySection = ({ id }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
@@ -198,6 +197,15 @@ const GallerySection = ({ id }) => {
   const isItemOwnedByUser = (item) => {
     return item?.sender?._id === currentUserId;
   };
+
+  useChatSocket({
+    onMessageReceived: message => {
+      console.log('message >>>>>>>.', message);
+      if (message?.type === 'image') {
+        queryClient.invalidateQueries({ queryKey: ['gallery', id] });
+      }
+    },
+  });
 
   // Reset states when contact changes
   useEffect(() => {
@@ -243,10 +251,8 @@ const GallerySection = ({ id }) => {
   useChatSocket({
     onMessageDeleted: data => {
       if (data?.data && Array.isArray(data.data)) {
-        const newDeletedIds = data.data; // Direct array of IDs
+        const newDeletedIds = data.data; 
         setDeletedMessageIds(prev => [...prev, ...newDeletedIds]);
-
-        // Invalidate and refetch gallery data
         queryClient.invalidateQueries({ queryKey: ['gallery', id] });
       }
     },
@@ -836,9 +842,6 @@ const GallerySection = ({ id }) => {
       contactId: id
     });
   }, [isSelectionMode, selectedItems.length, id]);
-
-  // Debug logging
-  console.log('GallerySection - id:', id, 'galleryLoading:', galleryLoading, 'galleryData.length:', galleryData.length);
 
   if (galleryLoading || !id) {
     return (

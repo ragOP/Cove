@@ -16,6 +16,7 @@ export const apiService = async ({
 }) => {
   try {
     const token = selectToken(store.getState());
+    // console.log(token)
 
     const requestObj = {
       url: `${customUrl ? customUrl : BACKEND_URL}/${endpoint}`,

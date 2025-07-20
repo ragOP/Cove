@@ -38,8 +38,10 @@ const ImageViewer = ({
   showCenterNavigation = true,
   autoHideNavigation = true,
   showSnackbarNotifications = true,
-  currentUserId, // Add currentUserId prop to determine if image was sent by current user
+  currentUserId,
 }) => {
+  const dispatch = useDispatch();
+
   const [currentIndex, setCurrentIndex] = useState(initialIndex || 0);
   const [showInfo, setShowInfo] = useState(false);
   const [showNavigation, setShowNavigation] = useState(true);
@@ -49,7 +51,6 @@ const ImageViewer = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showSensitiveDialog, setShowSensitiveDialog] = useState(false);
   const [showUnsensitiveDialog, setShowUnsensitiveDialog] = useState(false);
-  const dispatch = useDispatch();
 
   useEffect(() => {
     if (visible) {
@@ -69,7 +70,6 @@ const ImageViewer = ({
       });
       return () => backHandler.remove();
     } else {
-      // Reset dialog states when closing
       setShowDeleteDialog(false);
       setShowSensitiveDialog(false);
       setShowUnsensitiveDialog(false);
@@ -113,8 +113,8 @@ const ImageViewer = ({
   const senderInfo = getSenderInfo(currentImage);
 
   const handleClose = () => {
-    setShowInfo(false); // Close info modal if open
-    // Reset all dialog states when closing
+    setShowInfo(false);
+
     setShowDeleteDialog(false);
     setShowSensitiveDialog(false);
     setShowUnsensitiveDialog(false);
@@ -568,6 +568,8 @@ const ImageViewer = ({
     }
   };
 
+  console.log(1111111)
+
   return (
     <Modal
       visible={visible}
@@ -577,7 +579,7 @@ const ImageViewer = ({
       statusBarTranslucent={true}>
       <StatusBar hidden />
       <View style={styles.modalOverlay}>
-        {/* Touchable overlay to close modal when tapping outside - excluding bottom bar area */}
+
         <TouchableOpacity
           style={styles.overlayTouchable}
           onPress={handleClose}
@@ -591,22 +593,24 @@ const ImageViewer = ({
               style={styles.arrowButton}
               onPress={handleClose}
               activeOpacity={0.8}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              // hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <MaterialCommunityIcons name="arrow-left" size={28} color="#fff" />
             </TouchableOpacity>
 
             <View style={styles.headerInfoContainer}>
-              {senderInfo && (
-                <Text style={styles.senderNameText}>
-                  {senderInfo.name || "Unknown"}
-                </Text>
-              )}
-              {currentImage?.timestamp && (
-                <Text style={styles.timeText}>
-                  {formatTime(currentImage.timestamp)}
-                </Text>
-              )}
+              <View style={styles.senderInfoRow}>
+                {senderInfo && (
+                  <Text style={styles.senderNameText}>
+                    {senderInfo.name || "Unknown"}
+                  </Text>
+                )}
+                {currentImage?.timestamp && (
+                  <Text style={styles.timeText}>
+                    {formatTime(currentImage.timestamp)}
+                  </Text>
+                )}
+              </View>
             </View>
 
             <View style={styles.imageCounterContainer}>
@@ -634,7 +638,7 @@ const ImageViewer = ({
               key={`image-${image?._id || index}-${index}`}
               style={styles.imageContainer}
               onPress={handleImagePress}
-              onLongPress={handleLongPress}
+              // onLongPress={handleLongPress}
               activeOpacity={1}>
               <Image
                 source={{ uri: image?.uri }}
@@ -837,7 +841,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 80, // Exclude bottom bar area
-    zIndex: 1,
+    zIndex: 0,
   },
   headerContainer: {
     position: 'absolute',
@@ -851,7 +855,7 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingBottom: 16,
     backgroundColor: 'rgba(0,0,0,0.8)',
-    zIndex: 1001,
+    zIndex: 100,
   },
   arrowButton: {
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -864,6 +868,10 @@ const styles = StyleSheet.create({
   headerInfoContainer: {
     flex: 1,
     marginLeft: 12,
+    alignItems: 'flex-start',
+  },
+  senderInfoRow: {
+    flexDirection: 'column',
     alignItems: 'flex-start',
   },
   senderNameText: {
@@ -889,7 +897,7 @@ const styles = StyleSheet.create({
   },
   imageScrollView: {
     flex: 1,
-    zIndex: 2,
+    zIndex: 10,
     marginTop: 80,
     marginBottom: 80,
   },

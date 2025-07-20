@@ -7,7 +7,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getConversations } from '../../../apis/getConversations';
 import { useSelector } from 'react-redux';
 import MessageItem from '../../../components/Messages/MessageItem';
@@ -41,6 +41,7 @@ const ChatMessageRow = ({
 }) => {
   const held = useSharedValue(false);
   const translateX = useSharedValue(0);
+
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -125,6 +126,8 @@ const ChatsContainer = ({
   const [refreshing, setRefreshing] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const userId = useSelector(state => state.auth.user?.id);
+
+  const queryClient = useQueryClient();
 
   const { isLoading, refetch } = useQuery({
     queryKey: ['user_conversations', conversationId],
