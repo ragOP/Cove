@@ -7,7 +7,6 @@ export const getUserGallery = async ({params, id}) => {
       endpoint: `${endpoints.userGallery}`,
       params,
     });
-    console.log('apiResponse', apiResponse);
     return apiResponse;
   } catch (error) {
     console.error(error);

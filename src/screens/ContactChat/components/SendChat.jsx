@@ -40,8 +40,6 @@ const SendChat = ({
   // Get current gallery state for total calculation
   const currentGalleryTotal = useSelector(state => state.gallery.total);
 
-  console.log("userId >>>", userId)
-
   const [message, setMessage] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);

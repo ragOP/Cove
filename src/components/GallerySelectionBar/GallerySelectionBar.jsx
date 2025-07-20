@@ -23,10 +23,11 @@ const GallerySelectionBar = ({
     const dispatch = useDispatch();
 
     // Redux state for main gallery (using gallery slice)
-    const reduxSelectedItems = useSelector(state => {
-        if (!useRedux) return [];
-        return state.gallery.selectedItems || [];
-    });
+    // const reduxSelectedItems = useSelector(state => {
+    //     if (!useRedux) return [];
+    //     return state.gallery.selectedItems || [];
+    // });
+    const reduxSelectedItems = useSelector(state => state.gallery.selectedItems);
 
     // Determine which selected items to use
     const items = useRedux ? reduxSelectedItems : selectedItems;

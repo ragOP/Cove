@@ -48,7 +48,7 @@ const chunkArray = (array, size) => {
   return result;
 };
 
-const GalleryItem = ({ item, conversationId, onPress, onLongPress, isSelected, styles, isSelectionMode, currentUserId }) => {
+const GalleryItem = ({ item, conversationId, onPress, onLongPress, isSelected, styles, isSelectionMode, currentUserId, setConversations }) => {
   const [error, setError] = React.useState(false);
 
   if (!item || !item._id) {
@@ -178,7 +178,7 @@ const GalleryItem = ({ item, conversationId, onPress, onLongPress, isSelected, s
   );
 };
 
-const GallerySection = ({ id, conversationId }) => {
+const GallerySection = ({ id, setConversations, conversationId }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -528,7 +528,7 @@ const GallerySection = ({ id, conversationId }) => {
 
       try {
         // Make the actual API call
-        const response = await deleteMessages({ ids: itemIds });
+        const response = await deleteMessages({ ids: itemIds, conversationId });
 
         if (response?.response?.success) {
           // Immediately close the image viewer since the image was deleted
@@ -584,7 +584,7 @@ const GallerySection = ({ id, conversationId }) => {
 
       try {
         // Make the actual API call
-        const response = await deleteMessages({ ids: itemIds });
+        const response = await deleteMessages({ ids: itemIds, conversationId });
 
         if (response?.response?.success) {
           // Update cache to remove the items
@@ -769,7 +769,7 @@ const GallerySection = ({ id, conversationId }) => {
         const itemIds = pendingAction.items.map(item => item._id);
 
         // Make the actual API call
-        const response = await deleteMessages({ ids: itemIds });
+        const response = await deleteMessages({ ids: itemIds, conversationId });
 
         if (response?.response?.success) {
           // Update cache to remove the items
@@ -833,18 +833,7 @@ const GallerySection = ({ id, conversationId }) => {
     return selectedItems.some(selected => selected._id === item._id);
   };
 
-  console.log(filteredMediaList)
-
   const allImages = prepareImagesForViewer(filteredMediaList);
-
-  // Debug logging for selection state
-  useEffect(() => {
-    console.log('GallerySection - Selection state changed:', {
-      isSelectionMode,
-      selectedItemsCount: selectedItems.length,
-      contactId: id
-    });
-  }, [isSelectionMode, selectedItems.length, id]);
 
   if (galleryLoading || !id) {
     return (
@@ -903,6 +892,8 @@ const GallerySection = ({ id, conversationId }) => {
                         styles={styles}
                         isSelectionMode={isSelectionMode}
                         currentUserId={currentUserId}
+                        setConversations={setConversations}
+                        conversationId={conversationId}
                       />
                     ))}
                   </View>

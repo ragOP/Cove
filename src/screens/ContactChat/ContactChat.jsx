@@ -199,7 +199,7 @@ const ContactChat = () => {
 
     try {
       const messageIds = messageToDelete.map(msg => msg._id);
-      const response = await deleteMessages({ ids: messageIds });
+      const response = await deleteMessages({ ids: messageIds, conversationId });
 
       if (response?.response?.success) {
         // Remove the messages from conversations
@@ -381,6 +381,7 @@ const ContactChat = () => {
               <GallerySection
                 id={contactDetails?._id}
                 conversationId={conversationId}
+                setConversations={setConversations}
               />
             </View>
           )}

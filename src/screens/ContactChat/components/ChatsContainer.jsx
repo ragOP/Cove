@@ -43,7 +43,6 @@ const ChatMessageRow = ({
   const held = useSharedValue(false);
   const translateX = useSharedValue(0);
 
-
   const animatedStyle = useAnimatedStyle(() => {
     return {
       backgroundColor:

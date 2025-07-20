@@ -78,7 +78,6 @@ const gallerySlice = createSlice({
         newItem =>
           !state.galleryData.some(existing => existing._id === newItem._id),
       );
-      console.log(state.galleryData, newItems);
       state.galleryData = [...(newItems || []), ...(state.galleryData || [])];
       state.total = total || state.total;
       state.page = page || state.page;

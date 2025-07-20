@@ -18,7 +18,6 @@ export const deleteMessages = async ({ids, conversationId}) => {
       method: 'POST',
       data: payload,
     });
-    console.log('Delete messages response:', apiResponse);
     return apiResponse;
   } catch (error) {
     console.error('Delete messages error:', error);
