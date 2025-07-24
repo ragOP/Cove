@@ -1,5 +1,5 @@
 import { useEffect, useRef, memo } from 'react';
-import { Animated, Text, View, StyleSheet } from 'react-native';
+import { Animated, Text, View, StyleSheet, TouchableOpacity } from 'react-native';
 import { formatDateLabel } from '../../utils/date/formatDateLabel';
 import { formatTime } from '../../utils/time/formatTime';
 import RenderMessageContent from './RenderMessageContent';
@@ -15,6 +15,7 @@ const MessageItem = memo(({
   onMarkSensitive,
   onMarkUnsensitive,
   onDelete,
+  onRetry,
 }) => {
   const isSent = item?.sender?._id === userId;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -62,6 +63,14 @@ const MessageItem = memo(({
         <View style={styles.timeStatusRow}>
           <Text style={styles.timeText}>{formatTime(item.timestamp)}</Text>
           {isSent && <TickIcon status={item.status} anim={fadeAnim} />}
+          {isSent && item.status === 'failed' && onRetry && (
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={() => onRetry(item)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Icon name="refresh" size={14} color="#ff4444" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </Animated.View>
@@ -88,6 +97,18 @@ export const TickIcon = ({ status, anim }) => {
     return (
       <Animated.View style={{ opacity: anim }}>
         <Icon name="checkmark-done" size={16} color="#bbb" />
+      </Animated.View>
+    );
+  } else if (status === 'sending') {
+    return (
+      <Animated.View style={{ opacity: anim }}>
+        <Icon name="time-outline" size={16} color="#ffb300" />
+      </Animated.View>
+    );
+  } else if (status === 'failed') {
+    return (
+      <Animated.View style={{ opacity: anim }}>
+        <Icon name="close-circle" size={16} color="#ff4444" />
       </Animated.View>
     );
   } else {
@@ -178,6 +199,10 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: 4,
+  },
+  retryButton: {
+    padding: 2,
+    marginLeft: 4,
   },
   protectedBadge: {
     position: 'absolute',

@@ -26,13 +26,14 @@ export default function useChatSocket({
     }
   };
 
-  const leaveChat = conversationId => {
+  const leaveChat = (conversationId, receiverId) => {
     if (!conversationId) {
       return;
     }
 
     if (socket && socket.connected) {
       console.info('[LEAVE CHAT]', conversationId);
+      emitTypingStatus(false, conversationId, receiverId);
       socket.emit('leave_chat', {conversationId});
     }
   };
@@ -85,10 +86,10 @@ export default function useChatSocket({
     };
     const handleMessageDeleted = data => {
       console.info('[MESSAGE DELETED]', data);
-      const userId = data?.userId;
-
+      const userId = data?.data?.receiverId;
+      const deleteIds = data?.data?.messageIds;
       if (userId === id) {
-        onMessageDeleted?.(data);
+        onMessageDeleted?.(deleteIds);
       }
     };
     const handleError = err => {

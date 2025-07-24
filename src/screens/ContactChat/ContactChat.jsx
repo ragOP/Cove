@@ -115,8 +115,9 @@ const ContactChat = () => {
     },
     onMessageDeleted: data => {
       // Handle message_deleted event - data.data is array of message IDs
-      if (data?.data && Array.isArray(data.data)) {
-        const deletedMessageIds = data.data; // Direct array of IDs
+      if (data && Array.isArray(data)) {
+        console.log("data", data)
+        const deletedMessageIds = data; // Direct array of IDs
         setConversations(prev => prev.filter(msg => !deletedMessageIds.includes(msg._id)));
 
         // Invalidate gallery cache when messages are deleted via socket
@@ -299,6 +300,12 @@ const ContactChat = () => {
     );
   };
 
+  const handleRetryMessage = async (failedMessage) => {
+    // This function will be implemented in SendChat component
+    // We pass it through to maintain the same interface
+    console.log('Retry message:', failedMessage);
+  };
+
 
   useQuery({
     queryKey: ['read_chat', userConversationId],
@@ -314,7 +321,7 @@ const ContactChat = () => {
     joinChat(conversationId);
 
     return () => {
-      leaveChat(conversationId);
+      leaveChat(conversationId,  contactDetails?._id);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
@@ -365,6 +372,7 @@ const ContactChat = () => {
                 onMarkSensitive={handleMarkSensitive}
                 onMarkUnsensitive={handleMarkUnsensitive}
                 onDelete={handleDeleteMessage}
+                onRetry={handleRetryMessage}
               />
               <SendChat
                 conversationId={conversationId}
@@ -374,6 +382,7 @@ const ContactChat = () => {
                 replyMessage={replyMessage}
                 onCancelReply={() => setReplyMessage(null)}
                 emitTypingStatus={emitTypingStatus}
+                onRetry={handleRetryMessage}
               />
             </>
           ) : (

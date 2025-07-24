@@ -576,9 +576,10 @@ const ImageViewer = ({
       transparent={true}
       animationType="fade"
       onRequestClose={handleModalClose}
-      statusBarTranslucent={true}>
-      <StatusBar hidden />
-      <SafeAreaView style={styles.modalOverlay}>
+      statusBarTranslucent={true}
+      hardwareAccelerated={true}>
+      <StatusBar hidden backgroundColor="transparent" translucent />
+      <SafeAreaView style={styles.modalOverlay} edges={['top', 'bottom']}>
         <TouchableOpacity
           style={styles.overlayTouchable}
           onPress={handleClose}
@@ -731,10 +732,10 @@ const ImageViewer = ({
               <MaterialIcon name="share-variant" size={26} color="#D28A8C" />
               <Text style={styles.viewerBarLabel}>Share</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.viewerBarButton} onPress={() => setShowInfo(true)}>
+            {/* <TouchableOpacity style={styles.viewerBarButton} onPress={() => setShowInfo(true)}>
               <MaterialIcon name="information-outline" size={26} color="#D28A8C" />
               <Text style={styles.viewerBarLabel}>Info</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         )}
 
@@ -851,6 +852,7 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: 'rgba(0,0,0,0.8)',
     zIndex: 100,
+    elevation: 5,
   },
   headerContent: {
     flexDirection: 'row',
@@ -867,6 +869,7 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    elevation: 3,
   },
   headerInfoContainer: {
     flex: 1,
@@ -892,6 +895,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 15,
+    elevation: 3,
   },
   imageCounterText: {
     color: '#fff',
@@ -1011,6 +1015,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
     marginTop: -30,
+    elevation: 8,
   },
   centerNavButtonInner: {
     width: 50,

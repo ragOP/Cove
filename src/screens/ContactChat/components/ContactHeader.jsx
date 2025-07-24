@@ -109,9 +109,9 @@ const ContactHeader = ({
           </View>
         </View>
         <View style={styles.iconsContainer}>
-          <TouchableOpacity onPress={handleCall} style={styles.iconBtn}>
+          {/* <TouchableOpacity onPress={handleCall} style={styles.iconBtn}>
             <Icon name="call-outline" size={26} color="#D28A8C" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <Menu
             visible={menuVisible}
             onDismiss={closeMenu}

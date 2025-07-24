@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -14,7 +14,6 @@ import { useSelector, useDispatch } from 'react-redux';
 import { prepareMessagePayload } from '../../../helpers/messages/prepareMessagePayload';
 import { selectFiles } from '../../../helpers/files/selectFiles';
 import { uploadFiles } from '../../../helpers/files/uploadFiles';
-import PrimaryLoader from '../../../components/Loaders/PrimaryLoader';
 import { dedupeMessages } from '../../../utils/messages/dedupeMessages';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import { playSoundEffect } from '../../../utils/sound';
@@ -41,12 +40,13 @@ const SendChat = ({
   const currentGalleryTotal = useSelector(state => state.gallery.total);
 
   const [message, setMessage] = useState('');
-  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [uploading, setUploading] = useState(false);
   const [captions, setCaptions] = useState({});
   const [activeFileIdx, setActiveFileIdx] = useState(null);
   const [mediaPreview, setMediaPreview] = useState(null);
+  const [messageQueue, setMessageQueue] = useState([]);
+  const [isProcessingQueue, setIsProcessingQueue] = useState(false);
+  const isMountedRef = useRef(true);
 
   const handleSelectFiles = async () => {
     try {
@@ -92,117 +92,362 @@ const SendChat = ({
     }
   };
 
-  const handleSend = async () => {
-    emitTypingStatus(false, conversationId, receiverId);
+  const processMessageQueue = useCallback(async () => {
+    if (isProcessingQueue) {
+      return;
+    }
 
-    if (isSendingMessage) {
-      return;
-    }
-    if ((!message.trim() && selectedFiles.length === 0) || isSendingMessage) {
-      return;
-    }
-    setIsSendingMessage(true);
-    setUploading(true);
-    let uploadedFiles = [];
+    setIsProcessingQueue(true);
 
     try {
-      // Upload files if any
-      if (selectedFiles.length > 0) {
-        uploadedFiles = await uploadFiles(selectedFiles);
-        uploadedFiles = uploadedFiles.map((file, idx) => ({
-          ...file,
-          caption: captions[idx] || '',
-        }));
-      }
-      setUploading(false);
+      const currentQueue = [...messageQueue];
 
-      // Send text message if there's text and no files
-      if (selectedFiles.length === 0 && message.trim()) {
-        const payloads = prepareMessagePayload({
-          text: message,
+      if (currentQueue.length === 0) {
+        setIsProcessingQueue(false);
+        return;
+      }
+
+      // Clear the queue immediately
+      setMessageQueue([]);
+
+      // Process all items in the queue
+      for (const queueItem of currentQueue) {
+        if (queueItem.type === 'text') {
+          await processTextMessage(queueItem);
+        } else if (queueItem.type === 'file') {
+          await processFileMessage(queueItem);
+        }
+      }
+
+      setIsProcessingQueue(false);
+    } catch (error) {
+      console.error('Error processing message queue:', error);
+      setIsProcessingQueue(false);
+    }
+  }, [isProcessingQueue, messageQueue, processTextMessage, processFileMessage]);
+
+  const processTextMessage = useCallback(async (queueItem) => {
+    const { messageText, replyMessage: replyMsg } = queueItem;
+
+    const payloads = prepareMessagePayload({
+      text: messageText,
+      files: [],
+      senderId: userId,
+      receiverId,
+      replyTo: replyMsg?._id || replyMsg?.id || undefined,
+    });
+
+    for (const payload of payloads) {
+      const optimisticMessage = {
+        _id: `temp_${Date.now()}_${Math.random()}`,
+        content: messageText,
+        type: 'text',
+        sender: { _id: userId, name: reduxUser?.name },
+        receiver: { _id: receiverId },
+        timestamp: new Date().toISOString(),
+        status: 'sending',
+        ...(replyMsg && { replyTo: replyMsg }),
+      };
+
+      // Add optimistic message immediately
+      try {
+        setConversations(prev =>
+          dedupeMessages([...(prev || []), optimisticMessage]),
+        );
+
+        // Play sound and haptic feedback immediately
+        playSoundEffect('send');
+        ReactNativeHapticFeedback.trigger('impactLight');
+
+        const apiResponse = await sendMessage({ payload });
+        if (apiResponse?.response?.success) {
+          const response = apiResponse.response.data
+          console.log("RESPONSE", response, conversations?.reverse()?.slice(0, 10), optimisticMessage._id)
+          setConversations(prev =>
+            prev.map(msg =>
+              msg._id === optimisticMessage._id
+                ? { ...response, status: 'sent' }
+                : msg
+            ),
+          );
+
+        } else {
+          setConversations(prev =>
+            prev.map(msg =>
+              msg._id === optimisticMessage._id
+                ? { ...msg, status: 'failed' }
+                : msg
+            ),
+          );
+        }
+
+
+      } catch (error) {
+        console.error('Error processing text message:', error);
+        try {
+          setConversations(prev =>
+            prev.map(msg =>
+              msg._id === optimisticMessage._id
+                ? { ...msg, status: 'failed' }
+                : msg
+            ),
+          );
+
+        } catch (stateError) {
+          console.error('Error updating message status:', stateError);
+        }
+      }
+    }
+  }, [userId, receiverId, reduxUser?.name, setConversations]);
+
+  const processFileMessage = useCallback(async (queueItem) => {
+    const { file, replyMessage: replyMsg } = queueItem;
+
+    // Upload file first
+    const uploadedFiles = await uploadFiles([file]);
+    const uploadedFile = uploadedFiles[0];
+
+    if (!uploadedFile) {
+      console.error('Failed to upload file');
+      return;
+    }
+
+    const payload = prepareMessagePayload({
+      text: file.caption || '',
+      files: [uploadedFile],
+      senderId: userId,
+      receiverId,
+      replyTo: replyMsg?._id || replyMsg?.id || undefined,
+    })[0];
+
+    // Create optimistic message for file
+    const optimisticMessage = {
+      _id: `temp_${Date.now()}_${Math.random()}`,
+      content: file.caption || '',
+      type: uploadedFile.fileType.startsWith('image') ? 'image' : 'file',
+      mediaUrl: uploadedFile.url,
+      sender: { _id: userId, name: reduxUser?.name },
+      receiver: { _id: receiverId },
+      timestamp: new Date().toISOString(),
+      status: 'sending',
+      meta: {
+        originalName: uploadedFile.originalName,
+        fileType: uploadedFile.fileType,
+        fileSize: uploadedFile.fileSize,
+      },
+      ...(replyMsg && { replyTo: replyMsg }),
+    };
+
+    // Add optimistic message immediately
+    try {
+      if (isMountedRef.current && setConversations) {
+        setConversations(prev =>
+          dedupeMessages([...(prev || []), optimisticMessage]),
+        );
+      }
+
+      // Play sound and haptic feedback immediately
+      playSoundEffect('send');
+      ReactNativeHapticFeedback.trigger('impactLight');
+
+      // Send to API
+      const apiResponse = await sendMessage({ payload });
+
+      if (apiResponse?.response?.success) {
+        // Replace optimistic message with real message
+        if (isMountedRef.current && setConversations) {
+          setConversations(prev =>
+            prev.map(msg =>
+              msg._id === optimisticMessage._id
+                ? { ...apiResponse.response.data, status: 'sent' }
+                : msg
+            ),
+          );
+        }
+
+        const newMediaItem = apiResponse.response.data;
+
+        if (newMediaItem && newMediaItem.type === 'image') {
+          dispatch(appendGalleryData({
+            data: [newMediaItem],
+            total: currentGalleryTotal + 1,
+            page: 1,
+            per_page: 50
+          }));
+        }
+      } else {
+        // Mark as failed
+        if (isMountedRef.current && setConversations) {
+          setConversations(prev =>
+            prev.map(msg =>
+              msg._id === optimisticMessage._id
+                ? { ...msg, status: 'failed' }
+                : msg
+            ),
+          );
+        }
+        console.error(
+          'Failed to send file message:',
+          apiResponse?.response?.message,
+        );
+      }
+    } catch (error) {
+      console.error('Error processing file message:', error);
+      // Mark as failed if there's an error
+      try {
+        if (isMountedRef.current && setConversations) {
+          setConversations(prev =>
+            prev.map(msg =>
+              msg._id === optimisticMessage._id
+                ? { ...msg, status: 'failed' }
+                : msg
+            ),
+          );
+        }
+      } catch (stateError) {
+        console.error('Error updating file message status:', stateError);
+      }
+    }
+  }, [userId, receiverId, reduxUser?.name, setConversations, dispatch, currentGalleryTotal]);
+
+  const handleRetryMessage = async (failedMessage) => {
+    try {
+      // Update status to sending
+      setConversations &&
+        setConversations(prev =>
+          prev.map(msg =>
+            msg._id === failedMessage._id
+              ? { ...msg, status: 'sending' }
+              : msg
+          ),
+        );
+
+      // Prepare payload based on message type
+      let payload;
+      if (failedMessage.type === 'text') {
+        payload = prepareMessagePayload({
+          text: failedMessage.content,
           files: [],
           senderId: userId,
           receiverId,
-          replyTo: replyMessage?._id || replyMessage?.id || undefined,
-        });
-
-        for (const payload of payloads) {
-          const apiResponse = await sendMessage({ payload });
-          if (apiResponse?.response?.success) {
-            setConversations &&
-              setConversations(prev =>
-                dedupeMessages([...(prev || []), apiResponse.response.data]),
-              );
-            playSoundEffect('send');
-            ReactNativeHapticFeedback.trigger('impactLight');
-          } else {
-            console.error(
-              'Failed to send message:',
-              apiResponse?.response?.message,
-            );
-          }
-        }
+          replyTo: failedMessage.replyTo,
+        })[0];
+      } else {
+        // For media messages, we need to re-upload the file
+        // This is a simplified retry - in a real app you might want to store the original file
+        console.log('Retry for media messages not implemented yet');
+        return;
       }
 
-      if (uploadedFiles.length > 0) {
-        for (let i = 0; i < uploadedFiles.length; i++) {
-          const file = uploadedFiles[i];
-          const payload = prepareMessagePayload({
-            text: file.caption || '',
-            files: [file],
-            senderId: userId,
-            receiverId,
-            replyTo: replyMessage?._id || replyMessage?.id || undefined,
-          })[0];
-
-          const apiResponse = await sendMessage({ payload });
-
-          if (apiResponse?.response?.success) {
-            setConversations &&
-              setConversations(prev =>
-                dedupeMessages([...(prev || []), apiResponse.response.data]),
-              );
-            playSoundEffect('send');
-            ReactNativeHapticFeedback.trigger('impactLight');
-
-            const newMediaItem = apiResponse.response.data;
-
-            if (newMediaItem && newMediaItem.type === 'image') {
-              dispatch(appendGalleryData({
-                data: [newMediaItem],
-                total: currentGalleryTotal + 1,
-                page: 1,
-                per_page: 50
-              }));
-            }
-          } else {
-            console.error(
-              'Failed to send file message:',
-              apiResponse?.response?.message,
-            );
-          }
-        }
-      }
-
-      if (uploadedFiles.length > 0) {
-        queryClient.invalidateQueries({ queryKey: ['gallery', receiverId] });
-      }
-
-      // Reset form
-      setMessage('');
-      setSelectedFiles([]);
-      setCaptions({});
-      setActiveFileIdx(null);
-      if (replyMessage && onCancelReply) {
-        onCancelReply();
+      // Send to API
+      const apiResponse = await sendMessage({ payload });
+      if (apiResponse?.response?.success) {
+        // Replace with real message
+        setConversations &&
+          setConversations(prev =>
+            prev.map(msg =>
+              msg._id === failedMessage._id
+                ? { ...apiResponse.response.data, status: 'sent' }
+                : msg
+            ),
+          );
+      } else {
+        // Mark as failed again
+        setConversations &&
+          setConversations(prev =>
+            prev.map(msg =>
+              msg._id === failedMessage._id
+                ? { ...msg, status: 'failed' }
+                : msg
+            ),
+          );
+        console.error(
+          'Failed to retry message:',
+          apiResponse?.response?.message,
+        );
       }
     } catch (error) {
-      setUploading(false);
-      console.error('Error sending message:', error);
-    } finally {
-      setIsSendingMessage(false);
+      // Mark as failed
+      setConversations &&
+        setConversations(prev =>
+          prev.map(msg =>
+            msg._id === failedMessage._id
+              ? { ...msg, status: 'failed' }
+              : msg
+          ),
+        );
+      console.error('Error retrying message:', error);
     }
   };
+
+  const handleSend = async () => {
+    emitTypingStatus(false, conversationId, receiverId);
+
+    if ((!message.trim() && selectedFiles.length === 0)) {
+      return;
+    }
+
+    // Clear input immediately
+    const currentMessage = message;
+    const currentSelectedFiles = [...selectedFiles];
+    const currentCaptions = { ...captions };
+    const currentReplyMessage = replyMessage;
+
+    setMessage('');
+    setSelectedFiles([]);
+    setCaptions({});
+    setActiveFileIdx(null);
+    if (replyMessage && onCancelReply) {
+      onCancelReply();
+    }
+
+    // Add messages to queue
+    const newQueueItems = [];
+
+    // Add text message to queue if there's text and no files
+    if (currentSelectedFiles.length === 0 && currentMessage.trim()) {
+      newQueueItems.push({
+        type: 'text',
+        messageText: currentMessage,
+        replyMessage: currentReplyMessage,
+      });
+    }
+
+    // Add file messages to queue
+    if (currentSelectedFiles.length > 0) {
+      for (let i = 0; i < currentSelectedFiles.length; i++) {
+        const file = currentSelectedFiles[i];
+        newQueueItems.push({
+          type: 'file',
+          file: {
+            ...file,
+            caption: currentCaptions[i] || '',
+          },
+          replyMessage: currentReplyMessage,
+        });
+      }
+    }
+
+    // Add to queue
+    setMessageQueue(prev => [...prev, ...newQueueItems]);
+  };
+
+  // Auto-process queue when new items are added
+  useEffect(() => {
+    if (messageQueue.length > 0 && !isProcessingQueue) {
+      processMessageQueue();
+    }
+  }, [messageQueue.length, isProcessingQueue, processMessageQueue]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (emitTypingStatus) {
+        emitTypingStatus(false, conversationId, receiverId);
+      }
+    };
+  }, [emitTypingStatus, conversationId, receiverId]);
 
   const renderFilePreviews = () => {
     if (!selectedFiles.length) {
@@ -340,13 +585,8 @@ const SendChat = ({
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={handleSend}
-          disabled={isSendingMessage || uploading}>
-          {isSendingMessage || uploading ? (
-            <PrimaryLoader size={20} />
-          ) : (
-            <Icon name="send" size={24} color="#fff" />
-          )}
+          onPress={handleSend}>
+          <Icon name="send" size={24} color="#fff" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.iconButton} onPress={handleSelectFiles}>
           <Icon name="add-circle-outline" size={28} color="#fff" />

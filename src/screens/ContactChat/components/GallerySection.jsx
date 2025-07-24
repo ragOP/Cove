@@ -254,8 +254,8 @@ const GallerySection = ({ id, setConversations, conversationId }) => {
   // Use useChatSocket for message_deleted event
   useChatSocket({
     onMessageDeleted: data => {
-      if (data?.data && Array.isArray(data.data)) {
-        const newDeletedIds = data.data;
+      if (data && Array.isArray(data)) {
+        const newDeletedIds = data;
         setDeletedMessageIds(prev => [...prev, ...newDeletedIds]);
         queryClient.invalidateQueries({ queryKey: ['gallery', id] });
       }

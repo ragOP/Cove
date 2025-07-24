@@ -56,8 +56,8 @@ const FriendRequestRow = ({ item, onAccept, onDecline, isAcceptingId, isDeclinin
       <TouchableOpacity
         onPress={() => onAccept(item.sender?._id)}
         style={styles.acceptBtn}
-        disabled={isAcceptingId === item._id}>
-        {isAcceptingId === item._id ? (
+        disabled={isAcceptingId === item.sender?._id || isDecliningId}>
+        {isAcceptingId === item.sender?._id ? (
           <PrimaryLoader size={20} color="#fff" />
         ) : (
           <MaterialCommunityIcons name="check" size={20} color="#fff" />
@@ -66,7 +66,7 @@ const FriendRequestRow = ({ item, onAccept, onDecline, isAcceptingId, isDeclinin
       <TouchableOpacity
         onPress={() => onDecline(item?._id)}
         style={styles.declineBtn}
-        disabled={isDecliningId === item._id}>
+        disabled={isDecliningId === item._id || isAcceptingId}>
         {isDecliningId === item._id ? (
           <PrimaryLoader size={20} color="#D28A8C" />
         ) : (
@@ -109,7 +109,7 @@ const FriendRequests = ({ navigation }) => {
   });
 
   const handleAccept = async id => {
-    if (isAcceptingId) {
+    if (isAcceptingId || isDecliningId) {
       return;
     }
 
@@ -157,7 +157,7 @@ const FriendRequests = ({ navigation }) => {
   };
 
   const handleDecline = async id => {
-    if (isDecliningId) {
+    if (isDecliningId || isAcceptingId) {
       return;
     }
     try {
