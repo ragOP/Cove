@@ -443,7 +443,6 @@ const SendChat = ({
   useEffect(() => {
     const handleAppStateChange = (nextAppState) => {
       if (nextAppState === 'background' || nextAppState === 'inactive') {
-        // Turn off typing when app goes to background or becomes inactive
         if (emitTypingStatus) {
           emitTypingStatus(false, conversationId, receiverId);
         }
@@ -580,7 +579,6 @@ const SendChat = ({
         }
       }}
       onBlur={() => {
-        // Turn off typing when input loses focus
         if (emitTypingStatus) {
           emitTypingStatus(false, conversationId, receiverId);
         }

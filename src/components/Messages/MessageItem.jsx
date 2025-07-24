@@ -102,7 +102,7 @@ export const TickIcon = ({ status, anim }) => {
   } else if (status === 'sending') {
     return (
       <Animated.View style={{ opacity: anim }}>
-        <Icon name="time-outline" size={16} color="#ffb300" />
+        <Icon name="checkmark" size={16} color="#bbb" />
       </Animated.View>
     );
   } else if (status === 'failed') {
