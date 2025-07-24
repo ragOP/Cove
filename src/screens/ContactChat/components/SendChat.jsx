@@ -7,6 +7,7 @@ import {
   Image,
   ScrollView,
   Text,
+  AppState,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { sendMessage } from '../../../apis/sendMessage';
@@ -439,10 +440,21 @@ const SendChat = ({
     }
   }, [messageQueue.length, isProcessingQueue, processMessageQueue]);
 
-  // Cleanup on unmount
   useEffect(() => {
+    const handleAppStateChange = (nextAppState) => {
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        // Turn off typing when app goes to background or becomes inactive
+        if (emitTypingStatus) {
+          emitTypingStatus(false, conversationId, receiverId);
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
     return () => {
       isMountedRef.current = false;
+      subscription?.remove();
       if (emitTypingStatus) {
         emitTypingStatus(false, conversationId, receiverId);
       }
@@ -565,6 +577,12 @@ const SendChat = ({
         handleCaptionChange(text);
         if (emitTypingStatus) {
           emitTypingStatus(!!text && text.trim().length > 0, conversationId, receiverId);
+        }
+      }}
+      onBlur={() => {
+        // Turn off typing when input loses focus
+        if (emitTypingStatus) {
+          emitTypingStatus(false, conversationId, receiverId);
         }
       }}
       selectionColor="#fff"
