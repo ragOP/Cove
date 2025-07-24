@@ -1,4 +1,4 @@
-import { SafeAreaView, StatusBar, StyleSheet } from 'react-native';
+import {  StatusBar, StyleSheet } from 'react-native';
 import React, { useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Splash from './src/screens/Splash/Splash';
@@ -7,7 +7,7 @@ import Home from './src/screens/Home/Home';
 import MainScreen from './src/screens/MainScreen/MainScreen';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Start from './src/screens/Start/Start';
 import { Provider, useSelector } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';

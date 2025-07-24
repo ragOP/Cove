@@ -37,7 +37,10 @@ const chatSlice = createSlice({
       state.error = null;
     },
     addContact: (state, action) => {
-      state.contacts.unshift(action.payload);
+      const existingContact = state.contacts.find(c => c._id === action.payload._id);
+      if (!existingContact) {
+        state.contacts.unshift(action.payload);
+      }
     },
     updateContact: (state, action) => {
       const idx = state.contacts.findIndex(c => c._id === action.payload._id);

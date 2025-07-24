@@ -95,7 +95,8 @@ const ContactHeader = ({
                 <Text style={styles.nameText}>{name}</Text>
               </TouchableOpacity>
               {isFetchingUserStatus ? (
-                <View style={styles.statusLoader} />
+                // <View style={styles.statusLoader} />
+                null
               ) : isOnline ? (
                 <Text style={[styles.usernameText, styles.onlineText]}>
                   online

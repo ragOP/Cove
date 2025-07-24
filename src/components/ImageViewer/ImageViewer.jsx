@@ -11,7 +11,6 @@ import {
   ScrollView,
   BackHandler,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Share from 'react-native-share';
@@ -576,10 +575,9 @@ const ImageViewer = ({
       transparent={true}
       animationType="fade"
       onRequestClose={handleModalClose}
-      statusBarTranslucent={true}
+      // statusBarTranslucent={true}
       hardwareAccelerated={true}>
-      <StatusBar hidden backgroundColor="transparent" translucent />
-      <SafeAreaView style={styles.modalOverlay} edges={['top', 'bottom']}>
+      <View style={styles.modalOverlay} edges={['top', 'bottom']}>
         <TouchableOpacity
           style={styles.overlayTouchable}
           onPress={handleClose}
@@ -825,7 +823,7 @@ const ImageViewer = ({
           confirmButtonColor="#D28A8C"
           showCancel={true}
         />
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 };

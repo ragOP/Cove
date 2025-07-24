@@ -7,7 +7,6 @@ import {
   Modal,
   Pressable,
   Image,
-  SafeAreaView,
 } from 'react-native';
 import { useRef, useState, useEffect } from 'react';
 import { useRoute } from '@react-navigation/native';
@@ -29,6 +28,7 @@ import { deleteMessages } from '../../apis/deleteMessages';
 import CustomDialog from '../../components/CustomDialog/CustomDialog';
 import { useDispatch } from 'react-redux';
 import { showSnackbar } from '../../redux/slice/snackbarSlice';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ContactChat = () => {
   const route = useRoute();
@@ -331,7 +331,7 @@ const ContactChat = () => {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#181818' }}>
+    <View style={{ flex: 1, backgroundColor: '#181818' }}>
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -412,7 +412,7 @@ const ContactChat = () => {
         confirmButtonColor="#ff4444"
         destructive={true}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

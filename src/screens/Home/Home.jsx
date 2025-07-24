@@ -126,7 +126,6 @@ const Home = ({
         });
 
         if (apiResponse?.response?.success) {
-          console.log('API Response:', apiResponse.response.data);
           dispatch(
             setContacts({
               contacts: apiResponse.response.data || [],
@@ -272,7 +271,6 @@ const Home = ({
       return;
     }
 
-    dispatch(updateContact(updatedContact));
     const exists = contacts.some(c => c._id === updatedContact._id);
 
     if (exists) {
@@ -288,8 +286,6 @@ const Home = ({
       queryClient.invalidateQueries({ queryKey: ['pendingRequests'] });
     }
   };
-
-  console.log(">>>", contacts)
 
   const handleDebugLoadContacts = () => {
     dispatch(setPage(1));
@@ -310,7 +306,7 @@ const Home = ({
     <View style={[
       HomeStyles.container,
       {
-        paddingTop: selectedContacts.length > 0 ? insets.top : Math.max(insets.top, 12),
+        paddingTop: selectedContacts.length > 0 ? 0 : 10,
       }
     ]}>
       {selectedContacts.length > 0 ? (

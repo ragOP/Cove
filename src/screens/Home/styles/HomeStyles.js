@@ -4,7 +4,7 @@ const HomeStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#181818',
-    paddingTop: 12,
+    paddingTop: 10,
   },
   headerRow: {
     flexDirection: 'row',

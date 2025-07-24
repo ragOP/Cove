@@ -56,7 +56,7 @@ const FriendRequestRow = ({ item, onAccept, onDecline, isAcceptingId, isDeclinin
       <TouchableOpacity
         onPress={() => onAccept(item.sender?._id)}
         style={styles.acceptBtn}
-        disabled={isAcceptingId === item.sender?._id || isDecliningId}>
+        disabled={Boolean(isAcceptingId === item.sender?._id || isDecliningId)}>
         {isAcceptingId === item.sender?._id ? (
           <PrimaryLoader size={20} color="#fff" />
         ) : (
@@ -66,7 +66,7 @@ const FriendRequestRow = ({ item, onAccept, onDecline, isAcceptingId, isDeclinin
       <TouchableOpacity
         onPress={() => onDecline(item?._id)}
         style={styles.declineBtn}
-        disabled={isDecliningId === item._id || isAcceptingId}>
+        disabled={Boolean(isDecliningId === item._id || isAcceptingId)}>
         {isDecliningId === item._id ? (
           <PrimaryLoader size={20} color="#D28A8C" />
         ) : (
@@ -126,9 +126,9 @@ const FriendRequests = ({ navigation }) => {
           }),
         );
 
-        if (apiResponse?.response?.data) {
-          dispatch(addContact(apiResponse.response.data));
-        }
+        // if (apiResponse?.response?.data) {
+        //   dispatch(addContact(apiResponse.response.data));
+        // }
 
         queryClient.invalidateQueries({ queryKey: ['pendingRequests'] });
       } else {
@@ -219,10 +219,7 @@ const FriendRequests = ({ navigation }) => {
       return;
     }
 
-    console.log(">>>", updatedContact)
     const exists = contacts.some(c => c._id === updatedContact._id);
-
-    console.log(">>>", exists)
 
     if (exists) {
       dispatch(updateContact(updatedContact));
@@ -256,30 +253,37 @@ const FriendRequests = ({ navigation }) => {
   const renderSection = ({ item }) => {
     if (item.type === 'pending') {
       return (
-        <>
-          <FlatList
-            data={item.data}
-            keyExtractor={requestItem => requestItem._id}
-            renderItem={renderItem}
-            contentContainerStyle={styles.listContent}
-            scrollEnabled={false}
-            ListEmptyComponent={
-              <View style={styles.emptyStateContainer}>
-                <Avatar.Icon
-                  icon="account-multiple-plus"
-                  size={80}
-                  style={styles.emptyAvatar}
-                  color="#D28A8C"
-                />
-                <Text style={styles.emptyTitle}>No Pending Requests</Text>
-                <Text style={styles.emptySubtitle}>
-                  You're all caught up! When someone sends you a friend request, it
-                  will appear here.
-                </Text>
-              </View>
-            }
-          />
-          {/* Sent Requests Section */}
+        <View>
+          {/* Render pending requests directly (no nested FlatList) */}
+          {item.data.map(requestItem => (
+            <FriendRequestRow
+              key={requestItem._id}
+              item={requestItem}
+              onAccept={handleAccept}
+              onDecline={handleDecline}
+              isAcceptingId={isAcceptingId}
+              isDecliningId={isDecliningId}
+            />
+          ))}
+
+          {/* Empty state */}
+          {item.data.length === 0 && (
+            <View style={styles.emptyStateContainer}>
+              <Avatar.Icon
+                icon="account-multiple-plus"
+                size={80}
+                style={styles.emptyAvatar}
+                color="#D28A8C"
+              />
+              <Text style={styles.emptyTitle}>No Pending Requests</Text>
+              <Text style={styles.emptySubtitle}>
+                You're all caught up! When someone sends you a friend request, it
+                will appear here.
+              </Text>
+            </View>
+          )}
+
+          {/* Section header */}
           <View style={styles.sectionHeader}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionHeaderText}>Requests Sent</Text>
@@ -288,15 +292,14 @@ const FriendRequests = ({ navigation }) => {
               </Text>
             </View>
           </View>
-        </>
+        </View>
       );
     } else if (item.type === 'sent') {
       return (
-        <FlatList
-          data={item.data}
-          keyExtractor={requestItem => requestItem._id}
-          renderItem={({ item: sentItem }) => (
-            <View style={styles.card}>
+        <View>
+          {/* Render sent requests directly (no nested FlatList) */}
+          {item.data.map(sentItem => (
+            <View key={sentItem._id} style={styles.card}>
               <View style={styles.avatarContainer}>
                 <UserAvatar
                   profilePicture={sentItem.receiver?.profilePicture}
@@ -316,10 +319,10 @@ const FriendRequests = ({ navigation }) => {
                 />
               </View>
             </View>
-          )}
-          contentContainerStyle={styles.listContent}
-          scrollEnabled={false}
-          ListEmptyComponent={
+          ))}
+
+          {/* Empty state */}
+          {item.data.length === 0 && (
             <View style={styles.emptyStateContainer}>
               <Avatar.Icon
                 icon="clock-outline"
@@ -332,8 +335,8 @@ const FriendRequests = ({ navigation }) => {
                 You haven't sent any friend requests yet.
               </Text>
             </View>
-          }
-        />
+          )}
+        </View>
       );
     }
     return null;
