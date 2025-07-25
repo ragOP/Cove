@@ -263,7 +263,7 @@ const GallerySection = ({ id, setConversations, conversationId }) => {
   });
 
   // Filter out deleted messages from galleryData
-  const filteredMediaList = galleryData.filter(item => !deletedMessageIds.includes(item._id));
+  const filteredMediaList = galleryData.filter(item => !deletedMessageIds.includes(item._id))?.reverse();
 
   // Update media items with proper cache invalidation
   const updateMediaItemsInCache = useCallback((updatedIds, isSensitive) => {
