@@ -133,7 +133,7 @@ const SendChat = ({
     const payloads = prepareMessagePayload({
       text: messageText,
       files: [],
-      senderId: userId,
+      userId: userId,
       receiverId,
       replyTo: replyMsg?._id || replyMsg?.id || undefined,
     });
@@ -201,6 +201,8 @@ const SendChat = ({
     }
   }, [userId, receiverId, reduxUser?.name, setConversations]);
 
+  console.log('Conversations:', conversations);
+
   const processFileMessage = useCallback(async (queueItem) => {
     const { file, replyMessage: replyMsg } = queueItem;
 
@@ -216,10 +218,12 @@ const SendChat = ({
     const payload = prepareMessagePayload({
       text: file.caption || '',
       files: [uploadedFile],
-      senderId: userId,
+      userId: userId,
       receiverId,
       replyTo: replyMsg?._id || replyMsg?.id || undefined,
     })[0];
+
+    console.log('Payload:', payload);
 
     // Create optimistic message for file
     const optimisticMessage = {
@@ -239,13 +243,13 @@ const SendChat = ({
       ...(replyMsg && { replyTo: replyMsg }),
     };
 
+    console.log('Optimistic message:', optimisticMessage);
+
     // Add optimistic message immediately
     try {
-      if (isMountedRef.current && setConversations) {
-        setConversations(prev =>
-          dedupeMessages([...(prev || []), optimisticMessage]),
-        );
-      }
+      setConversations(prev =>
+        dedupeMessages([...(prev || []), optimisticMessage]),
+      );
 
       // Play sound and haptic feedback immediately
       playSoundEffect('send');
@@ -256,15 +260,13 @@ const SendChat = ({
 
       if (apiResponse?.response?.success) {
         // Replace optimistic message with real message
-        if (isMountedRef.current && setConversations) {
-          setConversations(prev =>
-            prev.map(msg =>
-              msg._id === optimisticMessage._id
-                ? { ...apiResponse.response.data, status: 'sent' }
-                : msg
-            ),
-          );
-        }
+        setConversations(prev =>
+          prev.map(msg =>
+            msg._id === optimisticMessage._id
+              ? { ...apiResponse.response.data, status: 'sent' }
+              : msg
+          ),
+        );
 
         const newMediaItem = apiResponse.response.data;
 
@@ -277,16 +279,14 @@ const SendChat = ({
           }));
         }
       } else {
-        // Mark as failed
-        if (isMountedRef.current && setConversations) {
-          setConversations(prev =>
-            prev.map(msg =>
-              msg._id === optimisticMessage._id
-                ? { ...msg, status: 'failed' }
-                : msg
-            ),
-          );
-        }
+        setConversations(prev =>
+          prev.map(msg =>
+            msg._id === optimisticMessage._id
+              ? { ...msg, status: 'failed' }
+              : msg
+          ),
+        );
+
         console.error(
           'Failed to send file message:',
           apiResponse?.response?.message,
@@ -296,15 +296,14 @@ const SendChat = ({
       console.error('Error processing file message:', error);
       // Mark as failed if there's an error
       try {
-        if (isMountedRef.current && setConversations) {
-          setConversations(prev =>
-            prev.map(msg =>
-              msg._id === optimisticMessage._id
-                ? { ...msg, status: 'failed' }
-                : msg
-            ),
-          );
-        }
+        setConversations(prev =>
+          prev.map(msg =>
+            msg._id === optimisticMessage._id
+              ? { ...msg, status: 'failed' }
+              : msg
+          ),
+        );
+
       } catch (stateError) {
         console.error('Error updating file message status:', stateError);
       }
@@ -329,7 +328,7 @@ const SendChat = ({
         payload = prepareMessagePayload({
           text: failedMessage.content,
           files: [],
-          senderId: userId,
+          userId: userId,
           receiverId,
           replyTo: failedMessage.replyTo,
         })[0];
